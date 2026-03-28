@@ -20,37 +20,57 @@ export default function PricingPage() {
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
-      <div style={{ maxWidth: "1000px", margin: "0 auto", padding: "4rem 1.5rem 6rem", textAlign: "center" }}>
+      <div style={{ maxWidth: "860px", margin: "0 auto", padding: "4rem 1.25rem 6rem" }}>
 
-        {/* Title */}
-        <h1 style={{ fontFamily: "var(--fd)", fontSize: "clamp(2.5rem,6vw,4rem)", fontWeight: 800, letterSpacing: "-3px", marginBottom: "1rem", lineHeight: 1 }}>
-          Simple pricing.<br /><span className="gradient-text">Serious results.</span>
-        </h1>
-        <p style={{ color: "var(--soft)", fontSize: "1rem", marginBottom: "3rem", fontWeight: 300 }}>
-          Start free. Upgrade when your content demands it.
-        </p>
-
-        {/* Billing toggle */}
-        <div style={{ display: "inline-flex", alignItems: "center", marginBottom: "3rem", padding: "6px", background: "var(--s1)", border: "1px solid var(--border)", borderRadius: "100px" }}>
-          <button
-            onClick={() => setAnnual(false)}
-            style={{ padding: "8px 24px", borderRadius: "100px", border: "none", background: !annual ? "var(--s3)" : "transparent", color: !annual ? "var(--text)" : "var(--muted)", fontSize: ".85rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}
+        <div style={{ textAlign: "center", marginBottom: "3rem" }}>
+          <h1
+            style={{
+              fontFamily: "var(--fd)",
+              fontSize: "clamp(2.5rem,6vw,4rem)",
+              fontWeight: 800,
+              letterSpacing: "-3px",
+              marginBottom: "1rem",
+              lineHeight: 1,
+            }}
           >
-            Monthly
-          </button>
-          <button
-            onClick={() => setAnnual(true)}
-            style={{ padding: "8px 24px", borderRadius: "100px", border: "none", background: annual ? "var(--s3)" : "transparent", color: annual ? "var(--text)" : "var(--muted)", fontSize: ".85rem", cursor: "pointer", fontFamily: "var(--fb)", display: "flex", alignItems: "center", gap: "8px", transition: "all .2s" }}
+            Simple pricing.<br />
+            <span className="gradient-text">Serious results.</span>
+          </h1>
+          <p
+            style={{
+              color: "var(--soft)",
+              fontSize: "1rem",
+              fontWeight: 300,
+              maxWidth: "420px",
+              margin: "0 auto",
+            }}
           >
-            Annual
-            <span style={{ background: "rgba(0,255,178,.1)", color: "var(--neon)", border: "1px solid rgba(0,255,178,.2)", padding: "2px 8px", borderRadius: "100px", fontSize: ".7rem", fontFamily: "var(--fd)", fontWeight: 700 }}>Save 25%</span>
-          </button>
+            Start free. Upgrade when your content demands it.
+          </p>
         </div>
 
-        {/* Plans grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "20px", textAlign: "left", marginBottom: "5rem" }}>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: "3rem" }}>
+          <div style={{ display: "inline-flex", padding: "5px", background: "var(--s1)", border: "1px solid var(--border)", borderRadius: "100px" }}>
+            <button
+              onClick={() => setAnnual(false)}
+              style={{ padding: "8px 22px", borderRadius: "100px", border: "none", background: !annual ? "var(--s3)" : "transparent", color: !annual ? "var(--text)" : "var(--muted)", fontSize: ".85rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setAnnual(true)}
+              style={{ padding: "8px 22px", borderRadius: "100px", border: "none", background: annual ? "var(--s3)" : "transparent", color: annual ? "var(--text)" : "var(--muted)", fontSize: ".85rem", cursor: "pointer", fontFamily: "var(--fb)", display: "flex", alignItems: "center", gap: "8px", transition: "all .2s" }}
+            >
+              Annual
+              <span style={{ background: "rgba(0,255,178,.1)", color: "var(--neon)", border: "1px solid rgba(0,255,178,.2)", padding: "2px 8px", borderRadius: "100px", fontSize: ".7rem", fontFamily: "var(--fd)", fontWeight: 700 }}>
+                Save 25%
+              </span>
+            </button>
+          </div>
+        </div>
 
-          {/* ── FREE ── */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: "16px", marginBottom: "5rem" }}>
+
           <PlanCard>
             <PlanTier color="var(--muted)">Free</PlanTier>
             <PlanPrice>$0</PlanPrice>
@@ -61,98 +81,79 @@ export default function PricingPage() {
               excluded={["Unlimited history", "Export .txt", "Advanced AI score", "Script generator", "Hashtag analysis"]}
             />
             <div style={{ marginTop: "2rem" }}>
-              <Link
-                href="/generator"
-                style={{ display: "block", textAlign: "center", padding: "13px", borderRadius: "100px", background: "var(--s3)", color: "var(--soft)", border: "1px solid var(--border2)", fontSize: ".9rem", textDecoration: "none", fontFamily: "var(--fb)", transition: "all .25s" }}
-                onMouseEnter={e => {
-                  const el = e.currentTarget as HTMLAnchorElement;
-                  el.style.background = "var(--s2)";
-                  el.style.color = "var(--text)";
-                  el.style.transform = "translateY(-2px)";
-                  el.style.borderColor = "rgba(108,58,255,.4)";
-                }}
-                onMouseLeave={e => {
-                  const el = e.currentTarget as HTMLAnchorElement;
-                  el.style.background = "var(--s3)";
-                  el.style.color = "var(--soft)";
-                  el.style.transform = "none";
-                  el.style.borderColor = "var(--border2)";
-                }}
-              >
-                Start Free
-              </Link>
+              <AnimLink href="/generator" variant="ghost">Start Free</AnimLink>
             </div>
           </PlanCard>
 
-          {/* ── PRO ── */}
           <PlanCard featured>
-            <div style={{ position: "absolute", top: "-1px", right: "2rem", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".65rem", fontFamily: "var(--fd)", fontWeight: 700, letterSpacing: "2px", padding: "5px 14px", borderRadius: "0 0 12px 12px" }}>
+            <div
+              style={{
+                position: "absolute",
+                top: "-12px",
+                right: "1.5rem",
+                background: "linear-gradient(135deg, #ff2d6b, #6c3aff)",
+                color: "#fff",
+                fontSize: ".72rem",
+                fontFamily: "var(--fd)",
+                fontWeight: 800,
+                letterSpacing: "2.5px",
+                padding: "7px 16px",
+                borderRadius: "0 0 12px 12px",
+                boxShadow: "0 10px 24px rgba(255,45,107,.35)",
+                border: "1px solid rgba(255,255,255,.12)",
+              }}
+            >
               MOST POPULAR
             </div>
-            <PlanTier color="var(--hot)">Pro</PlanTier>
-            <PlanPrice>${proPrice}</PlanPrice>
-            <PlanPer>per month{annual ? ", billed annually" : ""}</PlanPer>
-            <PlanDivider />
-            <PlanFeatures
-              included={["Unlimited generations", "5 platforms", "8 viral formulas", "Advanced AI score + analysis", "Unlimited history", "Favorites & tags", "Export .txt / Notion", "Script generator", "Hashtag optimizer"]}
-              excluded={[]}
+
+            <div style={{ fontSize: ".72rem", letterSpacing: "3px", textTransform: "uppercase", fontFamily: "var(--fd)", fontWeight: 700, color: "var(--hot)", marginBottom: "1.25rem" }}>
+              Pro
+            </div>
+            <div style={{ fontFamily: "var(--fd)", fontSize: "2.8rem", fontWeight: 800, letterSpacing: "-2px", lineHeight: 1, marginBottom: ".25rem" }}>
+              ${proPrice}
+            </div>
+            <div style={{ fontSize: ".875rem", color: "var(--muted)", marginBottom: "1.75rem", fontWeight: 300 }}>
+              per month{annual ? ", billed annually" : ""}
+            </div>
+            <div style={{ height: "1px", background: "var(--border)", marginBottom: "1.5rem" }} />
+            <Features
+              yes={["Unlimited generations", "5 platforms", "8 viral formulas", "Advanced AI score + analysis", "Unlimited history", "Favorites & tags", "Export .txt / Notion", "Script generator", "Hashtag optimizer"]}
+              no={[]}
             />
             <div style={{ marginTop: "2rem" }}>
-              <button
-                onClick={() => alert("Connect your Stripe keys to activate!")}
-                onMouseEnter={e => {
-                  const el = e.currentTarget as HTMLButtonElement;
-                  el.style.transform = "translateY(-3px) scale(1.02)";
-                  el.style.boxShadow = "0 20px 50px rgba(255,45,107,.5)";
-                }}
-                onMouseLeave={e => {
-                  const el = e.currentTarget as HTMLButtonElement;
-                  el.style.transform = "none";
-                  el.style.boxShadow = "0 8px 24px rgba(255,45,107,.25)";
-                }}
-                style={{ width: "100%", padding: "13px", borderRadius: "100px", border: "none", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".9rem", fontWeight: 500, cursor: "pointer", fontFamily: "var(--fb)", transition: "all .3s", boxShadow: "0 8px 24px rgba(255,45,107,.25)" }}
-              >
-                Get Pro →
-              </button>
+              <AnimBtn variant="primary" onClick={() => alert("Connect your Stripe keys!")}>Get Pro →</AnimBtn>
             </div>
           </PlanCard>
 
-          {/* ── AGENCY ── */}
           <PlanCard>
-            <PlanTier color="var(--neon)">Agency</PlanTier>
-            <PlanPrice>${agencyPrice}</PlanPrice>
-            <PlanPer>per month{annual ? ", billed annually" : ""}</PlanPer>
-            <PlanDivider />
-            <PlanFeatures
-              included={["Everything in Pro", "Multi-client workspace", "Bulk: 50 hooks / generation", "REST API access", "White-label (your brand)", "CSV / JSON export", "Priority support", "Dedicated onboarding"]}
-              excluded={[]}
+            <div style={{ fontSize: ".72rem", letterSpacing: "3px", textTransform: "uppercase", fontFamily: "var(--fd)", fontWeight: 700, color: "var(--neon)", marginBottom: "1.25rem" }}>
+              Agency
+            </div>
+            <div style={{ fontFamily: "var(--fd)", fontSize: "2.8rem", fontWeight: 800, letterSpacing: "-2px", lineHeight: 1, marginBottom: ".25rem" }}>
+              ${agencyPrice}
+            </div>
+            <div style={{ fontSize: ".875rem", color: "var(--muted)", marginBottom: "1.75rem", fontWeight: 300 }}>
+              per month{annual ? ", billed annually" : ""}
+            </div>
+            <div style={{ height: "1px", background: "var(--border)", marginBottom: "1.5rem" }} />
+            <Features
+              yes={["Everything in Pro", "Multi-client workspace", "Bulk: 50 hooks / gen", "REST API access", "White-label", "CSV / JSON export", "Priority support", "Dedicated onboarding"]}
+              no={[]}
             />
             <div style={{ marginTop: "2rem" }}>
-              <button
-                onClick={() => alert("Contact us for Agency onboarding!")}
-                onMouseEnter={e => {
-                  const el = e.currentTarget as HTMLButtonElement;
-                  el.style.transform = "translateY(-2px)";
-                  el.style.background = "rgba(0,255,178,.15)";
-                  el.style.boxShadow = "0 12px 32px rgba(0,255,178,.2)";
-                }}
-                onMouseLeave={e => {
-                  const el = e.currentTarget as HTMLButtonElement;
-                  el.style.transform = "none";
-                  el.style.background = "rgba(0,255,178,.06)";
-                  el.style.boxShadow = "none";
-                }}
-                style={{ width: "100%", padding: "13px", borderRadius: "100px", border: "1px solid rgba(0,255,178,.2)", background: "rgba(0,255,178,.06)", color: "var(--neon)", fontSize: ".9rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .3s" }}
-              >
-                Contact for Agency
-              </button>
+              <AnimBtn variant="neon" onClick={() => alert("Contact us for Agency!")}>Contact for Agency</AnimBtn>
             </div>
           </PlanCard>
-
         </div>
 
-        {/* FAQ */}
-        <div style={{ maxWidth: "640px", margin: "0 auto", textAlign: "left" }}>
+        <div style={{ textAlign: "center", padding: "2rem", background: "var(--s1)", borderRadius: "var(--r2)", border: "1px solid var(--border)", marginBottom: "5rem" }}>
+          <p style={{ fontSize: ".875rem", color: "var(--soft)", fontWeight: 300, lineHeight: 1.7 }}>
+            All plans include the same AI quality. Upgrades unlock <strong style={{ color: "var(--text)", fontWeight: 500 }}>volume, history, and power features</strong> — not better hooks.<br />
+            <Link href="/generator" style={{ color: "var(--electric)", textDecoration: "none" }}>Try free first →</Link>
+          </p>
+        </div>
+
+        <div style={{ maxWidth: "640px", margin: "0 auto" }}>
           <h2 style={{ fontFamily: "var(--fd)", fontSize: "1.75rem", fontWeight: 800, letterSpacing: "-1px", marginBottom: "2rem", textAlign: "center" }}>
             Frequently asked
           </h2>
@@ -162,8 +163,8 @@ export default function PricingPage() {
               onClick={() => setOpenFaq(openFaq === i ? null : i)}
               style={{ borderTop: "1px solid var(--border)", padding: "1.25rem 0", cursor: "pointer" }}
             >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: ".9rem", fontWeight: 500, gap: "1rem" }}>
-                {q}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: ".9rem", fontWeight: 500, gap: "1rem", color: "var(--text)" }}>
+                <span>{q}</span>
                 <div style={{ width: "24px", height: "24px", borderRadius: "50%", border: "1px solid var(--border2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: ".7rem", color: openFaq === i ? "#fff" : "var(--muted)", background: openFaq === i ? "var(--electric)" : "transparent", transition: "all .25s", flexShrink: 0, transform: openFaq === i ? "rotate(45deg)" : "none" }}>
                   +
                 </div>
@@ -175,14 +176,18 @@ export default function PricingPage() {
               )}
             </div>
           ))}
+          <div style={{ borderTop: "1px solid var(--border)" }} />
         </div>
 
+        <div style={{ textAlign: "center", marginTop: "4rem", display: "flex", justifyContent: "center", gap: "2rem", flexWrap: "wrap" }}>
+          {[["Terms of Service", "/terms"], ["Privacy Policy", "/privacy"], ["Generator", "/generator"]].map(([label, href]) => (
+            <Link key={href} href={href} style={{ fontSize: ".8rem", color: "var(--muted)", textDecoration: "none" }}>{label}</Link>
+          ))}
+        </div>
       </div>
     </div>
   );
 }
-
-// ── Sub-components ──
 
 function PlanCard({ children, featured }: { children: React.ReactNode; featured?: boolean }) {
   const [hov, setHov] = useState(false);
@@ -191,14 +196,20 @@ function PlanCard({ children, featured }: { children: React.ReactNode; featured?
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        background: featured ? "linear-gradient(180deg,rgba(255,45,107,.04) 0%,var(--s1) 40%)" : "var(--s1)",
-        border: `1px solid ${featured ? "rgba(255,45,107,.4)" : hov ? "rgba(108,58,255,.35)" : "var(--border)"}`,
+        background: featured
+          ? "linear-gradient(180deg, rgba(255,45,107,.10) 0%, rgba(108,58,255,.08) 45%, var(--s1) 100%)"
+          : "var(--s1)",
+        border: `1px solid ${featured ? "rgba(255,45,107,.55)" : hov ? "rgba(108,58,255,.35)" : "var(--border)"}`,
         borderRadius: "24px",
         padding: "2rem",
         position: "relative",
         transition: "all .3s cubic-bezier(.16,1,.3,1)",
-        transform: hov ? "translateY(-6px)" : "none",
-        boxShadow: hov ? "0 24px 60px rgba(108,58,255,.12)" : featured ? "0 0 40px rgba(255,45,107,.08)" : "none",
+        transform: hov ? "translateY(-5px)" : "none",
+        boxShadow: hov
+          ? "0 20px 50px rgba(108,58,255,.12)"
+          : featured
+            ? "0 0 0 1px rgba(255,45,107,.12), 0 18px 50px rgba(255,45,107,.14)"
+            : "none",
       }}
     >
       {children}
@@ -216,7 +227,7 @@ function PlanTier({ children, color }: { children: React.ReactNode; color: strin
 
 function PlanPrice({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ fontFamily: "var(--fd)", fontSize: "3rem", fontWeight: 800, letterSpacing: "-2px", lineHeight: 1, marginBottom: ".25rem" }}>
+    <div style={{ fontFamily: "var(--fd)", fontSize: "2.8rem", fontWeight: 800, letterSpacing: "-2px", lineHeight: 1, marginBottom: ".25rem" }}>
       {children}
     </div>
   );
@@ -248,5 +259,82 @@ function PlanFeatures({ included, excluded }: { included: string[]; excluded: st
         </div>
       ))}
     </>
+  );
+}
+
+function Features({ yes, no }: { yes: string[]; no: string[] }) {
+  return (
+    <div>
+      {yes.map(f => (
+        <div key={f} style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: ".6rem", fontSize: ".875rem", color: "var(--soft)", fontWeight: 300 }}>
+          <span style={{ color: "var(--neon)", fontSize: ".8rem", flexShrink: 0, marginTop: "2px" }}>✓</span>{f}
+        </div>
+      ))}
+      {no.map(f => (
+        <div key={f} style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: ".6rem", fontSize: ".875rem", color: "var(--muted)", fontWeight: 300, opacity: .45 }}>
+          <span style={{ flexShrink: 0, marginTop: "2px" }}>–</span>{f}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function AnimLink({ href, variant, children }: { href: string; variant: "ghost"; children: React.ReactNode }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <Link
+      href={href}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        display: "block",
+        textAlign: "center",
+        padding: "13px",
+        borderRadius: "100px",
+        background: hov ? "var(--s2)" : "var(--s3)",
+        color: hov ? "var(--text)" : "var(--soft)",
+        border: `1px solid ${hov ? "rgba(108,58,255,.4)" : "var(--border2)"}`,
+        fontSize: ".9rem",
+        textDecoration: "none",
+        fontFamily: "var(--fb)",
+        transition: "all .25s",
+        transform: hov ? "translateY(-2px)" : "none",
+      }}
+    >
+      {children}
+    </Link>
+  );
+}
+
+function AnimBtn({ onClick, variant, children }: { onClick: () => void; variant: "primary" | "neon"; children: React.ReactNode }) {
+  const [hov, setHov] = useState(false);
+  const isPrimary = variant === "primary";
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        width: "100%",
+        padding: "13px",
+        borderRadius: "100px",
+        border: isPrimary ? "none" : "1px solid rgba(0,255,178,.2)",
+        background: isPrimary
+          ? "linear-gradient(135deg,var(--hot),var(--electric))"
+          : hov ? "rgba(0,255,178,.15)" : "rgba(0,255,178,.06)",
+        color: isPrimary ? "#fff" : "var(--neon)",
+        fontSize: ".9rem",
+        fontWeight: isPrimary ? 500 : 400,
+        cursor: "pointer",
+        fontFamily: "var(--fb)",
+        transition: "all .3s",
+        transform: hov ? "translateY(-2px)" : "none",
+        boxShadow: hov
+          ? isPrimary ? "0 16px 40px rgba(255,45,107,.4)" : "0 10px 28px rgba(0,255,178,.2)"
+          : isPrimary ? "0 6px 20px rgba(255,45,107,.25)" : "none",
+      }}
+    >
+      {children}
+    </button>
   );
 }
