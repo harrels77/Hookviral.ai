@@ -1,30 +1,84 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
 
-:root {
-  --bg: #060609;
-  --s1: #0C0C14;
-  --s2: #111120;
-  --s3: #171728;
-  --border: #1E1E30;
-  --border2: #272740;
-  --hot: #FF2D6B;
+/* ── DARK MODE (default) ── */
+:root,
+[data-theme="dark"] {
+  --bg:       #060609;
+  --s1:       #0C0C14;
+  --s2:       #111120;
+  --s3:       #171728;
+  --border:   #1E1E30;
+  --border2:  #272740;
+  --nav-bg:   rgba(6,6,9,.9);
+
+  --hot:      #FF2D6B;
   --electric: #6C3AFF;
-  --neon: #00FFB2;
-  --gold: #FFB800;
-  --text: #F0EEF8;
-  --soft: #8A88A8;
-  --muted: #46465A;
+  --neon:     #00FFB2;
+  --gold:     #FFB800;
+
+  --text:     #F0EEF8;
+  --soft:     #8A88A8;
+  --muted:    #46465A;
+
   --fd: 'Syne', sans-serif;
   --fb: 'DM Sans', sans-serif;
+
   --nav-h: 64px;
   --max-w: 880px;
-  --r: 12px; --r2: 18px; --r3: 24px;
+  --r: 12px;
+  --r2: 18px;
+  --r3: 24px;
+}
+
+/* ── LIGHT MODE ── */
+[data-theme="light"] {
+  --bg:       #F4F3FF;
+  --s1:       #FFFFFF;
+  --s2:       #F0EFF8;
+  --s3:       #E8E7F5;
+  --border:   #D8D6EE;
+  --border2:  #C4C2DE;
+  --nav-bg:   rgba(244,243,255,.92);
+
+  --hot:      #E8185A;
+  --electric: #5A2EE8;
+  --neon:     #00A882;
+  --gold:     #C98A00;
+
+  --text:     #0E0D1A;
+  --soft:     #4A4868;
+  --muted:    #8A88A8;
 }
 
 html { scroll-behavior: smooth; }
-body { font-family: var(--fb); background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+
+body {
+  font-family: var(--fb);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background .3s ease, color .3s ease;
+}
+
+/* Smooth transitions on theme switch */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color;
+  transition-duration: .25s;
+  transition-timing-function: ease;
+}
+/* But NOT on transforms/animations — would break hover effects */
+button, a {
+  transition: all .25s ease;
+}
+
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
@@ -37,11 +91,33 @@ body { font-family: var(--fb); background: var(--bg); color: var(--text); min-he
   background-clip: text;
   animation: gradShift 5s ease infinite;
 }
-.page-wrap { max-width: var(--max-w); margin: 0 auto; padding: 2.5rem 1.25rem 6rem; }
 
-@keyframes gradShift { 0%,100% { background-position: 0% center; } 50% { background-position: 100% center; } }
-@keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes spin { to { transform: rotate(360deg); } }
-@keyframes cardIn { from { opacity: 0; transform: translateY(20px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
-@keyframes pulseGlow { 0%,100% { box-shadow: 0 0 0 0 rgba(255,45,107,.4); } 50% { box-shadow: 0 0 0 8px rgba(255,45,107,0); } }
-@keyframes orbFloat { 0%,100% { transform: translate(0,0); } 50% { transform: translate(20px,-15px); } }
+.page-wrap {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: 2.5rem 1.25rem 6rem;
+}
+
+@keyframes gradShift {
+  0%,100% { background-position: 0% center; }
+  50%      { background-position: 100% center; }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(20px) scale(.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes pulseGlow {
+  0%,100% { box-shadow: 0 0 0 0 rgba(255,45,107,.4); }
+  50%     { box-shadow: 0 0 0 8px rgba(255,45,107,0); }
+}
+@keyframes orbFloat {
+  0%,100% { transform: translate(0,0); }
+  50%     { transform: translate(20px,-15px); }
+}
