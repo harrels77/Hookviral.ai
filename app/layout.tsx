@@ -2,17 +2,14 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Nav } from "@/components/Nav";
 import { ThemeProvider } from "@/components/Themeprovider";
+import Footer from "./Footer";
 
 export const metadata: Metadata = {
   title: "HookViral AI — Stop the Scroll in 3 Seconds",
   description: "Generate 8 viral hooks in seconds. Free to start.",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body>
@@ -22,6 +19,7 @@ export default function RootLayout({
             {children}
           </main>
         </ThemeProvider>
+        <Footer />
       </body>
     </html>
   );
