@@ -68,17 +68,6 @@ body {
   transition: background .3s ease, color .3s ease;
 }
 
-/* Smooth transitions on theme switch */
-*, *::before, *::after {
-  transition-property: background-color, border-color, color;
-  transition-duration: .25s;
-  transition-timing-function: ease;
-}
-/* But NOT on transforms/animations — would break hover effects */
-button, a {
-  transition: all .25s ease;
-}
-
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
@@ -98,6 +87,7 @@ button, a {
   padding: 2.5rem 1.25rem 6rem;
 }
 
+/* ── Animations ── */
 @keyframes gradShift {
   0%,100% { background-position: 0% center; }
   50%      { background-position: 100% center; }
@@ -120,4 +110,12 @@ button, a {
 @keyframes orbFloat {
   0%,100% { transform: translate(0,0); }
   50%     { transform: translate(20px,-15px); }
+}
+@keyframes blink {
+  0%,100% { opacity: 1; }
+  50%     { opacity: 0; }
+}
+@keyframes marqueeScroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
 }

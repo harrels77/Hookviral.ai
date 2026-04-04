@@ -30,80 +30,67 @@ function useBtnHover() {
 }
 
 export default function GeneratorPage() {
+  const [credits, setCredits] = useState(loadCredits().count);
   const [topic, setTopic] = useState("");
-  const [platforms, setPlatforms] = useState<string[]>(["TikTok","Instagram"]);
-  const [tone, setTone] = useState("Authentic");
+  const [platforms, setPlatforms] = useState<string[]>([]);
+  const [tone, setTone] = useState("");
   const [niche, setNiche] = useState("");
-  const [customNiche, setCustomNiche] = useState("");
   const [showCustom, setShowCustom] = useState(false);
-  const [goal, setGoal] = useState("Engagement");
-  const [hooks, setHooks] = useState<Hook[]>([]);
+  const [customNiche, setCustomNiche] = useState("");
+  const [goal, setGoal] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [credits, setCredits] = useState(FREE_DAILY);
+  const [genHov, setGenHov] = useState(false);
+  const [hooks, setHooks] = useState<Hook[]>([]);
+  const [selectedHook, setSelectedHook] = useState<Hook|null>(null);
+  const [scriptLoading, setScriptLoading] = useState(false);
+  const [script, setScript] = useState<Script|null>(null);
   const [copied, setCopied] = useState<string|null>(null);
   const [showModal, setShowModal] = useState(false);
   const [expandedHash, setExpandedHash] = useState<string|null>(null);
   const [expandedAnalysis, setExpandedAnalysis] = useState<string|null>(null);
-  const [selectedHook, setSelectedHook] = useState<Hook|null>(null);
-  const [script, setScript] = useState<Script|null>(null);
-  const [scriptLoading, setScriptLoading] = useState(false);
-  const [favorites, setFavorites] = useState<string[]>([]);
+  const [favs, setFavs] = useState<string[]>([]);
   const customRef = useRef<HTMLInputElement>(null);
-  const genBtn = useBtnHover();
+
+  const creditColor = credits > 3 ? "var(--neon)" : credits > 0 ? "var(--gold)" : "var(--hot)";
+  const creditPct = (credits / FREE_DAILY) * 100;
 
   useEffect(() => {
-    setCredits(loadCredits().count);
-    setFavorites((JSON.parse(localStorage.getItem("hv_favs")||"[]") as Hook[]).map(f=>f.id));
-  }, []);
-  useEffect(() => { if(showCustom) customRef.current?.focus(); }, [showCustom]);
+    const interval = setInterval(() => {
+      const c = loadCredits().count;
+      if (c !== credits) setCredits(c);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [credits]);
 
-  function spendCredit() {
-    const n=Math.max(0,credits-1); setCredits(n);
-    const raw=localStorage.getItem("hv_credits"); const s=raw?JSON.parse(raw):{resetAt:getMidnight()};
-    localStorage.setItem("hv_credits",JSON.stringify({...s,count:n})); return n;
-  }
-  function togglePlatform(p:string) { setPlatforms(prev=>prev.includes(p)?prev.length>1?prev.filter(x=>x!==p):prev:[...prev,p]); }
-  function toggleFav(hook:Hook) {
-    const favs:Hook[]=JSON.parse(localStorage.getItem("hv_favs")||"[]");
-    const idx=favs.findIndex(f=>f.id===hook.id);
-    const updated=idx>=0?favs.filter(f=>f.id!==hook.id):[...favs,hook];
-    localStorage.setItem("hv_favs",JSON.stringify(updated)); setFavorites(updated.map(f=>f.id));
-  }
+  const togglePlatform = (p: string) => {
+    setPlatforms(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
+  };
 
-  const activeNiche=showCustom?customNiche:niche;
+  const generate = async () => {
+    if (loading || credits <= 0) return;
+    setLoading(true);
+    setCredits(prev => prev - 1);
+    // Mock generation logic — replace with actual API call
+    setTimeout(() => {
+      const mockHooks: Hook[] = Array.from({ length: 8 }, (_, i) => ({
+        id: `hook-${i}`,
+        text: `Mock hook ${i + 1} for ${topic || "your content"}`,
+        formula: "Formula " + (i % 3 + 1),
+        platform: platforms[0] || "TikTok",
+        score: Math.floor(Math.random() * 20 + 80),
+        hashtags: ["#mock", "#viral"],
+        analysis: { why: "This hook works because...", curiosity: Math.floor(Math.random() * 10), emotion: Math.floor(Math.random() * 10), clarity: Math.floor(Math.random() * 10) }
+      }));
+      setHooks(mockHooks);
+      setLoading(false);
+    }, 2000);
+  };
 
-  async function generate() {
-    if(credits<=0){setShowModal(true);return;}
-    setLoading(true); setError(""); setHooks([]); setScript(null); setSelectedHook(null);
-    spendCredit();
-    try {
-      const res=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({topic,platforms,tone,niche:activeNiche,goal})});
-      const data=await res.json();
-      if(!res.ok) throw new Error(data.error||"Generation failed");
-      setHooks(data.hooks);
-      const session={id:`sess-${Date.now()}`,topic:topic||"(untitled)", platforms,tone,niche:activeNiche,goal,hooks:data.hooks,date:new Date().toISOString(),dateLabel:new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})};
-      const existing=JSON.parse(localStorage.getItem("hv_hist")||"[]");
-      localStorage.setItem("hv_hist",JSON.stringify([session,...existing].slice(0,60)));
-    } catch(e:unknown) { setError(e instanceof Error?e.message:"Something went wrong."); setCredits(c=>c+1); }
-    finally { setLoading(false); }
-  }
-
-  async function generateScript(hook:Hook) {
-    setSelectedHook(hook); setScriptLoading(true); setScript(null);
-    try {
-      const res=await fetch("/api/script",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({hook:hook.text,topic,platform:hook.platform,tone,goal})});
-      const data=await res.json(); if(!res.ok) throw new Error(data.error);
-      setScript(data.script);
-    } catch { setScript({hook:hook.text,bridge:"Could not generate. Check your API key.",cta:""}); }
-    finally { setScriptLoading(false); }
-  }
-
-  async function copyText(text:string,id:string) { await navigator.clipboard.writeText(text).catch(()=>{}); setCopied(id); setTimeout(()=>setCopied(null),1500); }
-
-  const creditPct=(credits/FREE_DAILY)*100;
-  const creditColor=credits===0?"var(--hot)":credits<=3?"var(--gold)":"var(--neon)";
-  const [genHov, setGenHov] = useState(false);
+  const copyText = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(label);
+    setTimeout(() => setCopied(null), 2000);
+  };
 
   return (
     <div style={{minHeight:"100vh",background:"var(--bg)"}}>
@@ -197,6 +184,45 @@ export default function GeneratorPage() {
               }
             </button>
           </div>
+
+          {/* Hooks list */}
+          {hooks.length > 0 && (
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))",gap:"1rem",marginBottom:"2rem"}}>
+              {hooks.map((hook, index) => (
+                <HookCard
+                  key={hook.id}
+                  hook={hook}
+                  index={index}
+                  isFav={favs.includes(hook.id)}
+                  copied={copied}
+                  expandedHash={expandedHash}
+                  expandedAnalysis={expandedAnalysis}
+                  onCopy={() => copyText(hook.text, hook.id)}
+                  onFav={() => setFavs(prev => prev.includes(hook.id) ? prev.filter(id => id !== hook.id) : [...prev, hook.id])}
+                  onScript={() => {
+                    if (credits <= 0) {
+                      setShowModal(true);
+                      return;
+                    }
+                    setSelectedHook(hook);
+                    setScriptLoading(true);
+                    setCredits(prev => prev - 1);
+                    // Mock script generation — replace with actual API call
+                    setTimeout(() => {
+                      setScript({
+                        hook: hook.text,
+                        bridge: "This is the bridge part of the script...",
+                        cta: "Call to action here..."
+                      });
+                      setScriptLoading(false);
+                    }, 2000);
+                  }}
+                  onToggleHash={() => setExpandedHash(prev => prev === hook.id ? null : hook.id)}
+                  onToggleAnalysis={() => setExpandedAnalysis(prev => prev === hook.id ? null : hook.id)}
+                />
+              ))}
+            </div>
+          )}
 
           {/* Script panel */}
           {(selectedHook||scriptLoading)&&(
