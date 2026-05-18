@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useTheme } from "@/components/Themeprovider";
+import { Logo } from "@/components/Logo";
 
 export function Nav() {
   const path = usePathname();
@@ -145,7 +146,7 @@ export function Nav() {
       <nav style={{ position: "fixed", top: 0, left: 0, right: 0, height: "var(--nav-h)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 1.5rem", background: "var(--nav-bg)", backdropFilter: "blur(24px) saturate(180%)", borderBottom: "1px solid var(--border)" }}>
 
         <Link href="/" style={{ fontFamily: "var(--fd)", fontWeight: 800, fontSize: "1.2rem", letterSpacing: "-1px", display: "flex", alignItems: "center", gap: "8px", textDecoration: "none", color: "var(--text)" }}>
-          <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "28px", height: "28px", background: "linear-gradient(135deg,var(--hot),var(--electric))", borderRadius: "8px", fontSize: "14px", animation: "pulseGlow 2.5s ease-in-out infinite" }}>⚡</span>
+          <Logo size={28} />
           HookViral<span style={{ color: "var(--hot)" }}>.</span>ai
         </Link>
 
