@@ -38,7 +38,7 @@ Le générateur gratuit est la **porte d'entrée d'acquisition**, pas le produit
 
 ## État Phase 3 (en cours le 2026-05-18)
 - ✅ Rewrite engine : `/api/rewrite` (5 styles, 3 variantes, rate-limit 30/h) intégré dans l'Analyzer → funnel Analyze → Rewrite.
-- ⛔ **Stripe / tier payant : BLOQUÉ sur input utilisateur.** Nécessite compte Stripe + clés + décisions pricing/produits. Ne PAS coder une intégration paiement à l'aveugle. Pré-requis avant lancement payant : remplacer le rate-limiting in-memory par un store durable (Upstash/Vercel KV) + enforcement entitlement côté serveur.
+- ⏸️ **Stripe / tier payant : REPORTÉ (décision user 2026-05-18).** On ne monétise qu'après Phase 4 (auth/comptes) + rétention prouvée. Ne PAS coder de paiement maintenant. Quand on y reviendra, pré-requis : comptes users d'abord, rate-limiting durable (Upstash/Vercel KV), enforcement entitlement serveur, puis Stripe (compte + clés + priceId fournis par le user).
 
 ## État Phase 2 (fait le 2026-05-18)
 - ✅ Niche modes : `lib/niches.ts` (8 niches, guidance + topics + exemples) ; guidance injectée dans le prompt `/api/generate`.
