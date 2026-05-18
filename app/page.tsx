@@ -149,13 +149,13 @@ export default function HomePage() {
             </div>
 
             <h1 style={{ fontFamily: "var(--fd)", fontSize: "clamp(2.5rem,4vw,4.2rem)", fontWeight: 800, lineHeight: .95, letterSpacing: "-3px", marginBottom: "1.25rem" }}>
-              Turn any idea into<br />
-              <span className="gradient-text">10 viral hooks</span><br />
-              in 3 seconds.
+              Creators lose viewers in the<br />
+              <span className="gradient-text">first 3 seconds.</span><br />
+              Fix yours.
             </h1>
 
             <p style={{ fontSize: "1rem", color: "var(--soft)", marginBottom: "1.75rem", lineHeight: 1.75, fontWeight: 300, maxWidth: "420px" }}>
-              Specialized for <strong style={{ color: "var(--text)", fontWeight: 500 }}>TikTok, Reels & YouTube Shorts</strong>. More effective than ChatGPT because we&apos;re built for one thing — hooks that stop the scroll.
+              Analyze any hook for retention, then generate 8 scored ones built to stop the scroll. Specialized for <strong style={{ color: "var(--text)", fontWeight: 500 }}>TikTok, Reels & YouTube Shorts</strong>.
             </p>
 
             {/* Why better than ChatGPT chips (from v1) */}
@@ -173,8 +173,8 @@ export default function HomePage() {
             </div>
 
             <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginBottom: "1rem" }}>
-              <HLink href="/generator" primary>Generate My Hooks — Free →</HLink>
-              <HLink href="/pricing">Pro — $9/mo</HLink>
+              <HLink href="/analyzer" primary>Analyze My Hook — Free →</HLink>
+              <HLink href="/generator">Generate 8 Hooks</HLink>
             </div>
             <p style={{ fontSize: ".75rem", color: "var(--muted)", marginBottom: "2.5rem" }}>
               10 free hooks/day · No credit card · Resets at midnight
@@ -399,15 +399,15 @@ export default function HomePage() {
         ══════════════════════════════════ */}
         <section style={{ textAlign: "center", padding: "6rem 1.5rem", borderTop: "1px solid var(--border)" }}>
           <h2 style={{ fontFamily: "var(--fd)", fontSize: "clamp(2rem,5vw,3.5rem)", fontWeight: 800, letterSpacing: "-2px", marginBottom: "1rem", lineHeight: 1.05 }}>
-            Stop guessing.<br />
-            <span className="gradient-text">Start going viral.</span>
+            Stop losing viewers.<br />
+            <span className="gradient-text">Start keeping them.</span>
           </h2>
           <p style={{ color: "var(--soft)", fontSize: ".95rem", margin: "0 auto 2.5rem", fontWeight: 300, maxWidth: "360px", lineHeight: 1.7 }}>
             10 free hooks/day. No account. Upgrade to Pro for unlimited.
           </p>
           <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
-            <HLink href="/generator" primary>Generate My Hooks — Free →</HLink>
-            <HLink href="/pricing">Pro — $9/mo annual</HLink>
+            <HLink href="/analyzer" primary>Analyze My Hook — Free →</HLink>
+            <HLink href="/generator">Generate 8 Hooks</HLink>
           </div>
           <div style={{ marginTop: "3rem", display: "flex", justifyContent: "center", gap: "2rem", flexWrap: "wrap" }}>
             {[["Terms", "/terms"], ["Privacy", "/privacy"], ["TikTok Hooks", "/tiktok-hook-generator"]].map(([l, h]) => (

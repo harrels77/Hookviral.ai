@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     const { hook, topic, platform, tone, goal } = await req.json();
 
     const message = await client.messages.create({
-      model: "claude-sonnet-4-5",
+      model: "claude-sonnet-4-6",
       max_tokens: 512,
       system: `You are an expert short-form video scriptwriter in 2026. 
 Write a complete 3-part script structure for a ${platform} video.

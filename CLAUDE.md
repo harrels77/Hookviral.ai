@@ -36,6 +36,11 @@ Le générateur gratuit est la **porte d'entrée d'acquisition**, pas le produit
 **Phase 4 — Si traction prouvée**
 - Comptes utilisateurs, workspace persistant, analytics, prédiction de performance.
 
+## État Phase 1 (fait le 2026-05-18)
+- ✅ Modèle Claude `claude-sonnet-4-6` sur generate + script + analyze.
+- ✅ **Hook Analyzer autonome** : route `/api/analyze` (rate-limit 30/h) + page `/analyzer` + lien Nav. L'utilisateur colle son hook → score rétention, formule détectée, why, curiosity/emotion/clarity, points à corriger.
+- ✅ Homepage repositionnée sur la rétention (angle perte/3 secondes) ; hero + CTA final mènent vers l'Analyzer.
+
 ## État Phase 0 (fait le 2026-05-18)
 - ✅ Hooks rendus dans `generator/page.tsx` (HookCard câblé), erreur API affichée, stub `setCopiedTag` corrigé, code mort supprimé (`useBtnHover`/`genBtn`/`SmBtn`).
 - ✅ Fuite de crédits corrigée : `refundCredit()` restaure localStorage + state sur erreur.
