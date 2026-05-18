@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 
 const PLATFORMS = ["TikTok", "Instagram", "YouTube", "LinkedIn", "X / Twitter"];
+const REWRITE_STYLES = ["More emotional", "More cinematic", "More contrarian", "More storytelling", "Punchier"];
 
 interface Analysis {
   score: number;
@@ -26,12 +27,24 @@ export default function AnalyzerPage() {
   const [error, setError] = useState("");
   const [result, setResult] = useState<Analysis | null>(null);
   const [btnHov, setBtnHov] = useState(false);
+  const [rewriteStyle, setRewriteStyle] = useState(REWRITE_STYLES[0]);
+  const [rewrites, setRewrites] = useState<string[]>([]);
+  const [rwLoading, setRwLoading] = useState(false);
+  const [rwError, setRwError] = useState("");
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+
+  function resetRewrites() {
+    setRewrites([]);
+    setRwError("");
+    setCopiedIdx(null);
+  }
 
   async function analyze() {
     if (!hook.trim()) return;
     setLoading(true);
     setError("");
     setResult(null);
+    resetRewrites();
     try {
       const res = await fetch("/api/analyze", {
         method: "POST",
@@ -46,6 +59,34 @@ export default function AnalyzerPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function rewrite() {
+    if (!hook.trim()) return;
+    setRwLoading(true);
+    setRwError("");
+    setRewrites([]);
+    setCopiedIdx(null);
+    try {
+      const res = await fetch("/api/rewrite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hook, style: rewriteStyle, platform }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Rewrite failed");
+      setRewrites(data.rewrites || []);
+    } catch (e: unknown) {
+      setRwError(e instanceof Error ? e.message : "Something went wrong.");
+    } finally {
+      setRwLoading(false);
+    }
+  }
+
+  async function copyRewrite(text: string, i: number) {
+    await navigator.clipboard.writeText(text).catch(() => {});
+    setCopiedIdx(i);
+    setTimeout(() => setCopiedIdx(c => (c === i ? null : c)), 1500);
   }
 
   return (
@@ -163,6 +204,46 @@ export default function AnalyzerPage() {
                   </ul>
                 </div>
               )}
+
+              {/* Rewrite engine */}
+              <div style={{ marginTop: "1.75rem", paddingTop: "1.5rem", borderTop: "1px solid var(--border)" }}>
+                <div style={{ fontSize: ".68rem", fontFamily: "var(--fd)", fontWeight: 700, color: "var(--electric)", letterSpacing: "1px", textTransform: "uppercase", marginBottom: ".75rem" }}>Rewrite it stronger</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "1rem" }}>
+                  {REWRITE_STYLES.map(s => (
+                    <button key={s} onClick={() => setRewriteStyle(s)} style={{ padding: "6px 14px", borderRadius: "100px", border: `1px solid ${rewriteStyle === s ? "rgba(108,58,255,.6)" : "var(--border2)"}`, background: rewriteStyle === s ? "rgba(108,58,255,.1)" : "transparent", color: rewriteStyle === s ? "#C4B5FD" : "var(--muted)", fontSize: ".8rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={rewrite}
+                  disabled={rwLoading}
+                  style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%", justifyContent: "center", padding: "12px 24px", borderRadius: "100px", border: "none", background: rwLoading ? "var(--s3)" : "linear-gradient(135deg,var(--electric),var(--hot))", color: "#fff", fontSize: ".9rem", fontWeight: 600, fontFamily: "var(--fb)", cursor: rwLoading ? "not-allowed" : "pointer", opacity: rwLoading ? 0.6 : 1 }}
+                >
+                  {rwLoading
+                    ? <><div style={{ width: "16px", height: "16px", borderRadius: "50%", border: "2px solid rgba(255,255,255,.3)", borderTopColor: "#fff", animation: "spin 1s linear infinite" }} />Rewriting...</>
+                    : <>✦ Rewrite — {rewriteStyle}</>}
+                </button>
+
+                {rwError && (
+                  <div style={{ marginTop: "1rem", background: "rgba(255,45,107,.06)", border: "1px solid rgba(255,45,107,.3)", color: "var(--hot)", borderRadius: "var(--r2)", padding: ".875rem 1.1rem", fontSize: ".82rem" }}>
+                    {rwError}
+                  </div>
+                )}
+
+                {rewrites.length > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "1rem" }}>
+                    {rewrites.map((r, i) => (
+                      <div key={i} onClick={() => copyRewrite(r, i)} style={{ background: "var(--s2)", border: "1px solid var(--border)", borderRadius: "var(--r2)", padding: "1rem 1.1rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "1rem", transition: "all .2s" }}>
+                        <p style={{ flex: 1, fontSize: ".9rem", lineHeight: 1.6, color: "var(--text)" }}>{r}</p>
+                        <span style={{ fontSize: ".72rem", color: copiedIdx === i ? "var(--neon)" : "var(--muted)", fontFamily: "var(--fb)", whiteSpace: "nowrap", flexShrink: 0 }}>
+                          {copiedIdx === i ? "✓ Copied" : "Copy"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <div style={{ marginTop: "1.5rem", textAlign: "center" }}>
                 <Link href="/generator" style={{ fontSize: ".85rem", color: "var(--electric)", textDecoration: "none" }}>
