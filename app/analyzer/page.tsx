@@ -14,6 +14,8 @@ interface Analysis {
   emotion: number;
   clarity: number;
   weakPoints: string[];
+  patternsUsed: string[];
+  patternsMissing: string[];
 }
 
 function scoreColor(s: number) {
@@ -202,6 +204,40 @@ export default function AnalyzerPage() {
                       <li key={i} style={{ fontSize: ".85rem", color: "var(--soft)", lineHeight: 1.6 }}>{w}</li>
                     ))}
                   </ul>
+                </div>
+              )}
+
+              {/* Attention patterns */}
+              {(result.patternsUsed?.length > 0 || result.patternsMissing?.length > 0) && (
+                <div style={{ marginTop: "1.25rem", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                  <div style={{ background: "var(--s2)", borderRadius: "var(--r2)", padding: "1rem 1.1rem", border: "1px solid var(--border)" }}>
+                    <div style={{ fontSize: ".64rem", fontFamily: "var(--fd)", fontWeight: 700, color: "var(--neon)", letterSpacing: "1px", textTransform: "uppercase", marginBottom: ".6rem" }}>Patterns it uses</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
+                      {result.patternsUsed?.length > 0
+                        ? result.patternsUsed.map(p => (
+                          <span key={p} style={{ fontSize: ".7rem", padding: "3px 9px", borderRadius: "100px", background: "rgba(0,255,178,.08)", color: "var(--neon)", border: "1px solid rgba(0,255,178,.2)" }}>{p}</span>
+                        ))
+                        : <span style={{ fontSize: ".78rem", color: "var(--muted)" }}>None detected</span>}
+                    </div>
+                  </div>
+                  <div style={{ background: "var(--s2)", borderRadius: "var(--r2)", padding: "1rem 1.1rem", border: "1px solid var(--border)" }}>
+                    <div style={{ fontSize: ".64rem", fontFamily: "var(--fd)", fontWeight: 700, color: "var(--gold)", letterSpacing: "1px", textTransform: "uppercase", marginBottom: ".6rem" }}>Missing — biggest levers</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
+                      {result.patternsMissing?.length > 0
+                        ? result.patternsMissing.map(p => (
+                          <span key={p} style={{ fontSize: ".7rem", padding: "3px 9px", borderRadius: "100px", background: "rgba(255,184,0,.07)", color: "var(--gold)", border: "1px solid rgba(255,184,0,.25)" }}>{p}</span>
+                        ))
+                        : <span style={{ fontSize: ".78rem", color: "var(--muted)" }}>Solid coverage</span>}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {(result.patternsUsed?.length > 0 || result.patternsMissing?.length > 0) && (
+                <div style={{ marginTop: ".75rem", textAlign: "center" }}>
+                  <Link href="/patterns" style={{ fontSize: ".78rem", color: "var(--muted)", textDecoration: "none" }}>
+                    What do these patterns mean? See the library →
+                  </Link>
                 </div>
               )}
 

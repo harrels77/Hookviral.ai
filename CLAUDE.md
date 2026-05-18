@@ -36,6 +36,15 @@ Le générateur gratuit est la **porte d'entrée d'acquisition**, pas le produit
 **Phase 4 — Si traction prouvée**
 - Comptes utilisateurs, workspace persistant, analytics, prédiction de performance.
 
+## Beachhead & moat (décision 2026-05-18)
+- **Marché-beachhead = chaînes faceless / automation** (gros volume, mindset outil/ROI, rétention = revenu direct, peu servi par vidIQ). Scoper le nouveau travail vers ce marché en priorité.
+- **Anti-clone = pas les features** (l'Analyzer est copiable) mais (1) appropriation de la niche faceless, (2) **corpus de patterns curé qui se compose avec l'usage**.
+- **Contrainte honnête** : les vraies données de rétention/performance par vidéo ne sont PAS accessibles en API gratuite. Ne jamais sous-entendre que le produit a mesuré de la rétention réelle. Le moat = savoir-pattern curé → compose avec l'usage + SEO niche, PAS du big-data.
+- ⏸️ **Data loop compounding reporté** : capturer les hooks analysés/générés dans le corpus nécessite un store persistant (même bucket infra que Phase 4). v1 = corpus statique curé.
+
+## Couche Patterns (en cours le 2026-05-18)
+- 🔜 `lib/patterns.ts` (corpus curé), `/api/analyze` mappe le hook au vocabulaire de patterns du corpus (taxonomie possédée, pas inventée), UI Analyzer montre patterns présents/manquants, page `/patterns` (SEO + apprentissage = rétention).
+
 ## État Phase 3 (en cours le 2026-05-18)
 - ✅ Rewrite engine : `/api/rewrite` (5 styles, 3 variantes, rate-limit 30/h) intégré dans l'Analyzer → funnel Analyze → Rewrite.
 - ⏸️ **Stripe / tier payant : REPORTÉ (décision user 2026-05-18).** On ne monétise qu'après Phase 4 (auth/comptes) + rétention prouvée. Ne PAS coder de paiement maintenant. Quand on y reviendra, pré-requis : comptes users d'abord, rate-limiting durable (Upstash/Vercel KV), enforcement entitlement serveur, puis Stripe (compte + clés + priceId fournis par le user).
