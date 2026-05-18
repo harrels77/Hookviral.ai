@@ -40,9 +40,11 @@ Le générateur gratuit est la **porte d'entrée d'acquisition**, pas le produit
 - ✅ Niche modes : `lib/niches.ts` (8 niches, guidance + topics + exemples) ; guidance injectée dans le prompt `/api/generate`.
 - ✅ Pages SEO statiques `/hooks-for/[niche]` : `generateStaticParams` + `generateMetadata` (title/desc/canonical/OG par niche), 404 si niche inconnue. Server Components.
 - ✅ Prefill du générateur via `?topic=` / `?niche=` (wrappé en `<Suspense>` pour `useSearchParams`).
-- ✅ Section Trends : `/api/trends` (YouTube Data v3, cache fetch 6h, rate-limit 60/h) + page `/trends` (filtre par niche, clic → prefill générateur) + lien Nav. Dégrade proprement sans clé.
-- ⏳ **Reporté** : pages SEO `/trends/[niche]` rendues serveur + re-ranking Claude des trends par niche (dépend de la clé YouTube + design ISR ; à faire en étape dédiée).
-- ⚠️ **Action requise** : ajouter `YOUTUBE_API_KEY` dans `.env.local` (gratuite, Google Cloud) pour que Trends remonte de vrais sujets. Sans clé : `/api/trends` renvoie `{configured:false}`.
+- ✅ Section Trends **double source** : `/api/trends?source=google|youtube` (cache fetch 6h, rate-limit 60/h) + page `/trends` (toggle source) + lien Nav.
+  - **google** (défaut) : flux RSS officiel "Trending Now" (`trends.google.com/trending/rss?geo=`). **Gratuit, sans clé, marche déjà.** Termes de recherche tendance généraux (pas filtrables par niche). Endpoint non documenté mais stable — parsing regex sans dépendance, dégradation propre si ça casse.
+  - **youtube** : YouTube Data v3, filtrable par niche (catégories). Nécessite `YOUTUBE_API_KEY` ; sans clé renvoie `{configured:false}` et la page propose Google à la place.
+- ⏳ **Reporté** : pages SEO `/trends/[niche]` rendues serveur + re-ranking Claude des trends par niche (design ISR ; étape dédiée).
+- ⚠️ **Optionnel** : `YOUTUBE_API_KEY` dans `.env.local` (gratuite, Google Cloud) pour activer la source YouTube filtrable par niche. Google fonctionne sans rien.
 
 ## État Phase 1 (fait le 2026-05-18)
 - ✅ Modèle Claude `claude-sonnet-4-6` sur generate + script + analyze.
