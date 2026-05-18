@@ -23,12 +23,6 @@ function loadCredits() {
 }
 function scoreColor(s: number) { return s>=93?"var(--neon)":s>=88?"var(--gold)":"var(--hot)"; }
 
-// Reusable hover button style
-function useBtnHover() {
-  const [hov, setHov] = useState(false);
-  return { hov, onMouseEnter:()=>setHov(true), onMouseLeave:()=>setHov(false) };
-}
-
 export default function GeneratorPage() {
   const [topic, setTopic] = useState("");
   const [platforms, setPlatforms] = useState<string[]>(["TikTok","Instagram"]);
@@ -50,7 +44,6 @@ export default function GeneratorPage() {
   const [scriptLoading, setScriptLoading] = useState(false);
   const [favorites, setFavorites] = useState<string[]>([]);
   const customRef = useRef<HTMLInputElement>(null);
-  const genBtn = useBtnHover();
 
   useEffect(() => {
     setCredits(loadCredits().count);
@@ -62,6 +55,12 @@ export default function GeneratorPage() {
     const n=Math.max(0,credits-1); setCredits(n);
     const raw=localStorage.getItem("hv_credits"); const s=raw?JSON.parse(raw):{resetAt:getMidnight()};
     localStorage.setItem("hv_credits",JSON.stringify({...s,count:n})); return n;
+  }
+  function refundCredit() {
+    const raw=localStorage.getItem("hv_credits"); const s=raw?JSON.parse(raw):{resetAt:getMidnight(),count:credits};
+    const current=typeof s.count==="number"?s.count:credits;
+    const n=Math.min(FREE_DAILY,current+1); setCredits(n);
+    localStorage.setItem("hv_credits",JSON.stringify({...s,count:n}));
   }
   function togglePlatform(p:string) { setPlatforms(prev=>prev.includes(p)?prev.length>1?prev.filter(x=>x!==p):prev:[...prev,p]); }
   function toggleFav(hook:Hook) {
@@ -85,7 +84,7 @@ export default function GeneratorPage() {
       const session={id:`sess-${Date.now()}`,topic:topic||"(untitled)", platforms,tone,niche:activeNiche,goal,hooks:data.hooks,date:new Date().toISOString(),dateLabel:new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})};
       const existing=JSON.parse(localStorage.getItem("hv_hist")||"[]");
       localStorage.setItem("hv_hist",JSON.stringify([session,...existing].slice(0,60)));
-    } catch(e:unknown) { setError(e instanceof Error?e.message:"Something went wrong."); setCredits((c: number) => c + 1); }
+    } catch(e:unknown) { setError(e instanceof Error?e.message:"Something went wrong."); refundCredit(); }
     finally { setLoading(false); }
   }
 
@@ -198,6 +197,33 @@ export default function GeneratorPage() {
             </button>
           </div>
 
+          {error && (
+            <div style={{background:"rgba(255,45,107,.06)",border:"1px solid rgba(255,45,107,.3)",color:"var(--hot)",borderRadius:"var(--r2)",padding:"1rem 1.25rem",marginBottom:"12px",fontSize:".85rem"}}>
+              {error}
+            </div>
+          )}
+
+          {hooks.length>0 && (
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:"12px",marginBottom:"12px"}}>
+              {hooks.map((h,i)=>(
+                <HookCard
+                  key={h.id}
+                  hook={h}
+                  index={i}
+                  isFav={favorites.includes(h.id)}
+                  copied={copied}
+                  expandedHash={expandedHash}
+                  expandedAnalysis={expandedAnalysis}
+                  onCopy={()=>copyText(h.text,h.id)}
+                  onFav={()=>toggleFav(h)}
+                  onScript={()=>generateScript(h)}
+                  onToggleHash={()=>setExpandedHash(prev=>prev===h.id?null:h.id)}
+                  onToggleAnalysis={()=>setExpandedAnalysis(prev=>prev===h.id?null:h.id)}
+                />
+              ))}
+            </div>
+          )}
+
           {/* Script panel */}
           {(selectedHook||scriptLoading)&&(
             <div style={{marginTop:"2rem",background:"var(--s1)",border:"1px solid rgba(108,58,255,.3)",borderRadius:"var(--r2)",padding:"1.75rem",animation:"cardIn .4s ease"}}>
@@ -246,6 +272,7 @@ interface HookCardProps {
 
 function HookCard({ hook, index, isFav, copied, expandedHash, expandedAnalysis, onCopy, onFav, onScript, onToggleHash, onToggleAnalysis }: HookCardProps) {
   const [hov, setHov] = useState(false);
+  const [copiedTag, setCopiedTag] = useState<string | null>(null);
   const showHash = expandedHash === hook.id;
   const showAnalysis = expandedAnalysis === hook.id;
 
@@ -289,9 +316,9 @@ function HookCard({ hook, index, isFav, copied, expandedHash, expandedAnalysis, 
           {showHash&&(
             <div style={{marginTop:"8px",display:"flex",flexWrap:"wrap",gap:"5px"}}>
               {hook.hashtags.map(tag=>(
-                <button key={tag} onClick={async()=>{await navigator.clipboard.writeText(tag).catch(()=>{}); setCopiedTag(tag);}}
-                  style={{padding:"3px 9px",borderRadius:"6px",background:"rgba(0,255,178,.06)",border:"1px solid rgba(0,255,178,.2)",color:"var(--neon)",fontSize:".7rem",cursor:"pointer",fontFamily:"var(--fb)",transition:"all .2s"}}>
-                  {tag}
+                <button key={tag} onClick={async()=>{await navigator.clipboard.writeText(tag).catch(()=>{}); setCopiedTag(tag); setTimeout(()=>setCopiedTag(c=>c===tag?null:c),1200);}}
+                  style={{padding:"3px 9px",borderRadius:"6px",background:copiedTag===tag?"rgba(0,255,178,.16)":"rgba(0,255,178,.06)",border:"1px solid rgba(0,255,178,.2)",color:"var(--neon)",fontSize:".7rem",cursor:"pointer",fontFamily:"var(--fb)",transition:"all .2s"}}>
+                  {copiedTag===tag?`✓ ${tag}`:tag}
                 </button>
               ))}
               <button onClick={async()=>{await navigator.clipboard.writeText(hook.hashtags!.join(" ")).catch(()=>{});}} style={{padding:"3px 9px",borderRadius:"6px",background:"rgba(108,58,255,.08)",border:"1px solid rgba(108,58,255,.2)",color:"#9B8CFF",fontSize:".7rem",cursor:"pointer",fontFamily:"var(--fb)"}}>Copy all</button>
@@ -330,10 +357,6 @@ function HookCard({ hook, index, isFav, copied, expandedHash, expandedAnalysis, 
   );
 }
 
-// We need a local state for copied tag — add it to the parent or use a local ref
-// For simplicity, the copy tag button calls clipboard directly
-function setCopiedTag(_tag: string) { /* handled inline */ }
-
 function ActionBtn({ onClick, active, activeColor, title, children }: { onClick:()=>void; active?:boolean; activeColor?:string; title?:string; children:React.ReactNode }) {
   const [hov, setHov] = useState(false);
   return (
@@ -367,16 +390,6 @@ function Chip({ label, active, onClick, color }: { label:string; active:boolean;
     <button onClick={onClick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
       style={{padding:"6px 14px",borderRadius:"100px",border:`1px solid ${active?c.border:hov?c.border+"88":"var(--border2)"}`,background:active?c.bg:hov?c.bg+"44":"transparent",color:active?c.text:hov?c.text+"99":"var(--muted)",fontSize:".8rem",cursor:"pointer",fontFamily:"var(--fb)",transition:"all .2s",transform:hov&&!active?"scale(1.04)":"none"}}>
       {label}
-    </button>
-  );
-}
-
-function SmBtn({ onClick, children }: { onClick:()=>void; children:React.ReactNode }) {
-  const [hov,setHov]=useState(false);
-  return (
-    <button onClick={onClick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
-      style={{padding:"7px 16px",borderRadius:"100px",border:`1px solid ${hov?"rgba(108,58,255,.4)":"var(--border2)"}`,background:hov?"rgba(108,58,255,.06)":"transparent",color:hov?"var(--text)":"var(--soft)",fontSize:".78rem",cursor:"pointer",fontFamily:"var(--fb)",transition:"all .2s",transform:hov?"translateY(-1px)":"none"}}>
-      {children}
     </button>
   );
 }

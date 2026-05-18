@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { rateLimit, getClientIp } from "@/lib/rateLimit";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -47,6 +48,14 @@ IMPORTANT: Match the language of the topic input exactly.`;
 
 export async function POST(req: NextRequest) {
   try {
+    const rl = rateLimit(`generate:${getClientIp(req)}`, 20, 60 * 60 * 1000);
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
+      );
+    }
+
     const { topic, platforms, tone, niche, goal } = await req.json();
 
     const userMessage = [

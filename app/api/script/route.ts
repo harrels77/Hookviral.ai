@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { rateLimit, getClientIp } from "@/lib/rateLimit";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export async function POST(req: NextRequest) {
   try {
+    const rl = rateLimit(`script:${getClientIp(req)}`, 40, 60 * 60 * 1000);
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
+      );
+    }
+
     const { hook, topic, platform, tone, goal } = await req.json();
 
     const message = await client.messages.create({
