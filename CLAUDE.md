@@ -36,6 +36,14 @@ Le générateur gratuit est la **porte d'entrée d'acquisition**, pas le produit
 **Phase 4 — Si traction prouvée**
 - Comptes utilisateurs, workspace persistant, analytics, prédiction de performance.
 
+## État Phase 2 (fait le 2026-05-18)
+- ✅ Niche modes : `lib/niches.ts` (8 niches, guidance + topics + exemples) ; guidance injectée dans le prompt `/api/generate`.
+- ✅ Pages SEO statiques `/hooks-for/[niche]` : `generateStaticParams` + `generateMetadata` (title/desc/canonical/OG par niche), 404 si niche inconnue. Server Components.
+- ✅ Prefill du générateur via `?topic=` / `?niche=` (wrappé en `<Suspense>` pour `useSearchParams`).
+- ✅ Section Trends : `/api/trends` (YouTube Data v3, cache fetch 6h, rate-limit 60/h) + page `/trends` (filtre par niche, clic → prefill générateur) + lien Nav. Dégrade proprement sans clé.
+- ⏳ **Reporté** : pages SEO `/trends/[niche]` rendues serveur + re-ranking Claude des trends par niche (dépend de la clé YouTube + design ISR ; à faire en étape dédiée).
+- ⚠️ **Action requise** : ajouter `YOUTUBE_API_KEY` dans `.env.local` (gratuite, Google Cloud) pour que Trends remonte de vrais sujets. Sans clé : `/api/trends` renvoie `{configured:false}`.
+
 ## État Phase 1 (fait le 2026-05-18)
 - ✅ Modèle Claude `claude-sonnet-4-6` sur generate + script + analyze.
 - ✅ **Hook Analyzer autonome** : route `/api/analyze` (rate-limit 30/h) + page `/analyzer` + lien Nav. L'utilisateur colle son hook → score rétention, formule détectée, why, curiosity/emotion/clarity, points à corriger.

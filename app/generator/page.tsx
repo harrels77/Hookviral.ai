@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { getNiche } from "@/lib/niches";
 
 const PLATFORMS = ["TikTok", "Instagram", "YouTube", "LinkedIn", "X / Twitter"];
 const TONES = ["Authentic", "Shock", "Educational", "Humor", "Authority", "Storytelling"];
@@ -24,6 +26,15 @@ function loadCredits() {
 function scoreColor(s: number) { return s>=93?"var(--neon)":s>=88?"var(--gold)":"var(--hot)"; }
 
 export default function GeneratorPage() {
+  return (
+    <Suspense fallback={null}>
+      <GeneratorInner />
+    </Suspense>
+  );
+}
+
+function GeneratorInner() {
+  const searchParams = useSearchParams();
   const [topic, setTopic] = useState("");
   const [platforms, setPlatforms] = useState<string[]>(["TikTok","Instagram"]);
   const [tone, setTone] = useState("Authentic");
@@ -48,6 +59,19 @@ export default function GeneratorPage() {
   useEffect(() => {
     setCredits(loadCredits().count);
     setFavorites((JSON.parse(localStorage.getItem("hv_favs")||"[]") as Hook[]).map(f=>f.id));
+  }, []);
+  useEffect(() => {
+    const t = searchParams.get("topic");
+    if (t) setTopic(t.slice(0,200));
+    const nSlug = searchParams.get("niche");
+    if (nSlug) {
+      const nm = getNiche(nSlug);
+      if (nm) {
+        if (NICHES.includes(nm.label)) { setShowCustom(false); setNiche(nm.label); }
+        else { setShowCustom(true); setCustomNiche(nm.label); }
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => { if(showCustom) customRef.current?.focus(); }, [showCustom]);
 

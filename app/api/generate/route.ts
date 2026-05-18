@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { rateLimit, getClientIp } from "@/lib/rateLimit";
+import { matchNiche } from "@/lib/niches";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -58,11 +59,14 @@ export async function POST(req: NextRequest) {
 
     const { topic, platforms, tone, niche, goal } = await req.json();
 
+    const nicheMode = matchNiche(niche || "");
+
     const userMessage = [
       `Topic: "${topic || "general content"}"`,
       `Platform(s): ${(platforms || ["TikTok"]).join(", ")}`,
       `Tone: ${tone || "Authentic"}`,
       niche ? `Niche: ${niche}` : "",
+      nicheMode ? `Niche guidance: ${nicheMode.guidance}` : "",
       goal ? `Conversion goal: ${goal}` : "",
     ].filter(Boolean).join("\n");
 

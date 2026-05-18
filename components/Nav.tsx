@@ -14,6 +14,7 @@ export function Nav() {
     { href: "/", label: "Home" },
     { href: "/generator", label: "Generator" },
     { href: "/analyzer", label: "Analyzer" },
+    { href: "/trends", label: "Trends" },
     { href: "/history", label: "History" },
     { href: "/pricing", label: "Pricing" },
   ];
