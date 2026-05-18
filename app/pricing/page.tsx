@@ -10,11 +10,12 @@ export default function PricingPage() {
   const proPrice = annual ? 9 : 12;
 
   const faqs = [
-    ["Can I cancel anytime?", "Yes. No contracts, no friction. Cancel from your account in one click. You keep Pro access until the end of your billing period."],
-    ["Are hooks AI-generated or template-based?", "Both. Our engine combines 8 proven viral formulas with Claude AI to generate unique hooks tuned to your content, platform, and tone. Better than pure templates, more reliable than raw AI."],
-    ["How many hooks can I generate for free?", "10 generations per day, resetting at midnight. Each generation produces 8 hooks — that's 80 hooks/day for free. Pro is completely unlimited."],
-    ["Does it work in French?", "Yes. Write your description in French and hooks are generated in French. Language is auto-detected from your input."],
-    ["What happens to my history on the free plan?", "Your history is saved locally in your browser. On Pro, it's unlimited and persistent."],
+    ["What do I actually get?", "More than a generator. You get the Hook Analyzer (retention score + the attention patterns your hook uses or misses), a one-click Rewrite engine, the generator (8 scored hooks per idea), and live Trends. It's a system for the first 3 seconds, not a text spitter."],
+    ["How is this different from ChatGPT or vidIQ?", "ChatGPT writes generic text with no platform logic. vidIQ optimizes long-form YouTube. HookViral is the specialist for the opening seconds of short-form (TikTok / Reels / Shorts) — it scores retention and names why a hook works."],
+    ["Is the free plan actually usable?", "Yes. 10 generations/day (8 hooks each = 80 hooks/day), the Analyzer, Patterns and Trends — free, no account, reset at midnight. Pro removes the daily limit."],
+    ["Can I cancel anytime?", "Yes. No contracts. Cancel in one click; you keep Pro until the end of your billing period."],
+    ["Does it work for faceless channels and in French?", "Both. Faceless / narration channels are a core focus, with niche-specific patterns. Write in French and everything (hooks, analysis, rewrites) comes back in French — language is auto-detected."],
+    ["What happens to my history?", "It's saved locally in your browser, free. No account needed for it to work."],
   ];
 
   return (

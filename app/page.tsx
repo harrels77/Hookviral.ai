@@ -395,6 +395,44 @@ export default function HomePage() {
         </section>
 
         {/* ══════════════════════════════════
+            TRENDING NOW (live)
+        ══════════════════════════════════ */}
+        <section style={{ borderTop: "1px solid var(--border)" }}>
+          <div style={{ maxWidth: "900px", margin: "0 auto", padding: "5rem 1.5rem" }}>
+            <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
+              <SLabel center>Trending right now</SLabel>
+              <h2 style={{ fontFamily: "var(--fd)", fontSize: "clamp(1.8rem,4vw,2.8rem)", fontWeight: 800, letterSpacing: "-2px", lineHeight: 1.05, marginBottom: ".75rem" }}>
+                Ride what&apos;s hot — instantly.
+              </h2>
+              <p style={{ color: "var(--soft)", fontSize: ".9rem", fontWeight: 300 }}>
+                Real trending topics. Tap one → get scroll-stopping hooks for it in 3 seconds.
+              </p>
+            </div>
+            <HomeTrends />
+            <div style={{ textAlign: "center", marginTop: "2rem" }}>
+              <Link href="/trends" style={{ fontSize: ".875rem", color: "var(--electric)", textDecoration: "none" }}>
+                See all trends →
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════
+            FAQ
+        ══════════════════════════════════ */}
+        <section style={{ background: "var(--s1)", borderTop: "1px solid var(--border)" }}>
+          <div style={{ maxWidth: "760px", margin: "0 auto", padding: "5rem 1.5rem" }}>
+            <div style={{ textAlign: "center", marginBottom: "3rem" }}>
+              <SLabel center>FAQ</SLabel>
+              <h2 style={{ fontFamily: "var(--fd)", fontSize: "clamp(1.8rem,4vw,2.8rem)", fontWeight: 800, letterSpacing: "-2px" }}>
+                Questions, answered.
+              </h2>
+            </div>
+            <HomeFAQ />
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════
             FINAL CTA
         ══════════════════════════════════ */}
         <section style={{ textAlign: "center", padding: "6rem 1.5rem", borderTop: "1px solid var(--border)" }}>
@@ -635,6 +673,79 @@ function RCard({ r }: { r: { av: string; c: string; name: string; role: string; 
           <div style={{ fontSize: ".72rem", color: "var(--muted)" }}>{r.role}</div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── Home: live trends teaser ──
+function HomeTrends() {
+  const [items, setItems] = useState<{ title: string; sub: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/trends?source=google")
+      .then(r => r.json())
+      .then(d => setItems((d.trends || []).slice(0, 6)))
+      .catch(() => setItems([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div style={{ textAlign: "center", padding: "2rem" }}>
+        <div style={{ width: "30px", height: "30px", borderRadius: "50%", border: "2px solid var(--border2)", borderTopColor: "var(--hot)", animation: "spin 1s linear infinite", margin: "0 auto" }} />
+      </div>
+    );
+  }
+  if (items.length === 0) {
+    return (
+      <div style={{ textAlign: "center", color: "var(--muted)", fontSize: ".9rem", padding: "1.5rem" }}>
+        Trends are loading — <Link href="/trends" style={{ color: "var(--electric)", textDecoration: "none" }}>open the Trends page →</Link>
+      </div>
+    );
+  }
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: "10px" }}>
+      {items.map((t, i) => (
+        <Link key={i} href={`/generator?topic=${encodeURIComponent(t.title)}`} style={{ background: "var(--s1)", border: "1px solid var(--border)", borderRadius: "var(--r2)", padding: "1rem 1.1rem", textDecoration: "none", display: "flex", alignItems: "center", gap: "12px" }}>
+          <span style={{ fontFamily: "var(--fd)", fontWeight: 800, fontSize: ".9rem", color: "var(--muted)", flexShrink: 0 }}>{i + 1}</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: ".88rem", color: "var(--text)", lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.title}</div>
+            {t.sub && <div style={{ fontSize: ".68rem", color: "var(--muted)" }}>{t.sub}</div>}
+          </div>
+          <span style={{ fontSize: ".72rem", color: "var(--electric)", flexShrink: 0 }}>→</span>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+// ── Home: FAQ accordion ──
+const HOME_FAQS: [string, string][] = [
+  ["Is it really free?", "Yes — 10 hook generations per day, free, no account, reset at midnight. The Hook Analyzer and Trends are free to use. Pro removes the daily limit."],
+  ["Do I need an account?", "No. Nothing to sign up for. Your history and favorites stay on your device."],
+  ["How is this different from ChatGPT?", "ChatGPT writes generic text. HookViral is built for one thing: the first 3 seconds. It scores every hook for retention, names the attention patterns it uses or misses, and rewrites it stronger."],
+  ["What does the Analyzer actually do?", "Paste a hook you already wrote. It scores its scroll-stopping power 0–100, breaks down curiosity / emotion / clarity, names which viral patterns it uses vs. the high-leverage ones it's missing, and can rewrite it."],
+  ["Does it work for faceless channels?", "Yes — faceless and narration channels are a core focus. The pattern library flags the patterns that matter most for faceless openings."],
+  ["Where do the trends come from?", "Google Search trends (free, no setup) and, when configured, YouTube trending — filterable by niche. Tap any trend to generate hooks for it."],
+];
+
+function HomeFAQ() {
+  const [open, setOpen] = useState<number | null>(0);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+      {HOME_FAQS.map(([q, a], i) => {
+        const isOpen = open === i;
+        return (
+          <div key={i} onClick={() => setOpen(isOpen ? null : i)} style={{ background: "var(--bg)", border: "1px solid var(--border)", borderRadius: "var(--r2)", padding: "1.1rem 1.3rem", cursor: "pointer" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
+              <span style={{ fontSize: ".95rem", fontWeight: 500, color: "var(--text)" }}>{q}</span>
+              <span style={{ width: "24px", height: "24px", flexShrink: 0, borderRadius: "50%", border: "1px solid var(--border2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: ".7rem", color: isOpen ? "#fff" : "var(--muted)", background: isOpen ? "var(--electric)" : "transparent", transition: "all .25s", transform: isOpen ? "rotate(45deg)" : "none" }}>+</span>
+            </div>
+            {isOpen && <p style={{ fontSize: ".875rem", color: "var(--soft)", lineHeight: 1.7, marginTop: ".9rem", fontWeight: 300 }}>{a}</p>}
+          </div>
+        );
+      })}
     </div>
   );
 }

@@ -8,19 +8,21 @@ import { useTheme } from "@/components/Themeprovider";
 export function Nav() {
   const path = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const { theme, toggle } = useTheme();
 
-  const links = [
-    { href: "/", label: "Home" },
+  const primary = [
     { href: "/generator", label: "Generator" },
     { href: "/analyzer", label: "Analyzer" },
-    { href: "/patterns", label: "Patterns" },
-    { href: "/trends", label: "Trends" },
-    { href: "/history", label: "History" },
     { href: "/pricing", label: "Pricing" },
   ];
+  const more = [
+    { href: "/trends", label: "Trends" },
+    { href: "/patterns", label: "Patterns" },
+    { href: "/history", label: "History" },
+  ];
 
-  useEffect(() => { setMenuOpen(false); }, [path]);
+  useEffect(() => { setMenuOpen(false); setMoreOpen(false); }, [path]);
 
   useEffect(() => {
     // Skip on touch/mobile
@@ -113,7 +115,17 @@ export function Nav() {
 
       {/* Mobile drawer */}
       <div style={{ position: "fixed", top: 0, right: 0, bottom: 0, width: "280px", background: "var(--s1)", borderLeft: "1px solid var(--border)", zIndex: 200, padding: "5rem 1.5rem 2rem", display: "flex", flexDirection: "column", gap: "6px", transform: menuOpen ? "translateX(0)" : "translateX(100%)", transition: "transform .3s cubic-bezier(.16,1,.3,1)" }}>
-        {links.map(l => {
+        {primary.map(l => {
+          const active = path === l.href;
+          return (
+            <Link key={l.href} href={l.href} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderRadius: "var(--r2)", background: active ? "var(--s3)" : "transparent", color: active ? "var(--text)" : "var(--soft)", textDecoration: "none", fontFamily: "var(--fb)", fontSize: "1rem", fontWeight: active ? 500 : 400, border: active ? "1px solid var(--border2)" : "1px solid transparent", transition: "all .2s" }}>
+              {l.label}
+              {active && <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "linear-gradient(135deg,var(--hot),var(--electric))", flexShrink: 0 }} />}
+            </Link>
+          );
+        })}
+        <div style={{ fontSize: ".6rem", textTransform: "uppercase", letterSpacing: "2px", color: "var(--muted)", padding: "16px 18px 4px", fontFamily: "var(--fd)", fontWeight: 600 }}>More</div>
+        {more.map(l => {
           const active = path === l.href;
           return (
             <Link key={l.href} href={l.href} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderRadius: "var(--r2)", background: active ? "var(--s3)" : "transparent", color: active ? "var(--text)" : "var(--soft)", textDecoration: "none", fontFamily: "var(--fb)", fontSize: "1rem", fontWeight: active ? 500 : 400, border: active ? "1px solid var(--border2)" : "1px solid transparent", transition: "all .2s" }}>
@@ -139,7 +151,7 @@ export function Nav() {
 
         {/* Desktop */}
         <div className="hv-desktop-nav" style={{ display: "flex", alignItems: "center", gap: "2px" }}>
-          {links.map(l => {
+          {primary.map(l => {
             const active = path === l.href;
             return (
               <Link key={l.href} href={l.href} style={{ position: "relative", padding: "6px 16px", borderRadius: "100px", fontSize: ".85rem", color: active ? "var(--text)" : "var(--soft)", background: active ? "var(--s3)" : "transparent", textDecoration: "none", fontFamily: "var(--fb)", transition: "all .2s", display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
@@ -148,6 +160,29 @@ export function Nav() {
               </Link>
             );
           })}
+
+          {/* More dropdown */}
+          <div style={{ position: "relative" }}>
+            <button onClick={() => setMoreOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: "5px", padding: "6px 14px", borderRadius: "100px", fontSize: ".85rem", color: more.some(m => m.href === path) || moreOpen ? "var(--text)" : "var(--soft)", background: moreOpen ? "var(--s3)" : "transparent", border: "none", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
+              More
+              <span style={{ fontSize: ".55rem", display: "inline-block", transform: moreOpen ? "rotate(180deg)" : "none", transition: "transform .2s" }}>▼</span>
+            </button>
+            {moreOpen && (
+              <>
+                <div onClick={() => setMoreOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 90 }} />
+                <div style={{ position: "absolute", top: "calc(100% + 10px)", right: 0, zIndex: 110, background: "var(--s1)", border: "1px solid var(--border2)", borderRadius: "var(--r2)", padding: "6px", minWidth: "160px", display: "flex", flexDirection: "column", gap: "2px", boxShadow: "0 16px 44px rgba(0,0,0,.35)" }}>
+                  {more.map(l => {
+                    const active = path === l.href;
+                    return (
+                      <Link key={l.href} href={l.href} style={{ padding: "9px 14px", borderRadius: "var(--r)", fontSize: ".85rem", color: active ? "var(--text)" : "var(--soft)", background: active ? "var(--s3)" : "transparent", textDecoration: "none", fontFamily: "var(--fb)", transition: "all .15s" }}>
+                        {l.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
 
           {/* Theme toggle */}
           <button onClick={toggle} title={theme === "dark" ? "Light mode" : "Dark mode"}
