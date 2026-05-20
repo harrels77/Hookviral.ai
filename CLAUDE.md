@@ -45,6 +45,18 @@ Le générateur gratuit est la **porte d'entrée d'acquisition**, pas le produit
 ## Couche Patterns (en cours le 2026-05-18)
 - 🔜 `lib/patterns.ts` (corpus curé), `/api/analyze` mappe le hook au vocabulaire de patterns du corpus (taxonomie possédée, pas inventée), UI Analyzer montre patterns présents/manquants, page `/patterns` (SEO + apprentissage = rétention).
 
+## Simplification radicale — 4 moves (fait le 2026-05-20)
+Décision user : "trop compliqué, beaucoup trop. Il faut éviter de trop faire et rendre le truc plus accessible." Soustraction, pas addition. Le squelette + le aha moment restent intacts.
+- ✅ **Move 4 — Pro plumbing caché** : `isPro()` retourne `true` en attendant Stripe. Une seule ligne unlock toutes les features Pro (Script generator, 5 styles + 3 variantes rewrite, decode illimité, brief faceless). Les locks/badges/teasers ne rendent jamais (conditionals `!isPro()`). Le commentaire dans `lib/plan.ts` explique comment re-activer (lire `localStorage.hv_plan`). Cohérent avec Stripe reporté : zéro friction visuelle qui pousse vers un flux d'achat inexistant. Labels "Script (Pro)" et "Faceless brief · Pro" nettoyés.
+- ✅ **Move 3 — Home : 10 sections → 5** : Hero + How-it-works (4 cartes seulement, real-run callout coupé car le widget le remplace) + HomeAnalyzeWidget + Email + Final CTA. Coupé : Typing demo, Concrete Examples, Features grid, Trends teaser, FAQ + tous les orphelins (`useTyping`, `DesktopMockup`, `FCard`, `HomeTrends`, `HomeFAQ`, `HOME_FAQS`, `TYPING_HOOKS`, `EXAMPLE_OUTPUTS`).
+- ✅ **Move 2 — Defaults > Knobs** sur les 3 surfaces actives :
+  - Generator : Topic + Generate visibles. Platform + Tone + Niche + Goal sous `<details>More options ▾ (platform, tone, niche, goal)</details>`. 6 décisions → 1.
+  - Analyzer : Hook + Analyze visibles. Platform + Niche sous `<details>More options ▾ (platform, niche)</details>`.
+  - Trends : liste + keyword filter + refresh visibles. Source + Geo + Niche sous `<details>Filters ▾ (Google · US · All niches)</details>` — le summary montre l'état actif.
+- ✅ **Move 1 — `/why-it-works` réécrit en "Start here" guide** : plain language, pour l'utilisateur (pas la preuve). 4 blocs (Trends / Generator / Analyzer / Patterns) chacun avec **What it does / When to use it / Why it works** en 1 ligne chacun + CTA "Open X →". Closing "Not sure where to start" qui pointe vers l'Analyzer comme cœur du produit. Remplace l'article méthodologie scientifique. Mêmes liens entrants (Home cut, Analyzer "How? →", Patterns) continuent de pointer ici — l'URL reste `/why-it-works`.
+
+**Trous restants identifiés mais NON traités** (honnête) : niche-aware Generator (Generator a sa propre liste de niches legacy non-NICHE_MODES, pas refactorisé) ; History capture seulement Generator pas Analyzer ; pas d'enforcement serveur des Pro features (cohérent avec Stripe Phase 4).
+
 ## Home : mini-Analyzer inline (fait le 2026-05-19)
 Décision user : "qu'est-ce qu'on peut faire de plus sur la home" → reco "mini-Analyzer inline" (le plus gros levier de conversion non saisi) → "vas-y".
 - ✅ **`HomeAnalyzeWidget`** sur la home, entre la section How-it-works (avec son "real run" 12→84) et le Typing demo. Textarea + bouton "✦ Score this hook" + prefill "Try: 'My morning routine'". POST `/api/analyze` (la VRAIE route, même prompt, même score que la page Analyzer complète — zéro fake).

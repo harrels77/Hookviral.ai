@@ -186,23 +186,26 @@ function GeneratorInner() {
             <div style={{position:"absolute",bottom:"1rem",right:"1.25rem",fontSize:".72rem",color:topic.length>180?"var(--hot)":"var(--muted)"}}>{topic.length}/200</div>
           </div>
 
-          {/* Platform + Tone */}
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px",marginBottom:"12px"}}>
-            <Panel label="Platform">{PLATFORMS.map(p=><Chip key={p} label={p} active={platforms.includes(p)} onClick={()=>togglePlatform(p)} color="plat"/>)}</Panel>
-            <Panel label="Tone">{TONES.map(t=><Chip key={t} label={t} active={tone===t} onClick={()=>setTone(t)} color="tone"/>)}</Panel>
-          </div>
-
-          {/* Niche */}
-          <Panel label="Niche (optional)" style={{marginBottom:"12px"}}>
-            {NICHES.map(n=><Chip key={n} label={n} active={!showCustom&&niche===n} onClick={()=>{setShowCustom(false);setNiche(p=>p===n?"":n);}} color="niche"/>)}
-            <button onClick={()=>{setShowCustom(p=>!p);setNiche("");}} style={{padding:"6px 14px",borderRadius:"100px",border:`1px solid ${showCustom?"rgba(255,184,0,.5)":"var(--border2)"}`,background:showCustom?"rgba(255,184,0,.08)":"transparent",color:showCustom?"var(--gold)":"var(--muted)",fontSize:".8rem",cursor:"pointer",fontFamily:"var(--fb)",transition:"all .2s"}}>✏ Other...</button>
-            {showCustom&&<input ref={customRef} value={customNiche} onChange={e=>setCustomNiche(e.target.value)} placeholder="Type your niche..." style={{padding:"6px 14px",borderRadius:"100px",border:"1px solid rgba(255,184,0,.4)",background:"rgba(255,184,0,.04)",color:"var(--text)",fontSize:".8rem",fontFamily:"var(--fb)",outline:"none",width:"160px",caretColor:"var(--gold)"}}/>}
-          </Panel>
-
-          {/* Goal */}
-          <Panel label="Conversion goal" style={{marginBottom:"12px"}}>
-            {GOALS.map(g=><Chip key={g} label={g} active={goal===g} onClick={()=>setGoal(g)} color="goal"/>)}
-          </Panel>
+          {/* Optional knobs — sensible defaults (TikTok + Instagram, Authentic, Engagement) work for 80% of cases. */}
+          <details style={{marginBottom:"12px"}}>
+            <summary style={{cursor:"pointer",fontSize:".78rem",color:"var(--muted)",fontFamily:"var(--fb)",padding:"6px 4px",listStyle:"none",userSelect:"none"}}>
+              More options ▾ <span style={{color:"var(--muted)",opacity:.6}}>(platform, tone, niche, goal)</span>
+            </summary>
+            <div style={{marginTop:"8px",display:"flex",flexDirection:"column",gap:"12px"}}>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px"}}>
+                <Panel label="Platform">{PLATFORMS.map(p=><Chip key={p} label={p} active={platforms.includes(p)} onClick={()=>togglePlatform(p)} color="plat"/>)}</Panel>
+                <Panel label="Tone">{TONES.map(t=><Chip key={t} label={t} active={tone===t} onClick={()=>setTone(t)} color="tone"/>)}</Panel>
+              </div>
+              <Panel label="Niche (optional)">
+                {NICHES.map(n=><Chip key={n} label={n} active={!showCustom&&niche===n} onClick={()=>{setShowCustom(false);setNiche(p=>p===n?"":n);}} color="niche"/>)}
+                <button onClick={()=>{setShowCustom(p=>!p);setNiche("");}} style={{padding:"6px 14px",borderRadius:"100px",border:`1px solid ${showCustom?"rgba(255,184,0,.5)":"var(--border2)"}`,background:showCustom?"rgba(255,184,0,.08)":"transparent",color:showCustom?"var(--gold)":"var(--muted)",fontSize:".8rem",cursor:"pointer",fontFamily:"var(--fb)",transition:"all .2s"}}>✏ Other...</button>
+                {showCustom&&<input ref={customRef} value={customNiche} onChange={e=>setCustomNiche(e.target.value)} placeholder="Type your niche..." style={{padding:"6px 14px",borderRadius:"100px",border:"1px solid rgba(255,184,0,.4)",background:"rgba(255,184,0,.04)",color:"var(--text)",fontSize:".8rem",fontFamily:"var(--fb)",outline:"none",width:"160px",caretColor:"var(--gold)"}}/>}
+              </Panel>
+              <Panel label="Conversion goal">
+                {GOALS.map(g=><Chip key={g} label={g} active={goal===g} onClick={()=>setGoal(g)} color="goal"/>)}
+              </Panel>
+            </div>
+          </details>
 
           {/* Generate button */}
           <div style={{marginBottom:"12px"}}>
@@ -324,7 +327,7 @@ function HookCard({ hook, index, isFav, copied, expandedHash, expandedAnalysis, 
         <span style={{fontSize:".68rem",fontFamily:"var(--fd)",fontWeight:700,letterSpacing:".5px",padding:"3px 10px",borderRadius:"100px",background:"rgba(108,58,255,.1)",color:"#9B8CFF",border:"1px solid rgba(108,58,255,.2)"}}>{hook.formula}</span>
         <div style={{display:"flex",gap:"5px",opacity:hov?1:0,transition:"opacity .2s"}}>
           <ActionBtn onClick={onFav} active={isFav} activeColor="var(--gold)" title="Favorite">★</ActionBtn>
-          <ActionBtn onClick={onScript} title="Script (Pro)">▶</ActionBtn>
+          <ActionBtn onClick={onScript} title="Generate script">▶</ActionBtn>
         </div>
       </div>
 

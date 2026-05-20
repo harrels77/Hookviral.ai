@@ -5,12 +5,18 @@
 // deliberately deferred. Until then nobody is Pro, so isPro() is effectively
 // false everywhere; it exists as the single switch to flip once accounts land.
 
+// PRE-MONETIZATION: Stripe is deferred (Phase 4). Until payment exists, gating
+// users behind "Pro" features is visual friction that pays off zero — locks,
+// upgrade modals and "Pro" chips push toward a purchase flow we don't have.
+// So everyone is effectively Pro for now: every consumer conditional checks
+// isPro() and unlocks the feature in place.
+//
+// To re-enable gating when accounts + Stripe land, restore the localStorage
+// read below (the rest of the gating code is intact and ready to flip back):
+//
+//   try { return localStorage.getItem("hv_plan") === "pro"; } catch { return false; }
 export function isPro(): boolean {
-  try {
-    return localStorage.getItem("hv_plan") === "pro";
-  } catch {
-    return false;
-  }
+  return true;
 }
 
 // Daily free allowances for the Pro-gated, Claude-heavy actions.

@@ -10,49 +10,11 @@ function patternHref(name: string) {
 }
 
 // ── Data ──
-const TYPING_HOOKS = [
-  "🔥 I tried this for 30 days. The results shocked me.",
-  "⚠️ You're losing followers every day you ignore this.",
-  "🤯 Nobody talks about this trick that tripled my reach.",
-  "❌ Stop starting your videos like this. Do this instead.",
-  "🚀 I went from 200 to 47k views after one change.",
-];
-
 const DEMO_HOOKS = [
   { text: "🔥 I tried this for 30 days. The results shocked me.", formula: "Story Starter", platform: "TikTok", score: 96, color: "rgba(255,45,107,.15)", textColor: "#FF7DA0" },
   { text: "⚠️ You're losing followers every day you ignore this.", formula: "Loss Aversion", platform: "Instagram", score: 93, color: "rgba(225,48,108,.12)", textColor: "#F48CB1" },
   { text: "🤯 Nobody talks about this LinkedIn trick.", formula: "Curiosity Gap", platform: "LinkedIn", score: 91, color: "rgba(10,102,194,.12)", textColor: "#7EB6E8" },
   { text: "❌ Stop starting your videos like this. Do this instead.", formula: "Contrarian", platform: "YouTube", score: 94, color: "rgba(255,50,50,.12)", textColor: "#FF7070" },
-];
-
-const EXAMPLE_OUTPUTS = [
-  {
-    topic: "My fitness transformation",
-    platform: "TikTok",
-    hooks: [
-      { text: "🔥 I lost 15kg doing this 10-min workout. No gym required.", formula: "Story Starter", score: 96 },
-      { text: "⚠️ Stop doing crunches. They're ruining your progress.", formula: "Contrarian", score: 94 },
-      { text: "🤯 The fitness trick trainers don't want you to know.", formula: "Curiosity Gap", score: 92 },
-    ],
-  },
-  {
-    topic: "How to save money",
-    platform: "YouTube",
-    hooks: [
-      { text: "💸 You're wasting $400/month on this without realizing it.", formula: "Loss Aversion", score: 95 },
-      { text: "🤯 I saved $10,000 in one year doing nothing different.", formula: "Story Starter", score: 93 },
-      { text: "❌ The budgeting advice everyone gives you is completely wrong.", formula: "Contrarian", score: 91 },
-    ],
-  },
-  {
-    topic: "Productivity tips",
-    platform: "LinkedIn",
-    hooks: [
-      { text: "🧠 I deleted my to-do list for 30 days. My output doubled.", formula: "Story Starter", score: 97 },
-      { text: "⚠️ Your morning routine is killing your most productive hours.", formula: "Loss Aversion", score: 94 },
-      { text: "💡 The 3-minute habit that made me 10x more focused at work.", formula: "Number + Promise", score: 92 },
-    ],
-  },
 ];
 
 // Product-true facts only — no fabricated counts.
@@ -67,47 +29,14 @@ function scoreColor(s: number) {
   return s >= 93 ? "var(--neon)" : s >= 88 ? "var(--gold)" : "var(--hot)";
 }
 
-// ── Typing animation hook ──
-function useTyping(texts: string[], speed = 45, pause = 2200) {
-  const [display, setDisplay] = useState("");
-  const [tIdx, setTIdx] = useState(0);
-  const [charIdx, setCharIdx] = useState(0);
-  const [deleting, setDeleting] = useState(false);
-
-  useEffect(() => {
-    const current = texts[tIdx];
-    let timer: ReturnType<typeof setTimeout>;
-
-    if (!deleting && charIdx < current.length) {
-      timer = setTimeout(() => setCharIdx(c => c + 1), speed);
-    } else if (!deleting && charIdx === current.length) {
-      timer = setTimeout(() => setDeleting(true), pause);
-    } else if (deleting && charIdx > 0) {
-      timer = setTimeout(() => setCharIdx(c => c - 1), speed / 2.5);
-    } else if (deleting && charIdx === 0) {
-      setDeleting(false);
-      setTIdx(t => (t + 1) % texts.length);
-    }
-
-    setDisplay(current.slice(0, charIdx));
-    return () => clearTimeout(timer);
-  }, [charIdx, deleting, tIdx, texts, speed, pause]);
-
-  return display;
-}
-
 export default function HomePage() {
   const [demoActive, setDemoActive] = useState(0);
-  const [exampleIdx, setExampleIdx] = useState(0);
-  const typedHook = useTyping(TYPING_HOOKS);
 
-  // Auto-cycle demo hooks
+  // Auto-cycle demo hooks in the hero phone mockup
   useEffect(() => {
     const t = setInterval(() => setDemoActive(p => (p + 1) % DEMO_HOOKS.length), 3200);
     return () => clearInterval(t);
   }, []);
-
-  const ex = EXAMPLE_OUTPUTS[exampleIdx];
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)", overflowX: "hidden" }}>
@@ -245,45 +174,6 @@ export default function HomePage() {
               ))}
             </div>
 
-            {/* Real, concrete walkthrough — uses an actual flow from the product */}
-            <div style={{ marginTop: "2.5rem", background: "var(--s1)", border: "1px solid rgba(0,255,178,.2)", borderRadius: "var(--r3)", padding: "1.75rem", maxWidth: "760px", marginLeft: "auto", marginRight: "auto" }}>
-              <div style={{ fontSize: ".68rem", textTransform: "uppercase", letterSpacing: "2px", color: "var(--neon)", fontFamily: "var(--fd)", fontWeight: 700, marginBottom: ".75rem" }}>
-                ⚡ A real run, in 30 seconds
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: ".75rem", fontSize: ".9rem", lineHeight: 1.7 }}>
-                <div style={{ color: "var(--soft)" }}>
-                  <strong style={{ color: "var(--muted)", fontWeight: 500 }}>You write:</strong>{" "}
-                  <span style={{ color: "var(--text)", fontStyle: "italic" }}>“My morning routine”</span>
-                </div>
-                <div style={{ color: "var(--soft)" }}>
-                  <strong style={{ color: "var(--muted)", fontWeight: 500 }}>Analyzer says:</strong>{" "}
-                  score <strong style={{ color: "var(--hot)" }}>12 / 100</strong> — missing <strong style={{ color: "var(--gold)" }}>Open Loop, Specificity, Stakes</strong>.
-                </div>
-                <div style={{ color: "var(--soft)" }}>
-                  <strong style={{ color: "var(--muted)", fontWeight: 500 }}>One click</strong> on <strong style={{ color: "var(--gold)" }}>＋ Open Loop</strong>:
-                </div>
-                <div style={{ background: "var(--s2)", borderRadius: "var(--r2)", padding: "1rem 1.1rem", border: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-                  <p style={{ flex: 1, minWidth: "200px", color: "var(--text)", lineHeight: 1.5 }}>“⏰ I changed one thing in my morning and haven&apos;t been the same since.”</p>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
-                    <span style={{ fontFamily: "var(--fd)", fontWeight: 800, fontSize: "1.4rem", color: "var(--neon)", letterSpacing: "-1px" }}>84</span>
-                    <span style={{ fontSize: ".62rem", fontFamily: "var(--fd)", fontWeight: 700, color: "var(--neon)" }}>+72 ▲</span>
-                  </div>
-                </div>
-                <div style={{ color: "var(--muted)", fontSize: ".82rem", textAlign: "center", paddingTop: ".25rem" }}>
-                  Same idea. Same AI. Different hook — because now it has a pattern.
-                </div>
-              </div>
-            </div>
-
-            <div style={{ textAlign: "center", marginTop: "1.5rem", fontSize: ".85rem" }}>
-              <Link href="/why-it-works" style={{ color: "var(--muted)", textDecoration: "none" }}>
-                Why this works — the methodology behind the score →
-              </Link>
-            </div>
-
-            <div style={{ textAlign: "center", marginTop: "1.5rem" }}>
-              <HLink href="/generator" primary>Try it now — free →</HLink>
-            </div>
           </div>
         </section>
 
@@ -304,142 +194,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ══════════════════════════════════
-            TYPING DEMO — Desktop mockup (from v2)
-        ══════════════════════════════════ */}
-        <section style={{ background: "var(--s1)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)", padding: "4rem 1.5rem" }}>
-          <div style={{ maxWidth: "900px", margin: "0 auto" }}>
-            <SLabel>Live generation preview</SLabel>
-            <h2 style={{ fontFamily: "var(--fd)", fontSize: "clamp(1.5rem,3vw,2.2rem)", fontWeight: 800, letterSpacing: "-1.5px", marginBottom: "2.5rem", color: "var(--text)" }}>
-              Watch it generate in real time.
-            </h2>
-            <DesktopMockup typedHook={typedHook} />
-          </div>
-        </section>
-
-        {/* ══════════════════════════════════
-            CONCRETE EXAMPLES (from v1)
-        ══════════════════════════════════ */}
-        <section style={{ maxWidth: "900px", margin: "0 auto", padding: "5rem 1.5rem" }}>
-          <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
-            <SLabel center>Real outputs</SLabel>
-            <h2 style={{ fontFamily: "var(--fd)", fontSize: "clamp(1.8rem,4vw,2.8rem)", fontWeight: 800, letterSpacing: "-2px", lineHeight: 1.05, marginBottom: ".75rem" }}>
-              See exactly what you get.
-            </h2>
-            <p style={{ color: "var(--soft)", fontSize: ".9rem", fontWeight: 300 }}>
-              Real hooks generated by HookViral AI. Your results will be tailored to your topic.
-            </p>
-          </div>
-
-          {/* Topic selector */}
-          <div style={{ display: "flex", gap: "8px", justifyContent: "center", marginBottom: "2rem", flexWrap: "wrap" }}>
-            {EXAMPLE_OUTPUTS.map((e, i) => (
-              <button key={i} onClick={() => setExampleIdx(i)} style={{ padding: "8px 18px", borderRadius: "100px", border: `1px solid ${exampleIdx === i ? "rgba(255,45,107,.5)" : "var(--border2)"}`, background: exampleIdx === i ? "rgba(255,45,107,.08)" : "transparent", color: exampleIdx === i ? "var(--hot)" : "var(--muted)", fontSize: ".82rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s", fontWeight: exampleIdx === i ? 500 : 400 }}>
-                {e.topic}
-              </button>
-            ))}
-          </div>
-
-          {/* Topic + platform label */}
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "1.25rem", justifyContent: "center" }}>
-            <div style={{ padding: "6px 16px", borderRadius: "100px", background: "var(--s1)", border: "1px solid var(--border)", fontSize: ".8rem", color: "var(--soft)" }}>
-              Topic: <strong style={{ color: "var(--text)", fontWeight: 500 }}>{ex.topic}</strong>
-            </div>
-            <div style={{ padding: "6px 14px", borderRadius: "100px", background: "rgba(108,58,255,.08)", border: "1px solid rgba(108,58,255,.2)", fontSize: ".78rem", color: "#9B8CFF", fontFamily: "var(--fd)", fontWeight: 700 }}>
-              {ex.platform}
-            </div>
-          </div>
-
-          {/* Hook cards */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            {ex.hooks.map((h, i) => (
-              <div key={i} style={{ background: "var(--s1)", border: "1px solid var(--border)", borderRadius: "18px", padding: "1.25rem 1.5rem", display: "flex", alignItems: "center", gap: "1rem", animation: "cardIn .4s ease both", animationDelay: `${i * .08}s` }}>
-                {/* Rank */}
-                <div style={{ width: "28px", height: "28px", borderRadius: "50%", background: i === 0 ? "linear-gradient(135deg,var(--hot),var(--electric))" : "var(--s2)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--fd)", fontWeight: 700, fontSize: ".72rem", color: i === 0 ? "#fff" : "var(--muted)", flexShrink: 0 }}>
-                  {i + 1}
-                </div>
-                {/* Text */}
-                <p style={{ flex: 1, fontSize: "clamp(.85rem,2vw,.95rem)", lineHeight: 1.65, color: "var(--text)", fontWeight: 400 }}>
-                  {h.text}
-                </p>
-                {/* Formula tag */}
-                <span style={{ fontSize: ".65rem", padding: "2px 8px", borderRadius: "100px", background: "rgba(108,58,255,.08)", color: "#9B8CFF", border: "1px solid rgba(108,58,255,.15)", whiteSpace: "nowrap", flexShrink: 0 }}>{h.formula}</span>
-                {/* Score */}
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
-                  <div style={{ fontFamily: "var(--fd)", fontWeight: 800, fontSize: "1.3rem", color: scoreColor(h.score), letterSpacing: "-1px", lineHeight: 1 }}>{h.score}</div>
-                  <div style={{ fontSize: ".55rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>/100</div>
-                  <div style={{ marginTop: "5px", width: "40px", height: "3px", background: "var(--border)", borderRadius: "2px", overflow: "hidden" }}>
-                    <div style={{ height: "100%", background: `linear-gradient(90deg,var(--electric),${scoreColor(h.score)})`, width: `${h.score}%`, borderRadius: "2px" }} />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ textAlign: "center", marginTop: "2rem" }}>
-            <HLink href="/generator" primary>Generate Hooks Like These — Free →</HLink>
-          </div>
-        </section>
-
-        {/* ══════════════════════════════════
-            FEATURES
-        ══════════════════════════════════ */}
-        <section style={{ maxWidth: "900px", margin: "0 auto", padding: "5rem 1.5rem" }}>
-          <SLabel>Why not ChatGPT</SLabel>
-          <h2 style={{ fontFamily: "var(--fd)", fontSize: "clamp(1.8rem,4vw,2.8rem)", fontWeight: 800, letterSpacing: "-2px", marginBottom: "3rem", lineHeight: 1.05 }}>
-            Built for one thing.<br />Better at it than anything else.
-          </h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: "2px" }}>
-            {[
-              ["⚡", "8 Viral Formulas", "Curiosity Gap, Loss Aversion, Story Starter, Shock Value. Every hook uses a formula proven to stop the scroll — not generic AI text."],
-              ["🎯", "Platform Psychology", "TikTok hooks need pattern interrupts. LinkedIn needs authority frames. ChatGPT doesn't know the difference. HookViral does."],
-              ["📊", "Virality Score", "Every hook gets scored 0–100 with a breakdown of Curiosity, Emotion, and Clarity. You always know which hook to use."],
-              ["#", "Hashtag Optimizer", "5–8 platform-optimized hashtags per hook. High-volume + niche mix. Auto-adapted per platform."],
-              ["🎬", "Script Generator", "Hook (0–3s) + Bridge (3–10s) + CTA. Full script in 10 seconds. Never stare at a blank screen again."],
-              ["🔄", "10 Free Every Day", "10 hooks per day, reset at midnight. No account needed. See the results before you decide to upgrade."],
-            ].map(([icon, title, desc]) => (
-              <FCard key={title} icon={icon} title={title} desc={desc} />
-            ))}
-          </div>
-        </section>
-
-        {/* ══════════════════════════════════
-            TRENDING NOW (live)
-        ══════════════════════════════════ */}
-        <section style={{ borderTop: "1px solid var(--border)" }}>
-          <div style={{ maxWidth: "900px", margin: "0 auto", padding: "5rem 1.5rem" }}>
-            <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
-              <SLabel center>Trending right now</SLabel>
-              <h2 style={{ fontFamily: "var(--fd)", fontSize: "clamp(1.8rem,4vw,2.8rem)", fontWeight: 800, letterSpacing: "-2px", lineHeight: 1.05, marginBottom: ".75rem" }}>
-                Ride what&apos;s hot — instantly.
-              </h2>
-              <p style={{ color: "var(--soft)", fontSize: ".9rem", fontWeight: 300 }}>
-                Real trending topics. Tap one → get scroll-stopping hooks for it in 3 seconds.
-              </p>
-            </div>
-            <HomeTrends />
-            <div style={{ textAlign: "center", marginTop: "2rem" }}>
-              <Link href="/trends" style={{ fontSize: ".875rem", color: "var(--electric)", textDecoration: "none" }}>
-                See all trends →
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* ══════════════════════════════════
-            FAQ
-        ══════════════════════════════════ */}
-        <section style={{ background: "var(--s1)", borderTop: "1px solid var(--border)" }}>
-          <div style={{ maxWidth: "760px", margin: "0 auto", padding: "5rem 1.5rem" }}>
-            <div style={{ textAlign: "center", marginBottom: "3rem" }}>
-              <SLabel center>FAQ</SLabel>
-              <h2 style={{ fontFamily: "var(--fd)", fontSize: "clamp(1.8rem,4vw,2.8rem)", fontWeight: 800, letterSpacing: "-2px" }}>
-                Questions, answered.
-              </h2>
-            </div>
-            <HomeFAQ />
-          </div>
-        </section>
 
         {/* ══════════════════════════════════
             EMAIL CAPTURE
@@ -569,81 +323,6 @@ function PhoneMockup({ hook }: { hook: typeof DEMO_HOOKS[0] }) {
   );
 }
 
-// ══════════════════════════════════
-// DESKTOP MOCKUP COMPONENT (from v2)
-// ══════════════════════════════════
-function DesktopMockup({ typedHook }: { typedHook: string }) {
-  return (
-    <div style={{ position: "relative" }}>
-      {/* Glow */}
-      <div style={{ position: "absolute", top: "20%", left: "50%", transform: "translateX(-50%)", width: "60%", height: "40%", background: "radial-gradient(ellipse, rgba(108,58,255,.15) 0%, transparent 70%)", filter: "blur(30px)", pointerEvents: "none" }} />
-
-      {/* Browser frame */}
-      <div style={{ background: "var(--s2)", borderRadius: "16px", border: "1px solid var(--border2)", overflow: "hidden", boxShadow: "0 40px 80px rgba(0,0,0,.4)", position: "relative" }}>
-        {/* Browser chrome */}
-        <div style={{ background: "var(--s3)", padding: "10px 16px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid var(--border)" }}>
-          <div style={{ display: "flex", gap: "6px" }}>
-            <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#FF5F57" }} />
-            <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#FFBD2E" }} />
-            <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#28CA41" }} />
-          </div>
-          <div style={{ flex: 1, background: "var(--s2)", borderRadius: "6px", padding: "5px 12px", fontSize: ".7rem", color: "var(--muted)", fontFamily: "var(--fb)" }}>
-            hookviral.ai/generator
-          </div>
-        </div>
-
-        {/* App content */}
-        <div style={{ padding: "1.5rem" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-
-            {/* Left — input panel */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              <div style={{ background: "var(--s1)", borderRadius: "12px", padding: "1rem", border: "1px solid var(--border)" }}>
-                <div style={{ fontSize: ".6rem", letterSpacing: "2px", textTransform: "uppercase", color: "var(--muted)", marginBottom: ".5rem", fontFamily: "var(--fd)", fontWeight: 600 }}>Your content</div>
-                <div style={{ fontSize: ".8rem", color: "var(--soft)", lineHeight: 1.6, minHeight: "48px" }}>
-                  my fitness transformation story...
-                </div>
-              </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
-                {["TikTok", "Instagram", "YouTube"].map((p, i) => (
-                  <div key={p} style={{ padding: "4px 10px", borderRadius: "100px", border: `1px solid ${i === 0 ? "rgba(108,58,255,.6)" : "var(--border)"}`, background: i === 0 ? "rgba(108,58,255,.1)" : "transparent", color: i === 0 ? "#C4B5FD" : "var(--muted)", fontSize: ".65rem" }}>{p}</div>
-                ))}
-              </div>
-              <div style={{ padding: "10px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", textAlign: "center", fontSize: ".75rem", color: "#fff", fontFamily: "var(--fd)", fontWeight: 700 }}>⚡ Generate 8 Hooks</div>
-            </div>
-
-            {/* Right — output with typing animation */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              <div style={{ background: "var(--s1)", borderRadius: "12px", padding: "1rem", border: "1px solid rgba(108,58,255,.3)", position: "relative", overflow: "hidden" }}>
-                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "2px", background: "linear-gradient(90deg,var(--hot),var(--electric))" }} />
-                <div style={{ fontSize: ".62rem", color: "#9B8CFF", fontFamily: "var(--fd)", fontWeight: 700, marginBottom: ".5rem" }}>Story Starter</div>
-                <p style={{ fontSize: ".78rem", lineHeight: 1.6, color: "var(--text)", minHeight: "48px" }}>
-                  {typedHook}<span style={{ display: "inline-block", width: "2px", height: "14px", background: "var(--hot)", marginLeft: "2px", verticalAlign: "middle", animation: "blink .8s ease-in-out infinite" }} />
-                </p>
-                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: ".5rem" }}>
-                  <div style={{ flex: 1, height: "3px", background: "var(--border)", borderRadius: "2px", overflow: "hidden" }}>
-                    <div style={{ height: "100%", background: "linear-gradient(90deg,var(--electric),var(--neon))", width: "96%" }} />
-                  </div>
-                  <span style={{ fontSize: ".72rem", fontFamily: "var(--fd)", fontWeight: 800, color: "var(--neon)" }}>96</span>
-                </div>
-              </div>
-
-              {/* Skeleton hooks */}
-              {[1, 2].map(i => (
-                <div key={i} style={{ background: "var(--s1)", borderRadius: "10px", padding: ".875rem", border: "1px solid var(--border)", opacity: .6 }}>
-                  <div style={{ height: "6px", background: "var(--border2)", borderRadius: "3px", width: "40%", marginBottom: "5px" }} />
-                  <div style={{ height: "6px", background: "var(--border2)", borderRadius: "3px", width: "90%", marginBottom: "3px" }} />
-                  <div style={{ height: "6px", background: "var(--border2)", borderRadius: "3px", width: "70%" }} />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── Shared sub-components ──
 function SLabel({ children, center }: { children: React.ReactNode; center?: boolean }) {
   return (
@@ -666,19 +345,6 @@ function HLink({ href, primary, children }: { href: string; primary?: boolean; c
       }}>
       {children}
     </Link>
-  );
-}
-
-function FCard({ icon, title, desc }: { icon: string; title: string; desc: string }) {
-  const [hov, setHov] = useState(false);
-  return (
-    <div onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{ background: hov ? "var(--s3)" : "var(--s2)", padding: "2rem 1.75rem", position: "relative", overflow: "hidden", transition: "background .25s" }}>
-      {hov && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "2px", background: "linear-gradient(90deg,var(--hot),var(--electric))" }} />}
-      <div style={{ fontSize: "1.4rem", marginBottom: "1rem" }}>{icon}</div>
-      <div style={{ fontFamily: "var(--fd)", fontSize: "1rem", fontWeight: 700, marginBottom: ".5rem", color: "var(--text)" }}>{title}</div>
-      <div style={{ fontSize: ".875rem", color: "var(--soft)", lineHeight: 1.7, fontWeight: 300 }}>{desc}</div>
-    </div>
   );
 }
 
@@ -864,75 +530,3 @@ function EmailCapture({ source }: { source: string }) {
   );
 }
 
-// ── Home: live trends teaser ──
-function HomeTrends() {
-  const [items, setItems] = useState<{ title: string; sub: string }[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/trends?source=google")
-      .then(r => r.json())
-      .then(d => setItems((d.trends || []).slice(0, 6)))
-      .catch(() => setItems([]))
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) {
-    return (
-      <div style={{ textAlign: "center", padding: "2rem" }}>
-        <div style={{ width: "30px", height: "30px", borderRadius: "50%", border: "2px solid var(--border2)", borderTopColor: "var(--hot)", animation: "spin 1s linear infinite", margin: "0 auto" }} />
-      </div>
-    );
-  }
-  if (items.length === 0) {
-    return (
-      <div style={{ textAlign: "center", color: "var(--muted)", fontSize: ".9rem", padding: "1.5rem" }}>
-        Trends are loading — <Link href="/trends" style={{ color: "var(--electric)", textDecoration: "none" }}>open the Trends page →</Link>
-      </div>
-    );
-  }
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: "10px" }}>
-      {items.map((t, i) => (
-        <Link key={i} href={`/generator?topic=${encodeURIComponent(t.title)}`} style={{ background: "var(--s1)", border: "1px solid var(--border)", borderRadius: "var(--r2)", padding: "1rem 1.1rem", textDecoration: "none", display: "flex", alignItems: "center", gap: "12px" }}>
-          <span style={{ fontFamily: "var(--fd)", fontWeight: 800, fontSize: ".9rem", color: "var(--muted)", flexShrink: 0 }}>{i + 1}</span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: ".88rem", color: "var(--text)", lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.title}</div>
-            {t.sub && <div style={{ fontSize: ".68rem", color: "var(--muted)" }}>{t.sub}</div>}
-          </div>
-          <span style={{ fontSize: ".72rem", color: "var(--electric)", flexShrink: 0 }}>→</span>
-        </Link>
-      ))}
-    </div>
-  );
-}
-
-// ── Home: FAQ accordion ──
-const HOME_FAQS: [string, string][] = [
-  ["Is it really free?", "Yes — 10 hook generations per day, free, no account, reset at midnight. The Hook Analyzer and Trends are free to use. Pro removes the daily limit."],
-  ["Do I need an account?", "No. Nothing to sign up for. Your history and favorites stay on your device."],
-  ["How is this different from ChatGPT?", "ChatGPT writes generic text. HookViral is built for one thing: the first 3 seconds. It scores every hook for retention, names the attention patterns it uses or misses, and rewrites it stronger."],
-  ["What does the Analyzer actually do?", "Paste a hook you already wrote. It scores its scroll-stopping power 0–100, breaks down curiosity / emotion / clarity, names which viral patterns it uses vs. the high-leverage ones it's missing, and can rewrite it."],
-  ["Does it work for faceless channels?", "Yes — faceless and narration channels are a core focus. The pattern library flags the patterns that matter most for faceless openings."],
-  ["Where do the trends come from?", "Google Search trends (free, no setup) and, when configured, YouTube trending — filterable by niche. Tap any trend to generate hooks for it."],
-];
-
-function HomeFAQ() {
-  const [open, setOpen] = useState<number | null>(0);
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-      {HOME_FAQS.map(([q, a], i) => {
-        const isOpen = open === i;
-        return (
-          <div key={i} onClick={() => setOpen(isOpen ? null : i)} style={{ background: "var(--bg)", border: "1px solid var(--border)", borderRadius: "var(--r2)", padding: "1.1rem 1.3rem", cursor: "pointer" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
-              <span style={{ fontSize: ".95rem", fontWeight: 500, color: "var(--text)" }}>{q}</span>
-              <span style={{ width: "24px", height: "24px", flexShrink: 0, borderRadius: "50%", border: "1px solid var(--border2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: ".7rem", color: isOpen ? "#fff" : "var(--muted)", background: isOpen ? "var(--electric)" : "transparent", transition: "all .25s", transform: isOpen ? "rotate(45deg)" : "none" }}>+</span>
-            </div>
-            {isOpen && <p style={{ fontSize: ".875rem", color: "var(--soft)", lineHeight: 1.7, marginTop: ".9rem", fontWeight: 300 }}>{a}</p>}
-          </div>
-        );
-      })}
-    </div>
-  );
-}

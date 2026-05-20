@@ -115,46 +115,50 @@ export default function TrendsPage() {
         </div>
 
         <div className="page-wrap">
-          {/* Source toggle + refresh */}
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", marginBottom: "12px", flexWrap: "wrap" }}>
-            <div style={{ display: "flex", border: "1px solid var(--border)", borderRadius: "100px", overflow: "hidden", background: "var(--s1)" }}>
-              {([["google", "🔎 Google Search"], ["youtube", "▶ YouTube"]] as [Source, string][]).map(([s, label]) => (
-                <button key={s} onClick={() => setSource(s)} style={{ padding: "9px 22px", border: "none", background: source === s ? "var(--s3)" : "transparent", color: source === s ? "var(--text)" : "var(--muted)", fontSize: ".82rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
-                  {label}
-                </button>
-              ))}
-            </div>
-            <div style={{ display: "flex", border: "1px solid var(--border)", borderRadius: "100px", overflow: "hidden", background: "var(--s1)" }}>
-              {GEOS.map(([code, label]) => (
-                <button key={code} onClick={() => setGeo(code)} title={`Trends for ${code}`} style={{ padding: "9px 14px", border: "none", background: geo === code ? "var(--s3)" : "transparent", color: geo === code ? "var(--text)" : "var(--muted)", fontSize: ".82rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
-                  {label}
-                </button>
-              ))}
-            </div>
+          {/* Quiet controls — defaults work for first view. Refresh always visible. */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", marginBottom: "12px", flexWrap: "wrap" }}>
+            <details style={{ flex: 1 }}>
+              <summary style={{ cursor: "pointer", fontSize: ".82rem", color: "var(--muted)", fontFamily: "var(--fb)", padding: "6px 4px", listStyle: "none", userSelect: "none" }}>
+                Filters ▾ <span style={{ color: "var(--muted)", opacity: .6 }}>
+                  ({source === "google" ? "Google" : "YouTube"} · {geo} · {nicheLabel || "All niches"})
+                </span>
+              </summary>
+              <div style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", border: "1px solid var(--border)", borderRadius: "100px", overflow: "hidden", background: "var(--s1)" }}>
+                    {([["google", "🔎 Google Search"], ["youtube", "▶ YouTube"]] as [Source, string][]).map(([s, label]) => (
+                      <button key={s} onClick={() => setSource(s)} style={{ padding: "9px 22px", border: "none", background: source === s ? "var(--s3)" : "transparent", color: source === s ? "var(--text)" : "var(--muted)", fontSize: ".82rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", border: "1px solid var(--border)", borderRadius: "100px", overflow: "hidden", background: "var(--s1)" }}>
+                    {GEOS.map(([code, label]) => (
+                      <button key={code} onClick={() => setGeo(code)} title={`Trends for ${code}`} style={{ padding: "9px 14px", border: "none", background: geo === code ? "var(--s3)" : "transparent", color: geo === code ? "var(--text)" : "var(--muted)", fontSize: ".82rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ background: "var(--s1)", border: "1px solid var(--border)", borderRadius: "var(--r2)", padding: "1rem 1.1rem" }}>
+                  <div style={{ fontSize: ".66rem", letterSpacing: "2px", textTransform: "uppercase", color: "var(--muted)", marginBottom: ".5rem", fontFamily: "var(--fd)", fontWeight: 600 }}>Niche</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                    <button onClick={() => setNiche("")} style={{ padding: "6px 14px", borderRadius: "100px", border: `1px solid ${niche === "" ? "rgba(255,45,107,.5)" : "var(--border2)"}`, background: niche === "" ? "rgba(255,45,107,.08)" : "transparent", color: niche === "" ? "var(--hot)" : "var(--muted)", fontSize: ".8rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
+                      🔥 All
+                    </button>
+                    {NICHE_MODES.map(n => (
+                      <button key={n.slug} onClick={() => setNiche(n.slug)} style={{ padding: "6px 14px", borderRadius: "100px", border: `1px solid ${niche === n.slug ? "rgba(255,45,107,.5)" : "var(--border2)"}`, background: niche === n.slug ? "rgba(255,45,107,.08)" : "transparent", color: niche === n.slug ? "var(--hot)" : "var(--muted)", fontSize: ".8rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
+                        {n.emoji} {n.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </details>
             <button onClick={() => load(source, niche, geo)} disabled={loading} title="Refresh trends"
-              style={{ width: "38px", height: "38px", borderRadius: "50%", border: "1px solid var(--border2)", background: "var(--s1)", color: "var(--soft)", cursor: loading ? "not-allowed" : "pointer", fontSize: "15px", transition: "all .2s", opacity: loading ? 0.5 : 1 }}>
+              style={{ width: "38px", height: "38px", borderRadius: "50%", border: "1px solid var(--border2)", background: "var(--s1)", color: "var(--soft)", cursor: loading ? "not-allowed" : "pointer", fontSize: "15px", transition: "all .2s", opacity: loading ? 0.5 : 1, flexShrink: 0 }}>
               ↻
             </button>
-          </div>
-
-          {/* Niche filter — both sources. YouTube = category; Google = Claude relevance re-rank. */}
-          <div style={{ background: "var(--s1)", border: "1px solid var(--border)", borderRadius: "var(--r2)", padding: "1.25rem", marginBottom: "12px" }}>
-            <div style={{ fontSize: ".68rem", letterSpacing: "2px", textTransform: "uppercase", color: "var(--muted)", marginBottom: ".25rem", fontFamily: "var(--fd)", fontWeight: 600 }}>Filter by niche</div>
-            <div style={{ fontSize: ".72rem", color: "var(--muted)", marginBottom: ".75rem", fontWeight: 300 }}>
-              {niche
-                ? `Showing only trends a ${nicheLabel} creator can build on.`
-                : "Pick a niche — we keep only the trends you can actually turn into content."}
-            </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-              <button onClick={() => setNiche("")} style={{ padding: "6px 14px", borderRadius: "100px", border: `1px solid ${niche === "" ? "rgba(255,45,107,.5)" : "var(--border2)"}`, background: niche === "" ? "rgba(255,45,107,.08)" : "transparent", color: niche === "" ? "var(--hot)" : "var(--muted)", fontSize: ".8rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
-                🔥 All
-              </button>
-              {NICHE_MODES.map(n => (
-                <button key={n.slug} onClick={() => setNiche(n.slug)} style={{ padding: "6px 14px", borderRadius: "100px", border: `1px solid ${niche === n.slug ? "rgba(255,45,107,.5)" : "var(--border2)"}`, background: niche === n.slug ? "rgba(255,45,107,.08)" : "transparent", color: niche === n.slug ? "var(--hot)" : "var(--muted)", fontSize: ".8rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
-                  {n.emoji} {n.label}
-                </button>
-              ))}
-            </div>
           </div>
 
           {/* Keyword filter */}
@@ -417,7 +421,7 @@ function AngleCard({ a, i, niche, nicheQs }: { a: TrendAngle; i: number; niche: 
           disabled={bs === "loading"}
           style={{ padding: "6px 14px", borderRadius: "100px", border: "1px solid rgba(255,184,0,.3)", background: bs === "done" ? "rgba(255,184,0,.08)" : "transparent", color: "var(--gold)", fontSize: ".72rem", cursor: bs === "loading" ? "wait" : "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}
         >
-          {bs === "loading" ? "Building…" : bs === "done" ? "📋 Hide brief" : "📋 Faceless brief · Pro"}
+          {bs === "loading" ? "Building…" : bs === "done" ? "📋 Hide brief" : "📋 Faceless brief"}
         </button>
       </div>
 

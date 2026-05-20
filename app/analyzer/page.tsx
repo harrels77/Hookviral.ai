@@ -201,32 +201,37 @@ function AnalyzerInner() {
             </div>
           )}
 
-          {/* Platform */}
-          <div style={{ background: "var(--s1)", border: "1px solid var(--border)", borderRadius: "var(--r2)", padding: "1.25rem", marginBottom: "12px" }}>
-            <div style={{ fontSize: ".68rem", letterSpacing: "2px", textTransform: "uppercase", color: "var(--muted)", marginBottom: ".75rem", fontFamily: "var(--fd)", fontWeight: 600 }}>Platform</div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-              {PLATFORMS.map(p => (
-                <button key={p} onClick={() => setPlatform(p)} style={{ padding: "6px 14px", borderRadius: "100px", border: `1px solid ${platform === p ? "rgba(108,58,255,.6)" : "var(--border2)"}`, background: platform === p ? "rgba(108,58,255,.1)" : "transparent", color: platform === p ? "#C4B5FD" : "var(--muted)", fontSize: ".8rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
-                  {p}
-                </button>
-              ))}
+          {/* Optional knobs — default platform TikTok + Any niche works for first-pass analysis. */}
+          <details style={{ marginBottom: "12px" }}>
+            <summary style={{ cursor: "pointer", fontSize: ".78rem", color: "var(--muted)", fontFamily: "var(--fb)", padding: "6px 4px", listStyle: "none", userSelect: "none" }}>
+              More options ▾ <span style={{ color: "var(--muted)", opacity: .6 }}>(platform, niche)</span>
+            </summary>
+            <div style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div style={{ background: "var(--s1)", border: "1px solid var(--border)", borderRadius: "var(--r2)", padding: "1.25rem" }}>
+                <div style={{ fontSize: ".68rem", letterSpacing: "2px", textTransform: "uppercase", color: "var(--muted)", marginBottom: ".75rem", fontFamily: "var(--fd)", fontWeight: 600 }}>Platform</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                  {PLATFORMS.map(p => (
+                    <button key={p} onClick={() => setPlatform(p)} style={{ padding: "6px 14px", borderRadius: "100px", border: `1px solid ${platform === p ? "rgba(108,58,255,.6)" : "var(--border2)"}`, background: platform === p ? "rgba(108,58,255,.1)" : "transparent", color: platform === p ? "#C4B5FD" : "var(--muted)", fontSize: ".8rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ background: "var(--s1)", border: "1px solid var(--border)", borderRadius: "var(--r2)", padding: "1.25rem" }}>
+                <div style={{ fontSize: ".68rem", letterSpacing: "2px", textTransform: "uppercase", color: "var(--muted)", marginBottom: ".75rem", fontFamily: "var(--fd)", fontWeight: 600 }}>Niche <span style={{ textTransform: "none", letterSpacing: 0, fontWeight: 400 }}>— optional, sharpens the verdict</span></div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                  <button onClick={() => setNiche("")} style={{ padding: "6px 14px", borderRadius: "100px", border: `1px solid ${niche === "" ? "rgba(108,58,255,.6)" : "var(--border2)"}`, background: niche === "" ? "rgba(108,58,255,.1)" : "transparent", color: niche === "" ? "#C4B5FD" : "var(--muted)", fontSize: ".8rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
+                    Any
+                  </button>
+                  {NICHE_MODES.map(nm => (
+                    <button key={nm.slug} onClick={() => setNiche(nm.slug)} style={{ padding: "6px 14px", borderRadius: "100px", border: `1px solid ${niche === nm.slug ? "rgba(108,58,255,.6)" : "var(--border2)"}`, background: niche === nm.slug ? "rgba(108,58,255,.1)" : "transparent", color: niche === nm.slug ? "#C4B5FD" : "var(--muted)", fontSize: ".8rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
+                      {nm.emoji} {nm.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
-
-          {/* Niche — tailors the scoring to this audience */}
-          <div style={{ background: "var(--s1)", border: "1px solid var(--border)", borderRadius: "var(--r2)", padding: "1.25rem", marginBottom: "12px" }}>
-            <div style={{ fontSize: ".68rem", letterSpacing: "2px", textTransform: "uppercase", color: "var(--muted)", marginBottom: ".75rem", fontFamily: "var(--fd)", fontWeight: 600 }}>Niche <span style={{ textTransform: "none", letterSpacing: 0, fontWeight: 400 }}>— optional, sharpens the verdict</span></div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-              <button onClick={() => setNiche("")} style={{ padding: "6px 14px", borderRadius: "100px", border: `1px solid ${niche === "" ? "rgba(108,58,255,.6)" : "var(--border2)"}`, background: niche === "" ? "rgba(108,58,255,.1)" : "transparent", color: niche === "" ? "#C4B5FD" : "var(--muted)", fontSize: ".8rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
-                Any
-              </button>
-              {NICHE_MODES.map(nm => (
-                <button key={nm.slug} onClick={() => setNiche(nm.slug)} style={{ padding: "6px 14px", borderRadius: "100px", border: `1px solid ${niche === nm.slug ? "rgba(108,58,255,.6)" : "var(--border2)"}`, background: niche === nm.slug ? "rgba(108,58,255,.1)" : "transparent", color: niche === nm.slug ? "#C4B5FD" : "var(--muted)", fontSize: ".8rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
-                  {nm.emoji} {nm.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          </details>
 
           {/* Analyze button */}
           <button
