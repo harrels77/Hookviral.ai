@@ -1,9 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { isPro } from "@/lib/plan";
+import { NICHE_MODES } from "@/lib/niches";
+import { NextStep } from "@/components/NextStep";
+import { ProNote } from "@/components/ProLock";
+import { HOOK_PATTERNS } from "@/lib/patterns";
+import { getNichePref, setNichePref } from "@/lib/prefs";
+
+// Deep-link a pattern name to its explanation on the Patterns hub.
+function patternHref(name: string) {
+  const p = HOOK_PATTERNS.find(x => x.name === name);
+  return p ? `/patterns#${p.id}` : "/patterns";
+}
 
 const PLATFORMS = ["TikTok", "Instagram", "YouTube", "LinkedIn", "X / Twitter"];
+
+// Honest spoken-delivery heuristic: energetic short-form narration ≈ 3.3 words/s.
+// This estimates whether the line actually lands inside the 3-second window.
+function threeSecondCheck(text: string) {
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
+  if (words === 0) return null;
+  const secs = words / 3.3;
+  if (words <= 10) return { secs, label: "Lands in 3s", color: "var(--neon)" };
+  if (words <= 16) return { secs, label: "Tight — trim it", color: "var(--gold)" };
+  return { secs, label: "Too long for 3s", color: "var(--hot)" };
+}
 const REWRITE_STYLES = ["More emotional", "More cinematic", "More contrarian", "More storytelling", "Punchier"];
 
 interface Analysis {
@@ -23,17 +47,34 @@ function scoreColor(s: number) {
 }
 
 export default function AnalyzerPage() {
+  return (
+    <Suspense fallback={null}>
+      <AnalyzerInner />
+    </Suspense>
+  );
+}
+
+function AnalyzerInner() {
+  const searchParams = useSearchParams();
   const [hook, setHook] = useState("");
   const [platform, setPlatform] = useState("TikTok");
+  // Niche hydrates from cross-page prefs (Trends, Analyzer, etc. share it).
+  const [niche, setNiche] = useState(() => typeof window !== "undefined" ? getNichePref() : "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<Analysis | null>(null);
   const [btnHov, setBtnHov] = useState(false);
   const [rewriteStyle, setRewriteStyle] = useState(REWRITE_STYLES[0]);
-  const [rewrites, setRewrites] = useState<string[]>([]);
+  const [activeTarget, setActiveTarget] = useState<string | null>(null);
+  const [rewrites, setRewrites] = useState<{ text: string; score: number }[]>([]);
   const [rwLoading, setRwLoading] = useState(false);
   const [rwError, setRwError] = useState("");
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  const [pro, setPro] = useState(false);
+  const prefilled = useRef(false);
+
+  useEffect(() => { setPro(isPro()); }, []);
+  useEffect(() => { setNichePref(niche); }, [niche]);
 
   function resetRewrites() {
     setRewrites([]);
@@ -41,8 +82,9 @@ export default function AnalyzerPage() {
     setCopiedIdx(null);
   }
 
-  async function analyze() {
-    if (!hook.trim()) return;
+  async function analyze(overrideHook?: string, overridePlatform?: string) {
+    const h = (overrideHook ?? hook).trim();
+    if (!h) return;
     setLoading(true);
     setError("");
     setResult(null);
@@ -51,7 +93,7 @@ export default function AnalyzerPage() {
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hook, platform }),
+        body: JSON.stringify({ hook: h, platform: overridePlatform ?? platform, niche }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Analysis failed");
@@ -63,17 +105,22 @@ export default function AnalyzerPage() {
     }
   }
 
-  async function rewrite() {
+  async function rewrite(targetPattern?: string) {
     if (!hook.trim()) return;
     setRwLoading(true);
     setRwError("");
     setRewrites([]);
     setCopiedIdx(null);
+    setActiveTarget(targetPattern ?? null);
     try {
       const res = await fetch("/api/rewrite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hook, style: rewriteStyle, platform }),
+        body: JSON.stringify(
+          targetPattern
+            ? { hook, platform, pattern: targetPattern }
+            : { hook, style: rewriteStyle, platform }
+        ),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Rewrite failed");
@@ -90,6 +137,24 @@ export default function AnalyzerPage() {
     setCopiedIdx(i);
     setTimeout(() => setCopiedIdx(c => (c === i ? null : c)), 1500);
   }
+
+  // Prefill + auto-run when arriving from a generated hook (?hook=&platform=)
+  useEffect(() => {
+    if (prefilled.current) return;
+    const h = searchParams.get("hook");
+    if (!h) return;
+    prefilled.current = true;
+    const p = searchParams.get("platform");
+    const plat = p && PLATFORMS.includes(p) ? p : platform;
+    const trimmed = h.slice(0, 300);
+    if (p && PLATFORMS.includes(p)) setPlatform(p);
+    setHook(trimmed);
+    analyze(trimmed, plat);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const t3 = threeSecondCheck(hook);
+  const wordCount = hook.trim() ? hook.trim().split(/\s+/).filter(Boolean).length : 0;
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
@@ -121,6 +186,21 @@ export default function AnalyzerPage() {
             <div style={{ position: "absolute", bottom: "1rem", right: "1.25rem", fontSize: ".72rem", color: hook.length > 270 ? "var(--hot)" : "var(--muted)" }}>{hook.length}/300</div>
           </div>
 
+          {/* Live 3-second deliverability check */}
+          {t3 && (
+            <div style={{ background: "var(--s1)", border: `1px solid ${t3.color}33`, borderRadius: "var(--r2)", padding: ".85rem 1.1rem", marginBottom: "12px", display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+              <span style={{ fontSize: ".7rem", fontFamily: "var(--fd)", fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: t3.color }}>
+                ⏱ {t3.label}
+              </span>
+              <span style={{ fontSize: ".78rem", color: "var(--soft)" }}>
+                {wordCount} words · ~{t3.secs.toFixed(1)}s to say aloud
+              </span>
+              <div style={{ flex: 1, minWidth: "80px", height: "4px", background: "var(--border)", borderRadius: "4px", overflow: "hidden" }}>
+                <div style={{ height: "100%", borderRadius: "4px", background: t3.color, width: `${Math.min(100, (t3.secs / 4.5) * 100)}%`, transition: "width .3s ease" }} />
+              </div>
+            </div>
+          )}
+
           {/* Platform */}
           <div style={{ background: "var(--s1)", border: "1px solid var(--border)", borderRadius: "var(--r2)", padding: "1.25rem", marginBottom: "12px" }}>
             <div style={{ fontSize: ".68rem", letterSpacing: "2px", textTransform: "uppercase", color: "var(--muted)", marginBottom: ".75rem", fontFamily: "var(--fd)", fontWeight: 600 }}>Platform</div>
@@ -133,9 +213,24 @@ export default function AnalyzerPage() {
             </div>
           </div>
 
+          {/* Niche — tailors the scoring to this audience */}
+          <div style={{ background: "var(--s1)", border: "1px solid var(--border)", borderRadius: "var(--r2)", padding: "1.25rem", marginBottom: "12px" }}>
+            <div style={{ fontSize: ".68rem", letterSpacing: "2px", textTransform: "uppercase", color: "var(--muted)", marginBottom: ".75rem", fontFamily: "var(--fd)", fontWeight: 600 }}>Niche <span style={{ textTransform: "none", letterSpacing: 0, fontWeight: 400 }}>— optional, sharpens the verdict</span></div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+              <button onClick={() => setNiche("")} style={{ padding: "6px 14px", borderRadius: "100px", border: `1px solid ${niche === "" ? "rgba(108,58,255,.6)" : "var(--border2)"}`, background: niche === "" ? "rgba(108,58,255,.1)" : "transparent", color: niche === "" ? "#C4B5FD" : "var(--muted)", fontSize: ".8rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
+                Any
+              </button>
+              {NICHE_MODES.map(nm => (
+                <button key={nm.slug} onClick={() => setNiche(nm.slug)} style={{ padding: "6px 14px", borderRadius: "100px", border: `1px solid ${niche === nm.slug ? "rgba(108,58,255,.6)" : "var(--border2)"}`, background: niche === nm.slug ? "rgba(108,58,255,.1)" : "transparent", color: niche === nm.slug ? "#C4B5FD" : "var(--muted)", fontSize: ".8rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
+                  {nm.emoji} {nm.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Analyze button */}
           <button
-            onClick={analyze}
+            onClick={() => analyze()}
             disabled={loading || !hook.trim()}
             onMouseEnter={() => setBtnHov(true)}
             onMouseLeave={() => setBtnHov(false)}
@@ -166,7 +261,12 @@ export default function AnalyzerPage() {
               {/* Score header */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem", flexWrap: "wrap", gap: "1rem" }}>
                 <div>
-                  <div style={{ fontSize: ".68rem", textTransform: "uppercase", letterSpacing: "2px", color: "var(--muted)", marginBottom: "4px", fontFamily: "var(--fd)", fontWeight: 600 }}>Retention score</div>
+                  <div style={{ fontSize: ".68rem", textTransform: "uppercase", letterSpacing: "2px", color: "var(--muted)", marginBottom: "4px", fontFamily: "var(--fd)", fontWeight: 600, display: "flex", alignItems: "center", gap: "8px" }}>
+                    Retention score
+                    <Link href="/why-it-works" title="How is this computed?" style={{ fontSize: ".68rem", color: "var(--electric)", textDecoration: "none", textTransform: "none", letterSpacing: 0, fontWeight: 400 }}>
+                      How? →
+                    </Link>
+                  </div>
                   <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
                     <span style={{ fontFamily: "var(--fd)", fontSize: "2.6rem", fontWeight: 800, letterSpacing: "-2px", color: scoreColor(result.score), lineHeight: 1 }}>{result.score}</span>
                     <span style={{ fontSize: ".8rem", color: "var(--muted)" }}>/100</span>
@@ -215,7 +315,7 @@ export default function AnalyzerPage() {
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
                       {result.patternsUsed?.length > 0
                         ? result.patternsUsed.map(p => (
-                          <span key={p} style={{ fontSize: ".7rem", padding: "3px 9px", borderRadius: "100px", background: "rgba(0,255,178,.08)", color: "var(--neon)", border: "1px solid rgba(0,255,178,.2)" }}>{p}</span>
+                          <Link key={p} href={patternHref(p)} title="What this pattern means" style={{ fontSize: ".7rem", padding: "3px 9px", borderRadius: "100px", background: "rgba(0,255,178,.08)", color: "var(--neon)", border: "1px solid rgba(0,255,178,.2)", textDecoration: "none" }}>{p}</Link>
                         ))
                         : <span style={{ fontSize: ".78rem", color: "var(--muted)" }}>None detected</span>}
                     </div>
@@ -225,7 +325,7 @@ export default function AnalyzerPage() {
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
                       {result.patternsMissing?.length > 0
                         ? result.patternsMissing.map(p => (
-                          <span key={p} style={{ fontSize: ".7rem", padding: "3px 9px", borderRadius: "100px", background: "rgba(255,184,0,.07)", color: "var(--gold)", border: "1px solid rgba(255,184,0,.25)" }}>{p}</span>
+                          <Link key={p} href={patternHref(p)} title="Learn this pattern" style={{ fontSize: ".7rem", padding: "3px 9px", borderRadius: "100px", background: "rgba(255,184,0,.07)", color: "var(--gold)", border: "1px solid rgba(255,184,0,.25)", textDecoration: "none" }}>{p}</Link>
                         ))
                         : <span style={{ fontSize: ".78rem", color: "var(--muted)" }}>Solid coverage</span>}
                     </div>
@@ -244,15 +344,50 @@ export default function AnalyzerPage() {
               {/* Rewrite engine */}
               <div style={{ marginTop: "1.75rem", paddingTop: "1.5rem", borderTop: "1px solid var(--border)" }}>
                 <div style={{ fontSize: ".68rem", fontFamily: "var(--fd)", fontWeight: 700, color: "var(--electric)", letterSpacing: "1px", textTransform: "uppercase", marginBottom: ".75rem" }}>Rewrite it stronger</div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "1rem" }}>
-                  {REWRITE_STYLES.map(s => (
-                    <button key={s} onClick={() => setRewriteStyle(s)} style={{ padding: "6px 14px", borderRadius: "100px", border: `1px solid ${rewriteStyle === s ? "rgba(108,58,255,.6)" : "var(--border2)"}`, background: rewriteStyle === s ? "rgba(108,58,255,.1)" : "transparent", color: rewriteStyle === s ? "#C4B5FD" : "var(--muted)", fontSize: ".8rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
-                      {s}
-                    </button>
-                  ))}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: rewriteStyle && !pro ? ".6rem" : "1rem" }}>
+                  {REWRITE_STYLES.map((s, idx) => {
+                    const locked = !pro && idx > 0;
+                    return (
+                      <button
+                        key={s}
+                        onClick={() => { if (!locked) setRewriteStyle(s); }}
+                        title={locked ? "Pro — all 5 styles" : undefined}
+                        style={{ padding: "6px 14px", borderRadius: "100px", border: `1px solid ${rewriteStyle === s ? "rgba(108,58,255,.6)" : "var(--border2)"}`, background: rewriteStyle === s ? "rgba(108,58,255,.1)" : "transparent", color: locked ? "var(--muted)" : rewriteStyle === s ? "#C4B5FD" : "var(--muted)", fontSize: ".8rem", cursor: locked ? "not-allowed" : "pointer", fontFamily: "var(--fb)", transition: "all .2s", opacity: locked ? 0.45 : 1 }}
+                      >
+                        {locked ? `🔒 ${s}` : s}
+                      </button>
+                    );
+                  })}
                 </div>
+                {!pro && (
+                  <div style={{ fontSize: ".72rem", color: "var(--muted)", marginBottom: "1rem" }}>
+                    Free: 1 rewrite style. <Link href="/pricing" style={{ color: "var(--electric)", textDecoration: "none" }}>Pro unlocks all 5 + 3 variants →</Link>
+                  </div>
+                )}
+
+                {/* Targeted rewrite: inject a high-leverage pattern the hook is missing */}
+                {result.patternsMissing?.length > 0 && (
+                  <div style={{ marginBottom: "1rem" }}>
+                    <div style={{ fontSize: ".68rem", color: "var(--gold)", fontFamily: "var(--fd)", fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", marginBottom: ".6rem" }}>
+                      Or fix a missing pattern — 1 click
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                      {result.patternsMissing.map(p => (
+                        <button
+                          key={p}
+                          onClick={() => rewrite(p)}
+                          disabled={rwLoading}
+                          style={{ padding: "6px 14px", borderRadius: "100px", border: "1px solid rgba(255,184,0,.35)", background: activeTarget === p ? "rgba(255,184,0,.12)" : "rgba(255,184,0,.05)", color: "var(--gold)", fontSize: ".8rem", cursor: rwLoading ? "not-allowed" : "pointer", fontFamily: "var(--fb)", transition: "all .2s", opacity: rwLoading ? 0.6 : 1 }}
+                        >
+                          ＋ {p}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <button
-                  onClick={rewrite}
+                  onClick={() => rewrite()}
                   disabled={rwLoading}
                   style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%", justifyContent: "center", padding: "12px 24px", borderRadius: "100px", border: "none", background: rwLoading ? "var(--s3)" : "linear-gradient(135deg,var(--electric),var(--hot))", color: "#fff", fontSize: ".9rem", fontWeight: 600, fontFamily: "var(--fb)", cursor: rwLoading ? "not-allowed" : "pointer", opacity: rwLoading ? 0.6 : 1 }}
                 >
@@ -268,15 +403,38 @@ export default function AnalyzerPage() {
                 )}
 
                 {rewrites.length > 0 && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "1rem" }}>
-                    {rewrites.map((r, i) => (
-                      <div key={i} onClick={() => copyRewrite(r, i)} style={{ background: "var(--s2)", border: "1px solid var(--border)", borderRadius: "var(--r2)", padding: "1rem 1.1rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "1rem", transition: "all .2s" }}>
-                        <p style={{ flex: 1, fontSize: ".9rem", lineHeight: 1.6, color: "var(--text)" }}>{r}</p>
-                        <span style={{ fontSize: ".72rem", color: copiedIdx === i ? "var(--neon)" : "var(--muted)", fontFamily: "var(--fb)", whiteSpace: "nowrap", flexShrink: 0 }}>
-                          {copiedIdx === i ? "✓ Copied" : "Copy"}
-                        </span>
-                      </div>
-                    ))}
+                  <div style={{ marginTop: "1rem" }}>
+                    <div style={{ fontSize: ".72rem", color: "var(--muted)", marginBottom: "8px", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                      Original retention
+                      <span style={{ fontFamily: "var(--fd)", fontWeight: 800, color: scoreColor(result.score) }}>{result.score}</span>
+                      <span>→ {activeTarget ? <>rewritten to add <strong style={{ color: "var(--gold)" }}>{activeTarget}</strong></> : "rewrites below"}</span>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                      {(pro ? rewrites : rewrites.slice(0, 1)).map((r, i) => {
+                        const delta = r.score - result.score;
+                        const up = delta >= 0;
+                        return (
+                          <div key={i} onClick={() => copyRewrite(r.text, i)} style={{ background: "var(--s2)", border: "1px solid var(--border)", borderRadius: "var(--r2)", padding: "1rem 1.1rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "1rem", transition: "all .2s" }}>
+                            <p style={{ flex: 1, fontSize: ".9rem", lineHeight: 1.6, color: "var(--text)" }}>{r.text}</p>
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, minWidth: "54px" }}>
+                              <span style={{ fontFamily: "var(--fd)", fontWeight: 800, fontSize: "1.2rem", color: scoreColor(r.score), letterSpacing: "-1px", lineHeight: 1 }}>{r.score}</span>
+                              <span style={{ fontSize: ".62rem", fontFamily: "var(--fd)", fontWeight: 700, color: up ? "var(--neon)" : "var(--hot)", marginTop: "2px" }}>
+                                {up ? "+" : ""}{delta} {up ? "▲" : "▼"}
+                              </span>
+                            </div>
+                            <span style={{ fontSize: ".72rem", color: copiedIdx === i ? "var(--neon)" : "var(--muted)", fontFamily: "var(--fb)", whiteSpace: "nowrap", flexShrink: 0 }}>
+                              {copiedIdx === i ? "✓ Copied" : "Copy"}
+                            </span>
+                          </div>
+                        );
+                      })}
+                      {!pro && rewrites.length > 1 && (
+                        <ProNote
+                          title={`${rewrites.length - 1} more scored variant${rewrites.length - 1 > 1 ? "s" : ""}`}
+                          detail="Pro unlocks the full rewrite engine — 5 styles × 3 variants, regenerate any time."
+                        />
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -289,6 +447,8 @@ export default function AnalyzerPage() {
             </div>
           )}
         </div>
+
+        <NextStep current="analyze" />
       </div>
     </div>
   );

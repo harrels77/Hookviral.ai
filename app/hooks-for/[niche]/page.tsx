@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { NICHE_MODES, getNiche } from "@/lib/niches";
+import { NextStep } from "@/components/NextStep";
 
 export function generateStaticParams() {
   return NICHE_MODES.map(n => ({ niche: n.slug }));
@@ -49,6 +50,9 @@ export default async function NicheHooksPage(
           <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap", marginTop: "1.75rem" }}>
             <Link href={`/generator?niche=${n.slug}`} style={{ padding: "13px 26px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".95rem", fontWeight: 500, textDecoration: "none", fontFamily: "var(--fb)" }}>
               Generate {n.label} Hooks — Free →
+            </Link>
+            <Link href={`/trends/${n.slug}`} style={{ padding: "13px 26px", borderRadius: "100px", border: "1px solid var(--border2)", color: "var(--soft)", fontSize: ".95rem", fontWeight: 500, textDecoration: "none", fontFamily: "var(--fb)" }}>
+              Trending {n.label} Topics →
             </Link>
             <Link href="/analyzer" style={{ padding: "13px 26px", borderRadius: "100px", border: "1px solid var(--border2)", color: "var(--soft)", fontSize: ".95rem", fontWeight: 500, textDecoration: "none", fontFamily: "var(--fb)" }}>
               Analyze a Hook
@@ -104,6 +108,8 @@ export default async function NicheHooksPage(
           </div>
         </div>
       </div>
+
+      <NextStep />
     </div>
   );
 }

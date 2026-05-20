@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
+import { NextStep } from "@/components/NextStep";
 
 interface Hook { id: string; text: string; formula: string; platform: string; score: number; }
 interface Session { id: string; topic: string; platforms: string[]; tone: string; hooks: Hook[]; dateLabel: string; }
@@ -66,9 +68,14 @@ export default function HistoryPage() {
         {filtered.length === 0 && (
           <div style={{ textAlign: "center", padding: "6rem 2rem" }}>
             <div style={{ fontSize: "3rem", opacity: .12, marginBottom: "1.5rem" }}>{search ? "🔍" : tab === "favorites" ? "★" : "📭"}</div>
-            <p style={{ color: "var(--muted)", fontSize: ".9rem", lineHeight: 1.7 }}>
-              {search ? `No results for "${search}"` : tab === "favorites" ? "No favorites yet." : "No generations yet. Head to the Generator!"}
+            <p style={{ color: "var(--muted)", fontSize: ".9rem", lineHeight: 1.7, marginBottom: search ? 0 : "1.5rem" }}>
+              {search ? `No results for "${search}"` : tab === "favorites" ? "No favorites yet." : "No generations yet — the loop starts with an idea."}
             </p>
+            {!search && tab !== "favorites" && (
+              <Link href="/trends" style={{ display: "inline-flex", padding: "12px 24px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".9rem", fontWeight: 600, textDecoration: "none", fontFamily: "var(--fb)" }}>
+                Find a trend to post →
+              </Link>
+            )}
           </div>
         )}
 
@@ -91,9 +98,18 @@ export default function HistoryPage() {
                   {s.hooks.map(h => (
                     <div key={h.id} onClick={() => copyText(h.text, h.id)} style={{ background: "var(--s2)", border: "1px solid var(--border)", borderRadius: "var(--r)", padding: "1rem", cursor: "pointer", position: "relative", transition: "all .2s" }}>
                       <div style={{ fontSize: ".82rem", color: "var(--soft)", lineHeight: 1.6, marginBottom: ".6rem" }}>{h.text}</div>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span style={{ fontSize: ".68rem", color: "#9B8CFF", fontFamily: "var(--fd)", fontWeight: 700 }}>{h.formula}</span>
-                        <span style={{ fontSize: ".68rem", color: "var(--neon)", fontFamily: "var(--fd)", fontWeight: 700 }}>{h.score}/100</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <Link
+                            href={`/analyzer?hook=${encodeURIComponent(h.text)}&platform=${encodeURIComponent(h.platform || "TikTok")}`}
+                            onClick={e => e.stopPropagation()}
+                            style={{ fontSize: ".68rem", color: "var(--electric)", fontFamily: "var(--fb)", textDecoration: "none" }}
+                          >
+                            ✦ Improve →
+                          </Link>
+                          <span style={{ fontSize: ".68rem", color: "var(--neon)", fontFamily: "var(--fd)", fontWeight: 700 }}>{h.score}/100</span>
+                        </div>
                       </div>
                       {copied === h.id && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,255,178,.06)", borderRadius: "var(--r)", color: "var(--neon)", fontSize: ".8rem", fontFamily: "var(--fd)", fontWeight: 700 }}>COPIED ✓</div>}
                     </div>
@@ -103,6 +119,8 @@ export default function HistoryPage() {
             </div>
           ))}
         </div>
+
+        <NextStep />
       </div>
     </div>
   );

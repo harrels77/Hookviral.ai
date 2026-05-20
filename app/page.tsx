@@ -1,7 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
+import { HOOK_PATTERNS } from "@/lib/patterns";
+
+function patternHref(name: string) {
+  const p = HOOK_PATTERNS.find(x => x.name === name);
+  return p ? `/patterns#${p.id}` : "/patterns";
+}
 
 // ── Data ──
 const TYPING_HOOKS = [
@@ -49,17 +55,12 @@ const EXAMPLE_OUTPUTS = [
   },
 ];
 
-const BEFORE_AFTER = [
-  { before: "Hey guys, today I'm going to show you my morning routine...", after: "🔥 I woke up at 5am for 30 days. Here's what nobody tells you.", platform: "TikTok" },
-  { before: "In this video I'll share some tips about saving money.", after: "⚠️ You're wasting $400/month on this. Most people never realize it.", platform: "YouTube" },
-  { before: "I wanted to share some thoughts on productivity today.", after: "🧠 I deleted my to-do list for 2 weeks. My output doubled.", platform: "LinkedIn" },
-];
-
+// Product-true facts only — no fabricated counts.
 const STATS = [
-  { n: "2.4M+", label: "Hooks generated", color: "var(--hot)" },
-  { n: "48K+", label: "Creators", color: "var(--electric)" },
-  { n: "94", label: "Avg virality score", color: "var(--neon)" },
-  { n: "3s", label: "Per generation", color: "var(--gold)" },
+  { n: "8", label: "Scored hooks / generation", color: "var(--hot)" },
+  { n: "0–100", label: "Retention score", color: "var(--electric)" },
+  { n: "9", label: "Attention patterns", color: "var(--neon)" },
+  { n: "Free", label: "No account needed", color: "var(--gold)" },
 ];
 
 function scoreColor(s: number) {
@@ -98,25 +99,12 @@ function useTyping(texts: string[], speed = 45, pause = 2200) {
 export default function HomePage() {
   const [demoActive, setDemoActive] = useState(0);
   const [exampleIdx, setExampleIdx] = useState(0);
-  const [baIdx, setBaIdx] = useState(0);
-  const [statsVisible, setStatsVisible] = useState(false);
   const typedHook = useTyping(TYPING_HOOKS);
-  const statsRef = useRef<HTMLDivElement>(null);
 
   // Auto-cycle demo hooks
   useEffect(() => {
     const t = setInterval(() => setDemoActive(p => (p + 1) % DEMO_HOOKS.length), 3200);
     return () => clearInterval(t);
-  }, []);
-
-  // Stats appear on scroll
-  useEffect(() => {
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) setStatsVisible(true); },
-      { threshold: .3 }
-    );
-    if (statsRef.current) obs.observe(statsRef.current);
-    return () => obs.disconnect();
   }, []);
 
   const ex = EXAMPLE_OUTPUTS[exampleIdx];
@@ -198,6 +186,125 @@ export default function HomePage() {
         </section>
 
         {/* ══════════════════════════════════
+            HOW IT WORKS — the loop, made explicit
+        ══════════════════════════════════ */}
+        <section style={{ borderTop: "1px solid var(--border)" }}>
+          <div style={{ maxWidth: "1000px", margin: "0 auto", padding: "5rem 1.5rem" }}>
+            <div style={{ textAlign: "center", marginBottom: "3rem" }}>
+              <SLabel center>How it works</SLabel>
+              <h2 style={{ fontFamily: "var(--fd)", fontSize: "clamp(1.8rem,4vw,2.8rem)", fontWeight: 800, letterSpacing: "-2px", lineHeight: 1.05, marginBottom: ".75rem" }}>
+                From idea to a <span className="gradient-text">scroll-stopping hook</span>.<br />Step by step.
+              </h2>
+              <p style={{ color: "var(--soft)", fontSize: ".95rem", fontWeight: 300, maxWidth: "580px", margin: "0 auto", lineHeight: 1.7 }}>
+                Each tool does one job in a loop. You can start anywhere — but here&apos;s the path that turns a blank screen into a hook you&apos;re ready to film.
+              </p>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(205px,1fr))", gap: "12px" }}>
+              {[
+                {
+                  n: "1", step: "Discover", tool: "Trends", href: "/trends", cta: "Open Trends",
+                  you: "Pick what's already getting attention in your niche.",
+                  get: "3 niche-specific content angles + a ready scored hook for each trend.",
+                },
+                {
+                  n: "2", step: "Create", tool: "Generator", href: "/generator", cta: "Generate 8 hooks",
+                  you: "Drop a topic in, pick a platform.",
+                  get: "8 openings, each scored 0–100 for retention, with hashtags.",
+                },
+                {
+                  n: "3", step: "Diagnose & fix", tool: "Analyzer", href: "/analyzer", cta: "Analyze a hook",
+                  you: "Paste a hook you already wrote.",
+                  get: "Score, the “why”, the attention patterns it's missing, and a 1-click rewrite that injects them.",
+                },
+                {
+                  n: "4", step: "Learn", tool: "Patterns", href: "/patterns", cta: "See the 9 patterns",
+                  you: "Read the 9 attention patterns once.",
+                  get: "The vocabulary behind every score — so you know WHY a hook works, not just whether.",
+                },
+              ].map((s, i, arr) => (
+                <div key={s.n} style={{ position: "relative", background: "var(--s1)", border: "1px solid var(--border)", borderRadius: "var(--r3)", padding: "1.75rem 1.5rem", display: "flex", flexDirection: "column" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "1rem" }}>
+                    <span style={{ width: "30px", height: "30px", borderRadius: "50%", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--fd)", fontWeight: 800, fontSize: ".85rem", flexShrink: 0 }}>{s.n}</span>
+                    <div style={{ fontSize: ".68rem", textTransform: "uppercase", letterSpacing: "2px", color: "var(--muted)", fontFamily: "var(--fd)", fontWeight: 600 }}>{s.step}</div>
+                  </div>
+                  <div style={{ fontFamily: "var(--fd)", fontSize: "1.15rem", fontWeight: 800, letterSpacing: "-.5px", marginBottom: ".75rem" }}>{s.tool}</div>
+                  <div style={{ flex: 1, marginBottom: "1rem" }}>
+                    <div style={{ fontSize: ".62rem", fontFamily: "var(--fd)", fontWeight: 700, color: "var(--muted)", letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "4px" }}>You do</div>
+                    <p style={{ fontSize: ".85rem", color: "var(--soft)", lineHeight: 1.6, fontWeight: 300, marginBottom: ".75rem" }}>{s.you}</p>
+                    <div style={{ fontSize: ".62rem", fontFamily: "var(--fd)", fontWeight: 700, color: "var(--neon)", letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "4px" }}>You get</div>
+                    <p style={{ fontSize: ".85rem", color: "var(--text)", lineHeight: 1.6, fontWeight: 400 }}>{s.get}</p>
+                  </div>
+                  <Link href={s.href} style={{ fontSize: ".82rem", color: "var(--electric)", textDecoration: "none", fontFamily: "var(--fb)", fontWeight: 500 }}>
+                    {s.cta} →
+                  </Link>
+                  {i < arr.length - 1 && (
+                    <span className="hiw-arrow" style={{ position: "absolute", right: "-11px", top: "50%", transform: "translateY(-50%)", color: "var(--muted)", fontSize: "1rem", zIndex: 2 }}>→</span>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Real, concrete walkthrough — uses an actual flow from the product */}
+            <div style={{ marginTop: "2.5rem", background: "var(--s1)", border: "1px solid rgba(0,255,178,.2)", borderRadius: "var(--r3)", padding: "1.75rem", maxWidth: "760px", marginLeft: "auto", marginRight: "auto" }}>
+              <div style={{ fontSize: ".68rem", textTransform: "uppercase", letterSpacing: "2px", color: "var(--neon)", fontFamily: "var(--fd)", fontWeight: 700, marginBottom: ".75rem" }}>
+                ⚡ A real run, in 30 seconds
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: ".75rem", fontSize: ".9rem", lineHeight: 1.7 }}>
+                <div style={{ color: "var(--soft)" }}>
+                  <strong style={{ color: "var(--muted)", fontWeight: 500 }}>You write:</strong>{" "}
+                  <span style={{ color: "var(--text)", fontStyle: "italic" }}>“My morning routine”</span>
+                </div>
+                <div style={{ color: "var(--soft)" }}>
+                  <strong style={{ color: "var(--muted)", fontWeight: 500 }}>Analyzer says:</strong>{" "}
+                  score <strong style={{ color: "var(--hot)" }}>12 / 100</strong> — missing <strong style={{ color: "var(--gold)" }}>Open Loop, Specificity, Stakes</strong>.
+                </div>
+                <div style={{ color: "var(--soft)" }}>
+                  <strong style={{ color: "var(--muted)", fontWeight: 500 }}>One click</strong> on <strong style={{ color: "var(--gold)" }}>＋ Open Loop</strong>:
+                </div>
+                <div style={{ background: "var(--s2)", borderRadius: "var(--r2)", padding: "1rem 1.1rem", border: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+                  <p style={{ flex: 1, minWidth: "200px", color: "var(--text)", lineHeight: 1.5 }}>“⏰ I changed one thing in my morning and haven&apos;t been the same since.”</p>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
+                    <span style={{ fontFamily: "var(--fd)", fontWeight: 800, fontSize: "1.4rem", color: "var(--neon)", letterSpacing: "-1px" }}>84</span>
+                    <span style={{ fontSize: ".62rem", fontFamily: "var(--fd)", fontWeight: 700, color: "var(--neon)" }}>+72 ▲</span>
+                  </div>
+                </div>
+                <div style={{ color: "var(--muted)", fontSize: ".82rem", textAlign: "center", paddingTop: ".25rem" }}>
+                  Same idea. Same AI. Different hook — because now it has a pattern.
+                </div>
+              </div>
+            </div>
+
+            <div style={{ textAlign: "center", marginTop: "1.5rem", fontSize: ".85rem" }}>
+              <Link href="/why-it-works" style={{ color: "var(--muted)", textDecoration: "none" }}>
+                Why this works — the methodology behind the score →
+              </Link>
+            </div>
+
+            <div style={{ textAlign: "center", marginTop: "1.5rem" }}>
+              <HLink href="/generator" primary>Try it now — free →</HLink>
+            </div>
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════
+            TRY-IT WIDGET — real /api/analyze on the home
+            (compresses "land → aha" to one step, no nav)
+        ══════════════════════════════════ */}
+        <section style={{ borderTop: "1px solid var(--border)" }}>
+          <div style={{ maxWidth: "680px", margin: "0 auto", padding: "5rem 1.5rem", textAlign: "center" }}>
+            <SLabel center>Try it on yours</SLabel>
+            <h2 style={{ fontFamily: "var(--fd)", fontSize: "clamp(1.8rem,4vw,2.6rem)", fontWeight: 800, letterSpacing: "-2px", lineHeight: 1.05, marginBottom: ".75rem" }}>
+              See your hook&apos;s score <span className="gradient-text">in 5 seconds</span>.
+            </h2>
+            <p style={{ color: "var(--soft)", fontSize: ".95rem", fontWeight: 300, marginBottom: "2rem", lineHeight: 1.7 }}>
+              Same scoring as the full Analyzer. Real Claude call, real number, no account.
+            </p>
+            <HomeAnalyzeWidget />
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════
             TYPING DEMO — Desktop mockup (from v2)
         ══════════════════════════════════ */}
         <section style={{ background: "var(--s1)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)", padding: "4rem 1.5rem" }}>
@@ -207,24 +314,6 @@ export default function HomePage() {
               Watch it generate in real time.
             </h2>
             <DesktopMockup typedHook={typedHook} />
-          </div>
-        </section>
-
-        {/* ══════════════════════════════════
-            STATS — Animated on scroll
-        ══════════════════════════════════ */}
-        <section ref={statsRef} style={{ borderBottom: "1px solid var(--border)" }}>
-          <div style={{ maxWidth: "900px", margin: "0 auto", padding: "3rem 1.5rem" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "0", border: "1px solid var(--border)", borderRadius: "20px", background: "var(--s1)", overflow: "hidden" }}>
-              {STATS.map((s, i) => (
-                <div key={i} style={{ textAlign: "center", padding: "1.5rem 1rem", borderRight: i < STATS.length - 1 ? "1px solid var(--border)" : "none" }}>
-                  <div style={{ fontFamily: "var(--fd)", fontSize: "clamp(1.6rem,4vw,2.2rem)", fontWeight: 800, letterSpacing: "-1px", color: s.color, opacity: statsVisible ? 1 : 0, transform: statsVisible ? "translateY(0)" : "translateY(12px)", transition: `all .6s ease ${i * .12}s` }}>
-                    {s.n}
-                  </div>
-                  <div style={{ fontSize: ".7rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1.5px", marginTop: "4px" }}>{s.label}</div>
-                </div>
-              ))}
-            </div>
           </div>
         </section>
 
@@ -293,62 +382,6 @@ export default function HomePage() {
         </section>
 
         {/* ══════════════════════════════════
-            BEFORE / AFTER
-        ══════════════════════════════════ */}
-        <section style={{ background: "var(--s1)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
-          <div style={{ maxWidth: "900px", margin: "0 auto", padding: "5rem 1.5rem" }}>
-            <div style={{ textAlign: "center", marginBottom: "3rem" }}>
-              <SLabel center>The difference</SLabel>
-              <h2 style={{ fontFamily: "var(--fd)", fontSize: "clamp(1.8rem,4vw,2.8rem)", fontWeight: 800, letterSpacing: "-2px", lineHeight: 1.05 }}>
-                Before vs After.
-              </h2>
-              <p style={{ color: "var(--soft)", fontSize: ".9rem", marginTop: ".75rem", fontWeight: 300 }}>
-                Same topic. Completely different result.
-              </p>
-            </div>
-
-            <div style={{ display: "flex", gap: "8px", justifyContent: "center", marginBottom: "2rem", flexWrap: "wrap" }}>
-              {BEFORE_AFTER.map((b, i) => (
-                <button key={i} onClick={() => setBaIdx(i)} style={{ padding: "7px 18px", borderRadius: "100px", border: `1px solid ${baIdx === i ? "rgba(255,45,107,.5)" : "var(--border2)"}`, background: baIdx === i ? "rgba(255,45,107,.08)" : "transparent", color: baIdx === i ? "var(--hot)" : "var(--muted)", fontSize: ".8rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
-                  {b.platform}
-                </button>
-              ))}
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
-              <div style={{ background: "var(--bg)", border: "1px solid var(--border)", borderRadius: "20px", padding: "1.5rem" }}>
-                <div style={{ fontSize: ".68rem", fontFamily: "var(--fd)", fontWeight: 700, color: "var(--muted)", letterSpacing: "2px", textTransform: "uppercase", marginBottom: "1rem" }}>❌ Without HookViral</div>
-                <p style={{ fontSize: ".9rem", lineHeight: 1.7, color: "var(--muted)", fontStyle: "italic" }}>&ldquo;{BEFORE_AFTER[baIdx].before}&rdquo;</p>
-                <div style={{ marginTop: "1rem", display: "flex", alignItems: "center", gap: "8px" }}>
-                  <div style={{ flex: 1, height: "4px", background: "var(--border)", borderRadius: "4px" }}>
-                    <div style={{ height: "100%", background: "var(--muted)", width: "22%", borderRadius: "4px" }} />
-                  </div>
-                  <span style={{ fontFamily: "var(--fd)", fontWeight: 700, fontSize: ".95rem", color: "var(--muted)" }}>22<span style={{ fontSize: ".6rem", fontWeight: 400 }}>/100</span></span>
-                </div>
-              </div>
-
-              <div style={{ background: "var(--bg)", border: "1px solid rgba(0,255,178,.25)", borderRadius: "20px", padding: "1.5rem", position: "relative", overflow: "hidden" }}>
-                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "2px", background: "linear-gradient(90deg,var(--electric),var(--neon))", borderRadius: "20px 20px 0 0" }} />
-                <div style={{ fontSize: ".68rem", fontFamily: "var(--fd)", fontWeight: 700, color: "var(--neon)", letterSpacing: "2px", textTransform: "uppercase", marginBottom: "1rem" }}>✓ With HookViral</div>
-                <p style={{ fontSize: ".9rem", lineHeight: 1.7, color: "var(--text)" }}>{BEFORE_AFTER[baIdx].after}</p>
-                <div style={{ marginTop: "1rem", display: "flex", alignItems: "center", gap: "8px" }}>
-                  <div style={{ flex: 1, height: "4px", background: "var(--border)", borderRadius: "4px", overflow: "hidden" }}>
-                    <div style={{ height: "100%", background: "linear-gradient(90deg,var(--electric),var(--neon))", width: "94%", borderRadius: "4px", transition: "width .8s ease" }} />
-                  </div>
-                  <span style={{ fontFamily: "var(--fd)", fontWeight: 700, fontSize: ".95rem", color: "var(--neon)" }}>94<span style={{ fontSize: ".6rem", fontWeight: 400 }}>/100</span></span>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ textAlign: "center", marginTop: "2rem" }}>
-              <Link href="/generator" style={{ fontSize: ".875rem", color: "var(--electric)", textDecoration: "none" }}>
-                Generate hooks like these — free →
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* ══════════════════════════════════
             FEATURES
         ══════════════════════════════════ */}
         <section style={{ maxWidth: "900px", margin: "0 auto", padding: "5rem 1.5rem" }}>
@@ -367,30 +400,6 @@ export default function HomePage() {
             ].map(([icon, title, desc]) => (
               <FCard key={title} icon={icon} title={title} desc={desc} />
             ))}
-          </div>
-        </section>
-
-        {/* ══════════════════════════════════
-            REVIEWS
-        ══════════════════════════════════ */}
-        <section style={{ background: "var(--s1)", borderTop: "1px solid var(--border)" }}>
-          <div style={{ maxWidth: "900px", margin: "0 auto", padding: "5rem 1.5rem" }}>
-            <div style={{ textAlign: "center", marginBottom: "3rem" }}>
-              <SLabel center>What creators say</SLabel>
-              <h2 style={{ fontFamily: "var(--fd)", fontSize: "clamp(1.8rem,4vw,2.8rem)", fontWeight: 800, letterSpacing: "-2px" }}>
-                Real results. Real creators.
-              </h2>
-              <p style={{ color: "var(--muted)", fontSize: ".78rem", marginTop: ".75rem" }}>
-                Share your results → hello@hookviral.ai
-              </p>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: "14px" }}>
-              {[
-                { av: "SL", c: "var(--hot)", name: "Sofia L.", role: "@sofiacreates · 48k TikTok", text: "Views from 400 to 47k in 3 weeks. The virality score is everything — I only post 90+ hooks now." },
-                { av: "MK", c: "var(--electric)", name: "Marc K.", role: "Social Media Manager", text: "I manage 8 clients. HookViral saves me 2 hours/day. The platform-specific hooks are next level." },
-                { av: "AR", c: "var(--neon)", name: "Aïcha R.", role: "Finance YouTuber · 22k subs", text: "My hooks went from ignored to stopping the scroll. The before/after difference is genuinely insane." },
-              ].map((r, i) => <RCard key={i} r={r} />)}
-            </div>
           </div>
         </section>
 
@@ -433,6 +442,22 @@ export default function HomePage() {
         </section>
 
         {/* ══════════════════════════════════
+            EMAIL CAPTURE
+        ══════════════════════════════════ */}
+        <section style={{ background: "var(--s1)", borderTop: "1px solid var(--border)" }}>
+          <div style={{ maxWidth: "620px", margin: "0 auto", padding: "5rem 1.5rem", textAlign: "center" }}>
+            <SLabel center>Weekly hook teardown</SLabel>
+            <h2 style={{ fontFamily: "var(--fd)", fontSize: "clamp(1.6rem,4vw,2.4rem)", fontWeight: 800, letterSpacing: "-2px", lineHeight: 1.1, marginBottom: ".75rem" }}>
+              One viral hook, broken down.<br />Every week.
+            </h2>
+            <p style={{ color: "var(--soft)", fontSize: ".9rem", fontWeight: 300, marginBottom: "2rem", lineHeight: 1.7 }}>
+              We pull a hook that actually went viral, score it, and explain the pattern behind it. No spam — unsubscribe anytime.
+            </p>
+            <EmailCapture source="home-weekly" />
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════
             FINAL CTA
         ══════════════════════════════════ */}
         <section style={{ textAlign: "center", padding: "6rem 1.5rem", borderTop: "1px solid var(--border)" }}>
@@ -463,6 +488,9 @@ export default function HomePage() {
         }
         @media (max-width: 600px) {
           .before-after-grid { grid-template-columns: 1fr !important; }
+        }
+        @media (max-width: 1040px) {
+          .hiw-arrow { display: none !important; }
         }
       `}</style>
     </div>
@@ -654,25 +682,184 @@ function FCard({ icon, title, desc }: { icon: string; title: string; desc: strin
   );
 }
 
-function RCard({ r }: { r: { av: string; c: string; name: string; role: string; text: string } }) {
-  const [hov, setHov] = useState(false);
+// ── Home try-it widget: real /api/analyze, mini result on the page ──
+interface MiniResult { score: number; why: string; missing: string[]; }
+
+function HomeAnalyzeWidget() {
+  const [hook, setHook] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [result, setResult] = useState<MiniResult | null>(null);
+
+  async function score(text?: string) {
+    const h = (text ?? hook).trim();
+    if (!h || loading) return;
+    if (text) setHook(text);
+    setLoading(true); setError(""); setResult(null);
+    try {
+      const res = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hook: h, platform: "TikTok" }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Analysis failed");
+      setResult({
+        score: data.analysis.score,
+        why: data.analysis.why,
+        missing: (data.analysis.patternsMissing || []).slice(0, 3),
+      });
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const sc = result ? (result.score >= 90 ? "var(--neon)" : result.score >= 78 ? "var(--gold)" : "var(--hot)") : "var(--muted)";
+
   return (
-    <div onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{ background: "var(--bg)", border: `1px solid ${hov ? "rgba(108,58,255,.3)" : "var(--border)"}`, borderRadius: "18px", padding: "1.5rem", transition: "all .3s", transform: hov ? "translateY(-4px)" : "none", boxShadow: hov ? "0 16px 40px rgba(108,58,255,.1)" : "none", position: "relative", overflow: "hidden" }}>
-      {hov && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "1px", background: "linear-gradient(90deg,transparent,var(--electric),transparent)" }} />}
-      <div style={{ display: "flex", gap: "3px", marginBottom: "1rem" }}>
-        {Array.from({ length: 5 }).map((_, i) => (
-          <svg key={i} width="12" height="12" viewBox="0 0 24 24" fill="var(--gold)"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" /></svg>
-        ))}
-      </div>
-      <p style={{ fontSize: ".875rem", lineHeight: 1.75, color: "var(--soft)", marginBottom: "1.25rem", fontWeight: 300 }}>&ldquo;{r.text}&rdquo;</p>
-      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-        <div style={{ width: "34px", height: "34px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--fd)", fontWeight: 700, fontSize: ".72rem", background: `${r.c}22`, color: r.c, flexShrink: 0 }}>{r.av}</div>
-        <div>
-          <div style={{ fontSize: ".85rem", fontWeight: 500, color: "var(--text)" }}>{r.name}</div>
-          <div style={{ fontSize: ".72rem", color: "var(--muted)" }}>{r.role}</div>
+    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+      <div style={{ background: "var(--s1)", border: "1px solid var(--border)", borderRadius: "var(--r3)", padding: "1rem", display: "flex", flexDirection: "column", gap: "10px" }}>
+        <textarea
+          value={hook}
+          onChange={e => setHook(e.target.value.slice(0, 300))}
+          placeholder="Paste a hook you'd post on TikTok / Reels / Shorts…"
+          rows={2}
+          style={{ width: "100%", background: "transparent", border: "none", outline: "none", color: "var(--text)", fontSize: "1rem", fontFamily: "var(--fb)", resize: "none", lineHeight: 1.6, caretColor: "var(--hot)" }}
+        />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", flexWrap: "wrap" }}>
+          <button
+            onClick={() => score("My morning routine")}
+            disabled={loading}
+            style={{ fontSize: ".75rem", color: "var(--muted)", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--fb)", padding: 0, textDecoration: "underline" }}
+          >
+            Try: &ldquo;My morning routine&rdquo;
+          </button>
+          <button
+            onClick={() => score()}
+            disabled={loading || !hook.trim()}
+            style={{ padding: "10px 22px", borderRadius: "100px", border: "none", background: loading || !hook.trim() ? "var(--s3)" : "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".88rem", fontWeight: 600, fontFamily: "var(--fb)", cursor: loading || !hook.trim() ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "8px" }}
+          >
+            {loading
+              ? <><span style={{ width: "14px", height: "14px", borderRadius: "50%", border: "2px solid rgba(255,255,255,.3)", borderTopColor: "#fff", animation: "spin 1s linear infinite", display: "inline-block" }} />Scoring…</>
+              : <>✦ Score this hook</>}
+          </button>
         </div>
       </div>
+
+      {error && (
+        <div style={{ background: "rgba(255,45,107,.06)", border: "1px solid rgba(255,45,107,.3)", color: "var(--hot)", borderRadius: "var(--r2)", padding: ".85rem 1.1rem", fontSize: ".85rem" }}>
+          {error}
+        </div>
+      )}
+
+      {result && (
+        <div style={{ background: "var(--s1)", border: `1px solid ${sc}33`, borderRadius: "var(--r3)", padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem", textAlign: "left", animation: "cardIn .4s ease" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontSize: ".62rem", textTransform: "uppercase", letterSpacing: "1.5px", color: "var(--muted)", fontFamily: "var(--fd)", fontWeight: 700, marginBottom: "2px" }}>Retention score</div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
+                <span style={{ fontFamily: "var(--fd)", fontSize: "2.6rem", fontWeight: 800, letterSpacing: "-2px", color: sc, lineHeight: 1 }}>{result.score}</span>
+                <span style={{ fontSize: ".8rem", color: "var(--muted)" }}>/100</span>
+              </div>
+            </div>
+            <div style={{ height: "5px", flex: 1, minWidth: "120px", background: "var(--s3)", borderRadius: "3px", overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${result.score}%`, background: `linear-gradient(90deg,var(--electric),${sc})`, borderRadius: "3px", transition: "width .8s cubic-bezier(.16,1,.3,1)" }} />
+            </div>
+          </div>
+
+          <p style={{ fontSize: ".9rem", color: "var(--soft)", lineHeight: 1.7 }}>{result.why}</p>
+
+          {result.missing.length > 0 && (
+            <div>
+              <div style={{ fontSize: ".62rem", fontFamily: "var(--fd)", fontWeight: 700, color: "var(--gold)", letterSpacing: "1px", textTransform: "uppercase", marginBottom: ".5rem" }}>Missing — biggest levers</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
+                {result.missing.map(p => (
+                  <Link key={p} href={patternHref(p)} style={{ fontSize: ".72rem", padding: "3px 10px", borderRadius: "100px", background: "rgba(255,184,0,.07)", color: "var(--gold)", border: "1px solid rgba(255,184,0,.25)", textDecoration: "none" }}>
+                    {p}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", paddingTop: ".5rem", borderTop: "1px solid var(--border)" }}>
+            <Link
+              href={`/analyzer?hook=${encodeURIComponent(hook)}`}
+              style={{ flex: 1, minWidth: "180px", textAlign: "center", padding: "11px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".85rem", fontWeight: 600, textDecoration: "none", fontFamily: "var(--fb)" }}
+            >
+              See the full analysis &amp; 1-click rewrite →
+            </Link>
+            <button
+              onClick={() => { setHook(""); setResult(null); }}
+              style={{ padding: "11px 20px", borderRadius: "100px", border: "1px solid var(--border2)", background: "transparent", color: "var(--soft)", fontSize: ".85rem", fontFamily: "var(--fb)", cursor: "pointer" }}
+            >
+              Try another
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Email capture ──
+function EmailCapture({ source }: { source: string }) {
+  const [email, setEmail] = useState("");
+  const [state, setState] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [msg, setMsg] = useState("");
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (state === "loading") return;
+    setState("loading");
+    setMsg("");
+    try {
+      const res = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, source }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not subscribe.");
+      setState("done");
+    } catch (err: unknown) {
+      setState("error");
+      setMsg(err instanceof Error ? err.message : "Something went wrong.");
+    }
+  }
+
+  if (state === "done") {
+    return (
+      <div style={{ display: "inline-flex", alignItems: "center", gap: "10px", padding: "14px 24px", borderRadius: "100px", background: "rgba(0,255,178,.08)", border: "1px solid rgba(0,255,178,.25)", color: "var(--neon)", fontSize: ".95rem", fontFamily: "var(--fb)" }}>
+        ✓ You&apos;re in. Check your inbox.
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ maxWidth: "440px", margin: "0 auto" }}>
+      <form onSubmit={submit} style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+        <input
+          type="email"
+          required
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          placeholder="you@email.com"
+          style={{ flex: 1, minWidth: "200px", padding: "13px 18px", borderRadius: "100px", border: "1px solid var(--border2)", background: "var(--bg)", color: "var(--text)", fontSize: ".9rem", fontFamily: "var(--fb)", outline: "none", caretColor: "var(--hot)" }}
+        />
+        <button
+          type="submit"
+          disabled={state === "loading"}
+          style={{ padding: "13px 26px", borderRadius: "100px", border: "none", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".9rem", fontWeight: 600, fontFamily: "var(--fb)", cursor: state === "loading" ? "not-allowed" : "pointer", opacity: state === "loading" ? 0.6 : 1, whiteSpace: "nowrap" }}
+        >
+          {state === "loading" ? "..." : "Get it →"}
+        </button>
+      </form>
+      {state === "error" && (
+        <div style={{ marginTop: ".75rem", fontSize: ".8rem", color: "var(--hot)" }}>{msg}</div>
+      )}
     </div>
   );
 }

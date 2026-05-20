@@ -95,17 +95,17 @@ export const NICHE_MODES: NicheMode[] = [
     ],
   },
   {
-    slug: "football",
-    label: "Football",
-    emoji: "⚽",
-    tagline: "Hooks for football edits, takes & highlight content.",
+    slug: "sports",
+    label: "Sports",
+    emoji: "🏆",
+    tagline: "Hooks for sports edits, hot takes & highlight content.",
     guidance:
-      "Football fans react to bold takes and stakes between players/clubs. Lead with a hot opinion, an underrated player, or a 'nobody talks about' angle.",
-    sampleTopics: ["The most underrated player ever", "Why this transfer makes no sense", "The goal that broke records"],
+      "Sports fans react to bold takes and stakes between players/teams. Lead with a hot opinion, an underrated athlete, a record, or a 'nobody talks about' angle. Works across football, basketball, combat sports, etc.",
+    sampleTopics: ["The most underrated athlete ever", "Why this trade makes no sense", "The play that broke records"],
     exampleHooks: [
-      { text: "⚽ The most underrated player of his generation. No debate.", formula: "Contrarian", score: 95 },
-      { text: "🤯 Nobody talks about what he did in the last 5 minutes.", formula: "Curiosity Gap", score: 93 },
-      { text: "❌ This transfer makes zero sense — and here's why.", formula: "Contrarian", score: 92 },
+      { text: "🏆 The most underrated athlete of his generation. No debate.", formula: "Contrarian", score: 95 },
+      { text: "🤯 Nobody talks about what he did in the last 2 minutes.", formula: "Curiosity Gap", score: 93 },
+      { text: "❌ This trade makes zero sense — and here's why.", formula: "Contrarian", score: 92 },
     ],
   },
   {

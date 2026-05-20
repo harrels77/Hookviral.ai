@@ -6,7 +6,7 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export async function POST(req: NextRequest) {
   try {
-    const rl = rateLimit(`script:${getClientIp(req)}`, 40, 60 * 60 * 1000);
+    const rl = await rateLimit(`script:${getClientIp(req)}`, 40, 60 * 60 * 1000);
     if (!rl.ok) {
       return NextResponse.json(
         { error: "Too many requests. Please try again later." },

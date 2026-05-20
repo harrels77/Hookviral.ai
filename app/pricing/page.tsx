@@ -60,14 +60,15 @@ export default function PricingPage() {
             <div style={{ fontSize: ".875rem", color: "var(--muted)", marginBottom: "2rem", fontWeight: 300 }}>forever, no card needed</div>
             <Divider />
             <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: ".65rem", marginBottom: "2rem" }}>
-              {["10 hooks / day", "5 platforms", "8 viral formulas", "Virality score", "Hashtag generator", "Copy & export"].map(f => (
+              {[
+                "10 hook generations / day",
+                "Full Analyzer — score, patterns, 1 rewrite",
+                "Live Trends + 3 decodes / day",
+                "Patterns library, history, hashtags",
+                "No account, no card",
+              ].map(f => (
                 <li key={f} style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: ".875rem", color: "var(--soft)", fontWeight: 300 }}>
                   <span style={{ color: "var(--neon)", fontSize: ".8rem", flexShrink: 0 }}>✓</span>{f}
-                </li>
-              ))}
-              {["Unlimited generations", "Script generator", "Advanced analysis", "Priority support"].map(f => (
-                <li key={f} style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: ".875rem", color: "var(--muted)", fontWeight: 300, opacity: .4 }}>
-                  <span style={{ flexShrink: 0 }}>–</span>{f}
                 </li>
               ))}
             </ul>
@@ -111,16 +112,10 @@ export default function PricingPage() {
 
             <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: ".65rem", marginBottom: "2rem" }}>
               {[
-                "Unlimited hooks — no daily limit",
-                "5 platforms",
-                "8 viral formulas",
-                "Advanced AI virality score",
-                "Score breakdown (Curiosity, Emotion, Clarity)",
-                "Hashtag optimizer",
-                "Script generator (Hook + Bridge + CTA)",
-                "Unlimited history & favorites",
-                "Export .txt / Notion",
-                "Regenerate in 1 click",
+                "Unlimited hook generations",
+                "Full rewrite engine — 5 styles × 3 variants",
+                "Unlimited trend decodes",
+                "Script generator + faceless production brief",
                 "Priority support",
               ].map(f => (
                 <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: "10px", fontSize: ".875rem", color: "var(--soft)", fontWeight: 300 }}>
@@ -137,9 +132,7 @@ export default function PricingPage() {
         {/* Trust note */}
         <div style={{ textAlign: "center", padding: "1.75rem", background: "var(--s1)", borderRadius: "var(--r2)", border: "1px solid var(--border)", marginBottom: "4rem" }}>
           <p style={{ fontSize: ".875rem", color: "var(--soft)", fontWeight: 300, lineHeight: 1.7 }}>
-            Same AI quality on both plans. Pro unlocks{" "}
-            <strong style={{ color: "var(--text)", fontWeight: 500 }}>volume and advanced features</strong>
-            {" "}— not better hooks.{" "}
+            <strong style={{ color: "var(--text)", fontWeight: 500 }}>Same AI on both plans. Pro = unlimited.</strong>{" "}
             <Link href="/generator" style={{ color: "var(--electric)", textDecoration: "none" }}>Try free first →</Link>
           </p>
         </div>

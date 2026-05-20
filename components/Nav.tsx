@@ -9,21 +9,20 @@ import { Logo } from "@/components/Logo";
 export function Nav() {
   const path = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [moreOpen, setMoreOpen] = useState(false);
   const { theme, toggle } = useTheme();
 
+  // Flat nav — Home first, then the loop, then Pricing + History. No "More".
   const primary = [
-    { href: "/generator", label: "Generator" },
-    { href: "/analyzer", label: "Analyzer" },
-    { href: "/pricing", label: "Pricing" },
-  ];
-  const more = [
+    { href: "/", label: "Home" },
     { href: "/trends", label: "Trends" },
+    { href: "/generator", label: "Generate" },
+    { href: "/analyzer", label: "Analyze" },
     { href: "/patterns", label: "Patterns" },
+    { href: "/pricing", label: "Pricing" },
     { href: "/history", label: "History" },
   ];
 
-  useEffect(() => { setMenuOpen(false); setMoreOpen(false); }, [path]);
+  useEffect(() => { setMenuOpen(false); }, [path]);
 
   useEffect(() => {
     // Skip on touch/mobile
@@ -125,19 +124,9 @@ export function Nav() {
             </Link>
           );
         })}
-        <div style={{ fontSize: ".6rem", textTransform: "uppercase", letterSpacing: "2px", color: "var(--muted)", padding: "16px 18px 4px", fontFamily: "var(--fd)", fontWeight: 600 }}>More</div>
-        {more.map(l => {
-          const active = path === l.href;
-          return (
-            <Link key={l.href} href={l.href} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderRadius: "var(--r2)", background: active ? "var(--s3)" : "transparent", color: active ? "var(--text)" : "var(--soft)", textDecoration: "none", fontFamily: "var(--fb)", fontSize: "1rem", fontWeight: active ? 500 : 400, border: active ? "1px solid var(--border2)" : "1px solid transparent", transition: "all .2s" }}>
-              {l.label}
-              {active && <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "linear-gradient(135deg,var(--hot),var(--electric))", flexShrink: 0 }} />}
-            </Link>
-          );
-        })}
         <div style={{ marginTop: "auto", paddingTop: "1.5rem", borderTop: "1px solid var(--border)" }}>
-          <Link href="/pricing" style={{ display: "block", textAlign: "center", padding: "14px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".95rem", fontWeight: 500, textDecoration: "none", fontFamily: "var(--fb)" }}>
-            Upgrade to Pro →
+          <Link href="/generator" style={{ display: "block", textAlign: "center", padding: "14px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".95rem", fontWeight: 500, textDecoration: "none", fontFamily: "var(--fb)" }}>
+            Start Free →
           </Link>
         </div>
       </div>
@@ -162,29 +151,6 @@ export function Nav() {
             );
           })}
 
-          {/* More dropdown */}
-          <div style={{ position: "relative" }}>
-            <button onClick={() => setMoreOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: "5px", padding: "6px 14px", borderRadius: "100px", fontSize: ".85rem", color: more.some(m => m.href === path) || moreOpen ? "var(--text)" : "var(--soft)", background: moreOpen ? "var(--s3)" : "transparent", border: "none", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
-              More
-              <span style={{ fontSize: ".55rem", display: "inline-block", transform: moreOpen ? "rotate(180deg)" : "none", transition: "transform .2s" }}>▼</span>
-            </button>
-            {moreOpen && (
-              <>
-                <div onClick={() => setMoreOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 90 }} />
-                <div style={{ position: "absolute", top: "calc(100% + 10px)", right: 0, zIndex: 110, background: "var(--s1)", border: "1px solid var(--border2)", borderRadius: "var(--r2)", padding: "6px", minWidth: "160px", display: "flex", flexDirection: "column", gap: "2px", boxShadow: "0 16px 44px rgba(0,0,0,.35)" }}>
-                  {more.map(l => {
-                    const active = path === l.href;
-                    return (
-                      <Link key={l.href} href={l.href} style={{ padding: "9px 14px", borderRadius: "var(--r)", fontSize: ".85rem", color: active ? "var(--text)" : "var(--soft)", background: active ? "var(--s3)" : "transparent", textDecoration: "none", fontFamily: "var(--fb)", transition: "all .15s" }}>
-                        {l.label}
-                      </Link>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-          </div>
-
           {/* Theme toggle */}
           <button onClick={toggle} title={theme === "dark" ? "Light mode" : "Dark mode"}
             style={{ width: "34px", height: "34px", borderRadius: "50%", border: "1px solid var(--border2)", background: "var(--s2)", color: "var(--soft)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", transition: "all .25s", marginLeft: "4px" }}
@@ -194,7 +160,7 @@ export function Nav() {
             {theme === "dark" ? "☀" : "🌙"}
           </button>
 
-          <Link href="/pricing" style={{ marginLeft: "8px", padding: "8px 20px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".85rem", fontWeight: 500, textDecoration: "none", fontFamily: "var(--fb)", boxShadow: "0 4px 16px rgba(255,45,107,.25)" }}>
+          <Link href="/generator" style={{ marginLeft: "8px", padding: "8px 20px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".85rem", fontWeight: 500, textDecoration: "none", fontFamily: "var(--fb)", boxShadow: "0 4px 16px rgba(255,45,107,.25)" }}>
             Start Free →
           </Link>
         </div>

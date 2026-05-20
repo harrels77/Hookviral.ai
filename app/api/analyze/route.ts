@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { rateLimit, getClientIp } from "@/lib/rateLimit";
 import { PATTERN_VOCAB, HOOK_PATTERNS } from "@/lib/patterns";
+import { getNiche } from "@/lib/niches";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -47,7 +48,7 @@ If the hook is already excellent, weakPoints can be an empty array. Match the la
 
 export async function POST(req: NextRequest) {
   try {
-    const rl = rateLimit(`analyze:${getClientIp(req)}`, 30, 60 * 60 * 1000);
+    const rl = await rateLimit(`analyze:${getClientIp(req)}`, 30, 60 * 60 * 1000);
     if (!rl.ok) {
       return NextResponse.json(
         { error: "Too many requests. Please try again later." },
@@ -55,10 +56,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { hook, platform } = await req.json();
+    const { hook, platform, niche } = await req.json();
     if (!hook || typeof hook !== "string" || !hook.trim()) {
       return NextResponse.json({ error: "Paste a hook to analyze." }, { status: 400 });
     }
+
+    const n = typeof niche === "string" ? getNiche(niche) : undefined;
+    const nicheLine = n
+      ? `\nNiche: ${n.label}. Judge it for THIS audience specifically — ${n.guidance}`
+      : "";
 
     const message = await client.messages.create({
       model: "claude-sonnet-4-6",
@@ -67,7 +73,7 @@ export async function POST(req: NextRequest) {
       messages: [
         {
           role: "user",
-          content: `Hook: "${hook.slice(0, 300)}"\nPlatform: ${platform || "TikTok"}`,
+          content: `Hook: "${hook.slice(0, 300)}"\nPlatform: ${platform || "TikTok"}${nicheLine}`,
         },
       ],
     });

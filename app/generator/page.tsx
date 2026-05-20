@@ -1,9 +1,18 @@
 "use client";
 
 import { useState, useEffect, useRef, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { getNiche } from "@/lib/niches";
+import { isPro } from "@/lib/plan";
+import { NextStep } from "@/components/NextStep";
+import { HOOK_PATTERNS } from "@/lib/patterns";
+
+// Deep-link a pattern name (from the owned taxonomy) to its explanation.
+function patternHref(name: string) {
+  const p = HOOK_PATTERNS.find(x => x.name === name);
+  return p ? `/patterns#${p.id}` : "/patterns";
+}
 
 const PLATFORMS = ["TikTok", "Instagram", "YouTube", "LinkedIn", "X / Twitter"];
 const TONES = ["Authentic", "Shock", "Educational", "Humor", "Authority", "Storytelling"];
@@ -12,7 +21,7 @@ const GOALS = ["Engagement", "Sales", "Education", "Growth", "Brand awareness", 
 const FREE_DAILY = 10;
 
 interface HookAnalysis { why: string; curiosity: number; emotion: number; clarity: number; }
-interface Hook { id: string; text: string; formula: string; platform: string; score: number; hashtags?: string[]; analysis?: HookAnalysis; }
+interface Hook { id: string; text: string; formula: string; platform: string; score: number; hashtags?: string[]; analysis?: HookAnalysis; patternsUsed?: string[]; }
 interface Script { hook: string; bridge: string; cta: string; }
 
 function getMidnight() { const d = new Date(); d.setDate(d.getDate()+1); d.setHours(0,0,0,0); return d.toISOString(); }
@@ -35,6 +44,7 @@ export default function GeneratorPage() {
 
 function GeneratorInner() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [topic, setTopic] = useState("");
   const [platforms, setPlatforms] = useState<string[]>(["TikTok","Instagram"]);
   const [tone, setTone] = useState("Authentic");
@@ -113,6 +123,7 @@ function GeneratorInner() {
   }
 
   async function generateScript(hook:Hook) {
+    if(!isPro()){setShowModal(true);return;} // Script generator is Pro-only
     setSelectedHook(hook); setScriptLoading(true); setScript(null);
     try {
       const res=await fetch("/api/script",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({hook:hook.text,topic,platform:hook.platform,tone,goal})});
@@ -241,6 +252,7 @@ function GeneratorInner() {
                   onCopy={()=>copyText(h.text,h.id)}
                   onFav={()=>toggleFav(h)}
                   onScript={()=>generateScript(h)}
+                  onAnalyze={()=>router.push(`/analyzer?hook=${encodeURIComponent(h.text)}&platform=${encodeURIComponent(h.platform)}`)}
                   onToggleHash={()=>setExpandedHash(prev=>prev===h.id?null:h.id)}
                   onToggleAnalysis={()=>setExpandedAnalysis(prev=>prev===h.id?null:h.id)}
                 />
@@ -279,6 +291,8 @@ function GeneratorInner() {
             </div>
           )}
         </div>
+
+        <NextStep current="generate" />
       </div>
 
       {showModal&&<UpgradeModal onClose={()=>setShowModal(false)}/>}
@@ -290,11 +304,11 @@ function GeneratorInner() {
 interface HookCardProps {
   hook: Hook; index: number; isFav: boolean; copied: string|null;
   expandedHash: string|null; expandedAnalysis: string|null;
-  onCopy:()=>void; onFav:()=>void; onScript:()=>void;
+  onCopy:()=>void; onFav:()=>void; onScript:()=>void; onAnalyze:()=>void;
   onToggleHash:()=>void; onToggleAnalysis:()=>void;
 }
 
-function HookCard({ hook, index, isFav, copied, expandedHash, expandedAnalysis, onCopy, onFav, onScript, onToggleHash, onToggleAnalysis }: HookCardProps) {
+function HookCard({ hook, index, isFav, copied, expandedHash, expandedAnalysis, onCopy, onFav, onScript, onAnalyze, onToggleHash, onToggleAnalysis }: HookCardProps) {
   const [hov, setHov] = useState(false);
   const [copiedTag, setCopiedTag] = useState<string | null>(null);
   const showHash = expandedHash === hook.id;
@@ -306,13 +320,25 @@ function HookCard({ hook, index, isFav, copied, expandedHash, expandedAnalysis, 
       style={{ background:"var(--s1)", border:`1px solid ${hov?"rgba(108,58,255,.45)":"var(--border)"}`, borderRadius:"var(--r3)", padding:"1.4rem", position:"relative", transition:"all .35s cubic-bezier(.16,1,.3,1)", transform:hov?"translateY(-5px)":"none", boxShadow:hov?"0 20px 50px rgba(108,58,255,.15)":"none", animation:`cardIn .5s cubic-bezier(.16,1,.3,1) ${index*0.05}s both` }}
     >
       {/* Formula + actions */}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"1rem"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"10px"}}>
         <span style={{fontSize:".68rem",fontFamily:"var(--fd)",fontWeight:700,letterSpacing:".5px",padding:"3px 10px",borderRadius:"100px",background:"rgba(108,58,255,.1)",color:"#9B8CFF",border:"1px solid rgba(108,58,255,.2)"}}>{hook.formula}</span>
         <div style={{display:"flex",gap:"5px",opacity:hov?1:0,transition:"opacity .2s"}}>
           <ActionBtn onClick={onFav} active={isFav} activeColor="var(--gold)" title="Favorite">★</ActionBtn>
-          <ActionBtn onClick={onScript} title="Generate script">▶</ActionBtn>
+          <ActionBtn onClick={onScript} title="Script (Pro)">▶</ActionBtn>
         </div>
       </div>
+
+      {/* Attention patterns this hook uses — same vocabulary as Analyzer & Patterns */}
+      {hook.patternsUsed && hook.patternsUsed.length > 0 && (
+        <div style={{display:"flex",flexWrap:"wrap",gap:"4px",marginBottom:"1rem"}}>
+          {hook.patternsUsed.map(p => (
+            <Link key={p} href={patternHref(p)} title="Learn this pattern"
+              style={{fontSize:".62rem",padding:"2px 8px",borderRadius:"100px",background:"rgba(0,255,178,.06)",color:"var(--neon)",border:"1px solid rgba(0,255,178,.2)",textDecoration:"none",fontFamily:"var(--fb)"}}>
+              {p}
+            </Link>
+          ))}
+        </div>
+      )}
 
       {/* Text */}
       <p onClick={onCopy} style={{fontSize:".9rem",lineHeight:1.75,color:hov?"var(--text)":"var(--soft)",marginBottom:"1rem",cursor:"pointer",transition:"color .2s"}}>{hook.text}</p>
@@ -375,6 +401,12 @@ function HookCard({ hook, index, isFav, copied, expandedHash, expandedAnalysis, 
           )}
         </div>
       )}
+
+      {/* Deep analyze — sends this hook to the full Analyzer */}
+      <button onClick={onAnalyze}
+        style={{marginTop:"12px",width:"100%",padding:"9px",borderRadius:"100px",border:"1px solid rgba(108,58,255,.3)",background:hov?"rgba(108,58,255,.1)":"transparent",color:hov?"#C4B5FD":"var(--muted)",fontSize:".75rem",cursor:"pointer",fontFamily:"var(--fb)",transition:"all .2s",display:"flex",alignItems:"center",justifyContent:"center",gap:"6px"}}>
+        ✦ Deep retention analysis →
+      </button>
 
       {copied===hook.id&&<div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",background:"rgba(0,255,178,.08)",border:"1px solid rgba(0,255,178,.3)",color:"var(--neon)",padding:"8px 20px",borderRadius:"100px",fontSize:".78rem",fontFamily:"var(--fd)",fontWeight:700,pointerEvents:"none",zIndex:10,whiteSpace:"nowrap"}}>COPIED ✓</div>}
     </div>

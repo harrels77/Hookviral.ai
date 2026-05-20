@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { HOOK_PATTERNS } from "@/lib/patterns";
+import { NextStep } from "@/components/NextStep";
 
 export const metadata: Metadata = {
   title: "Viral Hook Patterns — Why the First 3 Seconds Work | HookViral AI",
@@ -25,6 +26,9 @@ export default function PatternsPage() {
           <p style={{ color: "var(--soft)", fontWeight: 300, fontSize: "1rem", maxWidth: "560px", margin: "0 auto", lineHeight: 1.7 }}>
             Hooks don&apos;t go viral by luck. These are the structural patterns that stop the scroll in the first 3 seconds — the ones our Analyzer scores your hook against. <strong style={{ color: "var(--text)", fontWeight: 500 }}>★ = especially load-bearing for faceless &amp; narration channels.</strong>
           </p>
+          <Link href="/why-it-works" style={{ display: "inline-block", marginTop: "1rem", fontSize: ".82rem", color: "var(--electric)", textDecoration: "none", fontFamily: "var(--fb)" }}>
+            Why these specific patterns? — the methodology →
+          </Link>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "2.5rem" }}>
@@ -46,19 +50,21 @@ export default function PatternsPage() {
                   <p style={{ fontSize: ".85rem", color: "var(--soft)", lineHeight: 1.5 }}>{p.fix}</p>
                 </div>
               </div>
+              {/* Patterns is the hub: act on each pattern, never dead-end on a definition. */}
+              <div style={{ display: "flex", gap: "8px", marginTop: "1rem", flexWrap: "wrap" }}>
+                <Link href="/analyzer" style={{ fontSize: ".75rem", padding: "6px 14px", borderRadius: "100px", border: "1px solid rgba(108,58,255,.3)", color: "#C4B5FD", textDecoration: "none", fontFamily: "var(--fb)" }}>
+                  ✦ Analyze a hook for this →
+                </Link>
+                <Link href={`/generator?topic=${encodeURIComponent(p.example)}`} style={{ fontSize: ".75rem", padding: "6px 14px", borderRadius: "100px", border: "1px solid var(--border2)", color: "var(--soft)", textDecoration: "none", fontFamily: "var(--fb)" }}>
+                  ⚡ Generate hooks like this →
+                </Link>
+              </div>
             </div>
           ))}
         </div>
-
-        <div style={{ textAlign: "center", marginBottom: "3rem", display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
-          <Link href="/analyzer" style={{ padding: "13px 26px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".95rem", fontWeight: 500, textDecoration: "none", fontFamily: "var(--fb)" }}>
-            Score My Hook Against These — Free →
-          </Link>
-          <Link href="/hooks-for/faceless" style={{ padding: "13px 26px", borderRadius: "100px", border: "1px solid var(--border2)", color: "var(--soft)", fontSize: ".95rem", fontWeight: 500, textDecoration: "none", fontFamily: "var(--fb)" }}>
-            Faceless Hook Examples
-          </Link>
-        </div>
       </div>
+
+      <NextStep current="patterns" />
     </div>
   );
 }
