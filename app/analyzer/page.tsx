@@ -28,6 +28,22 @@ function threeSecondCheck(text: string) {
   if (words <= 16) return { secs, label: "Tight — trim it", color: "var(--gold)" };
   return { secs, label: "Too long for 3s", color: "var(--hot)" };
 }
+
+// Heuristic: does this read more like a search query (a topic) than a hook?
+// Real hooks carry signals — personal pronouns, imperative verbs, punctuation,
+// question/exclamation. A search-bar entry like "meghan markle england visit"
+// has none of those. False positives are cheap (we still let them analyze) so
+// we lean toward flagging short plain noun phrases.
+function looksLikeTopic(text: string): boolean {
+  const t = text.trim();
+  if (!t) return false;
+  const words = t.split(/\s+/);
+  if (words.length === 0 || words.length > 6) return false;
+  if (/[?!.,:;'"—–-]/.test(t)) return false;
+  if (/\b(i|i'm|i've|my|me|you|your|you're|we|our|they|this|that|here|there|nobody|everyone|everybody)\b/i.test(t)) return false;
+  if (/^(watch|look|stop|wait|see|listen|hear|read|imagine|why|how|what|who|where|when|behold|meet|introducing)\b/i.test(t)) return false;
+  return true;
+}
 const REWRITE_STYLES = ["More emotional", "More cinematic", "More contrarian", "More storytelling", "Punchier"];
 
 interface Analysis {
@@ -263,6 +279,27 @@ function AnalyzerInner() {
 
           {result && (
             <div style={{ background: "var(--s1)", border: "1px solid rgba(108,58,255,.3)", borderRadius: "var(--r3)", padding: "1.75rem", animation: "cardIn .4s ease" }}>
+              {/* Topic detector — when input reads like a search query, route the
+                  user to the right tool instead of leaving them with a low score
+                  and no path forward. Trigger requires *both* low score AND
+                  topic-shape so we don't nag legitimate short hooks. */}
+              {looksLikeTopic(hook) && result.score < 40 && (
+                <div style={{ marginBottom: "1.5rem", background: "rgba(255,184,0,.06)", border: "1px solid rgba(255,184,0,.3)", borderRadius: "var(--r2)", padding: "1rem 1.25rem", display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <div style={{ fontSize: ".82rem", color: "var(--gold)", fontFamily: "var(--fb)", fontWeight: 500, lineHeight: 1.6 }}>
+                    💡 This reads like a <strong>topic</strong>, not a hook. A search-bar entry can&apos;t stop the scroll on its own.
+                  </div>
+                  <div style={{ fontSize: ".82rem", color: "var(--soft)", lineHeight: 1.6 }}>
+                    Turn it into 8 scored hooks instead — that&apos;s what the Generator is for.
+                  </div>
+                  <Link
+                    href={`/generator?topic=${encodeURIComponent(hook.trim())}${niche ? `&niche=${niche}` : ""}`}
+                    style={{ alignSelf: "flex-start", padding: "8px 18px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".82rem", fontWeight: 600, textDecoration: "none", fontFamily: "var(--fb)" }}
+                  >
+                    ⚡ Generate 8 hooks for &ldquo;{hook.trim().slice(0, 40)}{hook.trim().length > 40 ? "…" : ""}&rdquo; →
+                  </Link>
+                </div>
+              )}
+
               {/* Score header */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem", flexWrap: "wrap", gap: "1rem" }}>
                 <div>

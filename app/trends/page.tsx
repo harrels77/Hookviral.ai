@@ -29,8 +29,9 @@ function Sparkline({ ranks, color }: { ranks: number[]; color: string }) {
     </svg>
   );
 }
-interface TrendAngle { angle: string; hook: string; score: number; patternsUsed?: string[]; }
-interface Decoded { why: string; kind: "news" | "evergreen"; angles: TrendAngle[]; }
+interface TrendAngle { angle: string; reasoning?: string; hook: string; score: number; patternsUsed?: string[]; }
+interface TrendContext { who: string; what: string; whyTrending: string; stakes: string; timeline: string; }
+interface Decoded { context: TrendContext; kind: "news" | "evergreen"; angles: TrendAngle[]; sources: string[]; }
 
 function patternHref(name: string) {
   const p = HOOK_PATTERNS.find(x => x.name === name);
@@ -110,7 +111,7 @@ export default function TrendsPage() {
             What&apos;s <span className="gradient-text">trending</span> now
           </h1>
           <p style={{ color: "var(--soft)", fontWeight: 300, fontSize: ".95rem" }}>
-            Don&apos;t just see a trend — decode it into content angles you can post today.
+            Don&apos;t just see a trend — research the context and turn it into ready-to-film angles for your niche.
           </p>
         </div>
 
@@ -305,17 +306,20 @@ function TrendCard({ trend, rank, niche }: { trend: Trend; rank: number; niche: 
         </Link>
       </div>
 
-      {/* Decode → angles */}
+      {/* Research → context + angles. Web-search backed: slower than a plain
+          decode (~10s), but the angles are grounded in real reporting instead
+          of guessed from the trend name alone. Pro feature — currently open
+          (isPro()=true pre-Stripe), the badge signals the intent. */}
       <button
         onClick={decode}
         disabled={state === "loading"}
         style={{ width: "100%", padding: "9px", borderRadius: "100px", border: "1px solid rgba(108,58,255,.3)", background: open ? "rgba(108,58,255,.08)" : "transparent", color: state === "loading" ? "var(--muted)" : "#C4B5FD", fontSize: ".78rem", cursor: state === "loading" ? "wait" : "pointer", fontFamily: "var(--fb)", transition: "all .2s", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
       >
         {state === "loading"
-          ? <><span style={{ width: "13px", height: "13px", borderRadius: "50%", border: "2px solid rgba(196,181,253,.3)", borderTopColor: "#C4B5FD", animation: "spin 1s linear infinite", display: "inline-block" }} />Decoding…</>
+          ? <><span style={{ width: "13px", height: "13px", borderRadius: "50%", border: "2px solid rgba(196,181,253,.3)", borderTopColor: "#C4B5FD", animation: "spin 1s linear infinite", display: "inline-block" }} />Researching the web… <span style={{ fontSize: ".68rem", color: "var(--muted)" }}>(~10s)</span></>
           : state === "done"
-            ? <>🧠 {open ? "Hide angles ▲" : "Show angles ▼"}</>
-            : <>🧠 Decode into content angles{left !== null && left !== Infinity ? ` · ${left} left` : ""}</>}
+            ? <>🔬 {open ? "Hide research ▲" : "Show research ▼"}</>
+            : <>🔬 Research &amp; angles <span style={{ fontSize: ".58rem", padding: "1px 6px", borderRadius: "100px", background: "rgba(255,184,0,.15)", color: "var(--gold)", border: "1px solid rgba(255,184,0,.3)", fontFamily: "var(--fd)", fontWeight: 700, letterSpacing: "1px" }}>PRO</span>{left !== null && left !== Infinity ? ` · ${left} left` : ""}</>}
       </button>
 
       {open && state === "locked" && (
@@ -333,15 +337,53 @@ function TrendCard({ trend, rank, niche }: { trend: Trend; rank: number; niche: 
 
       {open && state === "done" && decoded && (
         <div style={{ display: "flex", flexDirection: "column", gap: "10px", animation: "cardIn .35s ease" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", paddingBottom: "8px", borderBottom: "1px solid var(--border)", flexWrap: "wrap" }}>
-            <span style={{ fontSize: ".66rem", fontFamily: "var(--fd)", fontWeight: 700, padding: "3px 10px", borderRadius: "100px", color: decoded.kind === "news" ? "var(--hot)" : "var(--neon)", background: decoded.kind === "news" ? "rgba(255,45,107,.1)" : "rgba(0,255,178,.08)", border: `1px solid ${decoded.kind === "news" ? "rgba(255,45,107,.3)" : "rgba(0,255,178,.25)"}` }}>
-              {decoded.kind === "news" ? "🗞️ News spike — post today" : "🌱 Evergreen — build a series"}
-            </span>
-            {decoded.why && <span style={{ flex: 1, minWidth: "180px", fontSize: ".8rem", color: "var(--soft)", lineHeight: 1.5, fontStyle: "italic" }}>💡 {decoded.why}</span>}
-          </div>
+          <span style={{ alignSelf: "flex-start", fontSize: ".66rem", fontFamily: "var(--fd)", fontWeight: 700, padding: "3px 10px", borderRadius: "100px", color: decoded.kind === "news" ? "var(--hot)" : "var(--neon)", background: decoded.kind === "news" ? "rgba(255,45,107,.1)" : "rgba(0,255,178,.08)", border: `1px solid ${decoded.kind === "news" ? "rgba(255,45,107,.3)" : "rgba(0,255,178,.25)"}` }}>
+            {decoded.kind === "news" ? "🗞️ News spike — post today" : "🌱 Evergreen — build a series"}
+          </span>
+
+          {/* Research block — context grounded in web search. Render any field
+              the model returned; skip silently if a field is empty. */}
+          {(decoded.context.who || decoded.context.what || decoded.context.whyTrending || decoded.context.stakes || decoded.context.timeline) && (
+            <div style={{ background: "var(--s2)", border: "1px solid var(--border)", borderRadius: "var(--r2)", padding: ".9rem 1rem", display: "flex", flexDirection: "column", gap: "8px" }}>
+              <div style={{ fontSize: ".62rem", color: "var(--electric)", textTransform: "uppercase", letterSpacing: "1.5px", fontFamily: "var(--fd)", fontWeight: 700 }}>
+                🔍 Research
+              </div>
+              {([
+                ["👤", "Who", decoded.context.who],
+                ["📍", "What", decoded.context.what],
+                ["📈", "Why now", decoded.context.whyTrending],
+                ["⚖️", "Stakes", decoded.context.stakes],
+                ["⏱", "When", decoded.context.timeline],
+              ] as [string, string, string][]).filter(([, , v]) => v).map(([emoji, label, body]) => (
+                <div key={label} style={{ display: "flex", gap: "10px", alignItems: "baseline" }}>
+                  <span style={{ flexShrink: 0, fontSize: ".7rem", fontFamily: "var(--fd)", fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px", width: "72px" }}>
+                    {emoji} {label}
+                  </span>
+                  <span style={{ flex: 1, fontSize: ".82rem", color: "var(--soft)", lineHeight: 1.55 }}>{body}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
           {decoded.angles.map((a, i) => (
             <AngleCard key={i} a={a} i={i} niche={niche} nicheQs={nicheQs} />
           ))}
+
+          {decoded.sources.length > 0 && (
+            <div style={{ fontSize: ".7rem", color: "var(--muted)", lineHeight: 1.6, paddingTop: "6px" }}>
+              <span style={{ fontFamily: "var(--fd)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", marginRight: "6px" }}>Sources</span>
+              {decoded.sources.map((url, i) => {
+                let host = url;
+                try { host = new URL(url).hostname.replace(/^www\./, ""); } catch { /* keep raw */ }
+                return (
+                  <span key={url}>
+                    {i > 0 && <span style={{ color: "var(--border2)" }}> · </span>}
+                    <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--electric)", textDecoration: "none" }}>{host}</a>
+                  </span>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -386,6 +428,11 @@ function AngleCard({ a, i, niche, nicheQs }: { a: TrendAngle; i: number; niche: 
         Angle {i + 1}
       </div>
       <div style={{ fontSize: ".82rem", color: "var(--soft)", lineHeight: 1.5 }}>{a.angle}</div>
+      {a.reasoning && (
+        <div style={{ fontSize: ".74rem", color: "var(--muted)", lineHeight: 1.5, fontStyle: "italic" }}>
+          💭 {a.reasoning}
+        </div>
+      )}
       <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
         <p style={{ flex: 1, fontSize: ".9rem", color: "var(--text)", lineHeight: 1.5, fontWeight: 500 }}>{a.hook}</p>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>

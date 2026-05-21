@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getNiche } from "@/lib/niches";
 import { upstashConfigured, pipeline, command } from "@/lib/upstash";
 import { PATTERN_VOCAB, HOOK_PATTERNS } from "@/lib/patterns";
+import { extractJson } from "@/lib/parseJson";
 
 const PATTERN_NAMES = HOOK_PATTERNS.map(p => p.name);
 
@@ -208,15 +209,63 @@ export async function computeVelocity(
   return { velocity, history };
 }
 
-// ── Trend → Angle decoder ──
-// A raw trending term ("gabon", "now stock") is useless to a creator. This
-// turns it into: why it's trending + 3 niche-specific content angles, each
-// with a ready scored hook. This is the bridge from "trend" to "postable".
+// ── Trend → Research + Angles ──
+// A raw trending term ("meghan markle england visit", "now stock") tells a
+// creator nothing without context: who, what action, why it's spiking, what's
+// at stake. This calls Claude with the web_search tool so the angles are
+// grounded in real reporting, not invented from the name alone — then returns
+// 3-5 strategic angles each with a scored hook and the source URLs cited.
+//
+// Cost note: web_search has a per-call charge. We cache 6h in-memory + Upstash
+// so the same trend clicked by N users hits the search exactly once per bucket.
 export type TrendKind = "news" | "evergreen";
-export interface TrendAngle { angle: string; hook: string; score: number; patternsUsed?: string[] }
-export interface DecodedTrend { why: string; kind: TrendKind; angles: TrendAngle[] }
+export interface TrendAngle { angle: string; reasoning?: string; hook: string; score: number; patternsUsed?: string[] }
+export interface TrendContext {
+  who: string;
+  what: string;
+  whyTrending: string;
+  stakes: string;
+  timeline: string;
+}
+export interface DecodedTrend {
+  context: TrendContext;
+  kind: TrendKind;
+  angles: TrendAngle[];
+  sources: string[];
+}
 
 const decodeCache = new Map<string, { at: number; data: DecodedTrend }>();
+const RESEARCH_CACHE_PREFIX = "tr:research:";
+
+async function getCachedResearch(key: string): Promise<DecodedTrend | null> {
+  const mem = decodeCache.get(key);
+  if (mem && Date.now() - mem.at < TREND_CACHE_SECONDS * 1000) return mem.data;
+  if (!upstashConfigured()) return null;
+  try {
+    const raw = await command(["GET", `${RESEARCH_CACHE_PREFIX}${key}`]);
+    if (raw && typeof raw === "string") {
+      const data = JSON.parse(raw) as DecodedTrend;
+      decodeCache.set(key, { at: Date.now(), data });
+      return data;
+    }
+  } catch {
+    /* cache is an optimization — never block on it */
+  }
+  return null;
+}
+
+async function setCachedResearch(key: string, data: DecodedTrend) {
+  decodeCache.set(key, { at: Date.now(), data });
+  if (!upstashConfigured()) return;
+  try {
+    await command([
+      "SET", `${RESEARCH_CACHE_PREFIX}${key}`,
+      JSON.stringify(data), "EX", TREND_CACHE_SECONDS,
+    ]);
+  } catch {
+    /* same — best effort */
+  }
+}
 
 export async function decodeTrend(
   trend: string,
@@ -225,61 +274,107 @@ export async function decodeTrend(
   const niche = getNiche(nicheSlug);
   const audience = niche ? `a ${niche.label} short-form creator` : "a short-form video creator";
 
-  const cacheKey = `${niche?.slug || "any"}:${trend.toLowerCase()}`;
-  const cached = decodeCache.get(cacheKey);
-  if (cached && Date.now() - cached.at < TREND_CACHE_SECONDS * 1000) {
-    return cached.data;
-  }
+  const cacheKey = `${niche?.slug || "any"}:${trend.toLowerCase().slice(0, 160)}`;
+  const cached = await getCachedResearch(cacheKey);
+  if (cached) return cached;
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  // max_tokens 3000: web_search costs tokens internally (queries + result
+  // chunks Claude reads), and the final JSON is 5 angles × {angle, reasoning,
+  // hook, score, patternsUsed} + a full context block + sources array.
   const message = await client.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 700,
-    system: `You turn a raw trending topic into postable short-form content for ${audience}. Be concrete and specific — never generic filler.
+    max_tokens: 3000,
+    tools: [
+      {
+        // Anthropic-managed web search. Claude runs the queries itself and we
+        // just read the final text output — no tool_use/tool_result loop.
+        // 3 searches is enough for context + recency; cap protects spend.
+        type: "web_search_20250305",
+        name: "web_search",
+        max_uses: 3,
+      },
+    ],
+    system: `You are a content strategist researching a trending topic for ${audience}.
+
+STEP 1 — RESEARCH. Use web_search 1-3 times to find:
+- Who/what the trend refers to (the specific actors)
+- The exact action or event causing the spike (not vague — what concretely happened)
+- Why it's trending right now (the emotional/news trigger)
+- What's at stake (controversy, surprise, money, reputation, danger)
+- Timeline (today / this week / ongoing)
+
+If the trend is evergreen (no specific news event), search for the most viral angles people are talking about right now on this topic instead.
+
+STEP 2 — STRATEGIZE. Produce 3-5 distinct strategic angles a ${audience} could film today. Each angle must be a specific story, not a vague theme. Avoid filler ("here's what you need to know"). Pick angles that play on the actual stakes you found.
 
 ATTENTION PATTERNS — for each hook, tag the 1-3 patterns it uses, picking ONLY from this owned vocabulary (use the exact names, never invent):
 ${PATTERN_VOCAB}
 
-Respond ONLY with valid JSON, no markdown:
+STEP 3 — RESPOND. Output ONLY this JSON, no markdown, no preamble:
 {
-  "why": "one plain-language sentence on why this is trending right now",
+  "context": {
+    "who": "1-2 sentences on the actors involved",
+    "what": "1-2 sentences on the specific event or action",
+    "whyTrending": "1 sentence on why this is spiking right now",
+    "stakes": "1 sentence on the emotional/material stakes — what makes people care",
+    "timeline": "when this is happening (e.g. 'broke today', 'ongoing since Monday', 'evergreen')"
+  },
   "kind": "news" or "evergreen",
   "angles": [
-    { "angle": "a specific content angle for this exact creator, not a vague theme", "hook": "a ready scroll-stopping hook, max 18 words, starts with 1 relevant emoji", "score": 0-100, "patternsUsed": ["Open Loop", "Stakes"] }
-  ]
+    {
+      "angle": "the specific story this video tells",
+      "reasoning": "1 sentence on why this angle stops the scroll for this creator's audience",
+      "hook": "ready scroll-stopping hook, max 18 words, starts with 1 relevant emoji",
+      "score": 0-100,
+      "patternsUsed": ["Open Loop", "Stakes"]
+    }
+  ],
+  "sources": ["url1", "url2"]
 }
 
-kind = "news" if this is a time-sensitive spike worth posting today/this week, "evergreen" if it's a durable theme worth building a series around. Return exactly 3 distinct angles. score = honest 0-100 likelihood the hook stops the scroll in 3 seconds (don't inflate). Match the language of the trend.`,
-    messages: [{ role: "user", content: `Trend: "${trend.slice(0, 160)}"\nCreator: ${audience}` }],
+Return 3-5 angles (more if the trend is rich, fewer if thin). score = honest 0-100 likelihood the hook stops the scroll in 3 seconds — DO NOT inflate. sources = the URLs you actually searched and used. Match the language of the trend.`,
+    messages: [{ role: "user", content: `Trend: "${trend.slice(0, 160)}"\nCreator: ${audience}\n\nResearch, then strategize.` }],
   });
 
   const raw = message.content
     .filter(b => b.type === "text")
     .map(b => (b as { type: "text"; text: string }).text)
     .join("");
-  const parsed = JSON.parse(raw.replace(/```json|```/g, "").trim()) as {
-    why?: string;
+  const parsed = extractJson<{
+    context?: Partial<TrendContext>;
     kind?: string;
-    angles?: { angle?: string; hook?: string; score?: number; patternsUsed?: unknown }[];
-  };
+    angles?: { angle?: string; reasoning?: string; hook?: string; score?: number; patternsUsed?: unknown }[];
+    sources?: unknown;
+  }>(raw);
 
+  const ctx = parsed.context || {};
   const data: DecodedTrend = {
-    why: typeof parsed.why === "string" ? parsed.why.trim() : "",
+    context: {
+      who: typeof ctx.who === "string" ? ctx.who.trim() : "",
+      what: typeof ctx.what === "string" ? ctx.what.trim() : "",
+      whyTrending: typeof ctx.whyTrending === "string" ? ctx.whyTrending.trim() : "",
+      stakes: typeof ctx.stakes === "string" ? ctx.stakes.trim() : "",
+      timeline: typeof ctx.timeline === "string" ? ctx.timeline.trim() : "",
+    },
     kind: parsed.kind === "evergreen" ? "evergreen" : "news",
     angles: (parsed.angles || [])
       .filter(a => a && typeof a.angle === "string" && typeof a.hook === "string")
-      .slice(0, 3)
+      .slice(0, 5)
       .map(a => ({
         angle: a.angle!.trim(),
+        reasoning: typeof a.reasoning === "string" ? a.reasoning.trim() : "",
         hook: a.hook!.trim(),
         score: Math.max(0, Math.min(100, Math.round(Number(a.score) || 0))),
-        // Whitelist: never let an invented pattern name slip through.
         patternsUsed: Array.isArray(a.patternsUsed)
           ? a.patternsUsed.filter((x): x is string => typeof x === "string" && PATTERN_NAMES.includes(x)).slice(0, 3)
           : [],
       })),
+    sources: Array.isArray(parsed.sources)
+      ? parsed.sources.filter((x): x is string => typeof x === "string" && /^https?:\/\//i.test(x)).slice(0, 8)
+      : [],
   };
 
-  decodeCache.set(cacheKey, { at: Date.now(), data });
+  await setCachedResearch(cacheKey, data);
   return data;
 }
