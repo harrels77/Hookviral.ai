@@ -88,3 +88,35 @@ HV monogram (geometric H + V dans le gradient brand) — `components/Logo.tsx` +
 ## Action user en attente
 - Ajouter `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` dans `.env.local` (Redis gratuit sur upstash.com) pour activer le rate-limiting durable, la vélocité des trends et la capture email. Sans ça : fallback in-memory + form email = 503.
 - `YOUTUBE_API_KEY` (optionnel, Google Cloud gratuit) pour activer la source YouTube filtrable par niche dans Trends. Google fonctionne sans rien.
+
+---
+
+## Journal des changements
+Tous les changements et améliorations significatifs, du plus récent au plus ancien. Une ligne par commit. Le détail vit dans `git show <sha>`.
+
+**2026-05-21**
+- Ajout de la section "Journal des changements" dans CLAUDE.md (CHANGELOG.md séparé envisagé puis abandonné — préférence user : tout reste dans un seul doc).
+- `88171b6` — Refactor CLAUDE.md : structure durable + une seule section "État actuel". 200 → 90 lignes. Le journal repart d'ici (cette section) au cas où.
+
+**2026-05-20**
+- `cb08ee9` — **Simplification radicale (4 moves)** : Pro plumbing caché (`isPro()` = true en attendant Stripe) · Home trimée 10 → 5 sections (cut Typing demo, Examples, Features, Trends teaser, FAQ, real-run callout) · Defaults > knobs sur Generator/Analyzer/Trends (chips sous `<details>More options ▾</details>`) · `/why-it-works` réécrit en guide "Start here" plain language (4 outils × What/When/Why). Net : +208/−682 lignes.
+- `7abede7` — **Squelette + boucle + connexion** (30 fichiers, +2110/−378) : nav flat (Home·Trends·Generate·Analyze·Patterns·Pricing·History), `NextStep` partout (+ mode outside-loop), Patterns hub, **Trends v2** (decode → angles + velocity + sparklines + faceless brief + niche re-rank + geo selector), **Analyzer** (targeted rewrite par pattern manquant — 12→84, niche-aware, 3s check, deep-links /patterns#id, Before/After), **Generator** patterns visibles + deep analyze, `/why-it-works` article, `/api/subscribe` Upstash email capture, `ProLock` unifié, `HomeAnalyzeWidget` inline, prefs cross-page (`lib/prefs.ts`).
+
+**2026-05-18** — Sprint Phases 0 → 3
+- `72bd1da` — Logo HV monogram (gradient brand).
+- `1fdbf34` — Homepage : live Trends + FAQ, nav dropdown "More".
+- `af6d79d` — Couche Patterns : taxonomie possédée 9 attention patterns (moat v1).
+- `6384da8` — Décision : Stripe reporté jusqu'à Phase 4 (post-auth + rétention prouvée).
+- `b13c68b` — Roadmap : statut Phase 3 (Rewrite ✅ / Stripe bloqué).
+- `75a63d6` — Phase 3 : Rewrite engine (`/api/rewrite`, 5 styles, 3 variantes).
+- `3c04eb7` — Phase 2 complete : niche re-ranking Claude + pages SEO `/trends/[niche]`.
+- `eed1c91` — Trends : source Google RSS gratuite (zéro clé).
+- `063dcc2` — Phase 2 : niche modes, pages SEO `/hooks-for/[niche]`, section Trends double-source.
+- `15328cc` — Phase 1 : Hook Analyzer autonome, repositionnement rétention, `claude-sonnet-4-6` sur generate/script/analyze.
+- `ea3c393` — Phase 0 : rendu des hooks dans Generator, fuite de crédits corrigée, rate-limiting serveur par IP.
+
+**2026-03 → 2026-04** — Build initial (avant Phase 0)
+- Bootstrap Next.js, routes API `generate` + `script`, pages Generator / History / Pricing / Privacy / Terms, composant `Nav`, `lib/credits.ts`, premiers essais SEO TikTok.
+
+### Convention pour la suite
+Chaque commit significatif sur `main` reçoit une ligne ici, le jour du commit, en haut de la section date courante. Une ligne suffit — le détail vit dans le message de commit. Refactors cosmétiques / typo fixes peuvent être omis.
