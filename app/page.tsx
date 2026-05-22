@@ -72,7 +72,7 @@ export default function HomePage() {
             </h1>
 
             <p style={{ fontSize: "1rem", color: "var(--soft)", marginBottom: "1.75rem", lineHeight: 1.75, fontWeight: 300, maxWidth: "440px" }}>
-              Paste your opening line. The Analyzer scores retention, names the attention patterns it&apos;s missing, and rewrites it stronger — without prompting. Built for <strong style={{ color: "var(--text)", fontWeight: 500 }}>TikTok, Reels & YouTube Shorts</strong>.
+              Paste any opening line. Get the score, the missing patterns, and a stronger rewrite in seconds — no prompting required. Built for <strong style={{ color: "var(--text)", fontWeight: 500 }}>TikTok, Reels & YouTube Shorts</strong>.
             </p>
 
             {/* Why better than ChatGPT chips (from v1) */}
