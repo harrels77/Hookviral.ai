@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { rateLimit, getClientIp } from "@/lib/rateLimit";
 import { PATTERN_VOCAB, HOOK_PATTERNS } from "@/lib/patterns";
 import { getNiche } from "@/lib/niches";
+import { extractJson } from "@/lib/parseJson";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -31,10 +32,17 @@ ${PATTERN_VOCAB}
 
 Decide which of these patterns the hook already uses (patternsUsed) and which 1-3 high-leverage ones it is missing and would benefit most from (patternsMissing). Use the exact names above verbatim.
 
+Also extract the underlying SUBJECT — the 2-6 word topic this hook is *about*, in a form that would make a clean web search query (proper nouns, key event, no conversational filler). Examples:
+- Hook: "Personne ne te dira ça mais Mbappé a refusé 80M€ en 2017" → subject: "Mbappé refused 80M PSG 2017"
+- Hook: "I tried the viral 5am cold plunge for 30 days" → subject: "5am cold plunge habit"
+- Hook: "Wait until you see what Apple just did to the M5" → subject: "Apple M5 chip launch"
+If the hook is generic or has no extractable real-world topic (pure lifestyle filler, no proper noun or event), set subject to "". This subject feeds a deep web-research feature, so it must be a real searchable concept.
+
 Respond ONLY with valid JSON, no markdown:
 {
   "score": 0-100,
   "formula": "...",
+  "subject": "2-6 word searchable topic, or empty string",
   "why": "2-3 sentences: the single biggest reason it works or fails, in plain creator language",
   "curiosity": 0-10,
   "emotion": 0-10,
@@ -83,13 +91,22 @@ export async function POST(req: NextRequest) {
       .map(b => (b as { type: "text"; text: string }).text)
       .join("");
 
-    const analysis = JSON.parse(raw.replace(/```json|```/g, "").trim());
+    const analysis = extractJson<{
+      subject?: unknown;
+      patternsUsed?: unknown;
+      patternsMissing?: unknown;
+      [k: string]: unknown;
+    }>(raw);
 
     // Keep the taxonomy owned: drop any pattern name not in our corpus.
     const whitelist = (arr: unknown): string[] =>
       Array.isArray(arr) ? arr.filter((x): x is string => typeof x === "string" && PATTERN_NAMES.includes(x)) : [];
     analysis.patternsUsed = whitelist(analysis.patternsUsed);
     analysis.patternsMissing = whitelist(analysis.patternsMissing);
+    // Subject is optional. Sanitize: trim, cap length, blank if model declined.
+    analysis.subject = typeof analysis.subject === "string"
+      ? analysis.subject.trim().slice(0, 60)
+      : "";
 
     return NextResponse.json({ analysis });
   } catch (err) {

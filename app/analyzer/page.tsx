@@ -49,6 +49,10 @@ const REWRITE_STYLES = ["More emotional", "More cinematic", "More contrarian", "
 interface Analysis {
   score: number;
   formula: string;
+  // 2-6 word searchable subject the hook is about, e.g. "Mbappé refusal PSG 2017".
+  // Empty when the hook has no real-world topic to research (pure lifestyle filler).
+  // Drives the "🔬 Research the topic" CTA which deep-links to /trends/research.
+  subject?: string;
   why: string;
   curiosity: number;
   emotion: number;
@@ -58,8 +62,31 @@ interface Analysis {
   patternsMissing: string[];
 }
 
+// Mirror of lib/takes.ts shape — restated here to keep this page a clean
+// client boundary (the lib is server-only because it imports the Anthropic SDK).
+interface TakeHook { text: string; score: number; patternsUsed?: string[] }
+interface Take {
+  emoji: string;
+  name: string;
+  stance: string;
+  reasoning: string;
+  arguments: string[];
+  hooks: TakeHook[];
+}
+interface StrategicTakes {
+  isControversial: boolean;
+  takes: Take[];
+  sources: string[];
+}
+
 function scoreColor(s: number) {
   return s >= 93 ? "var(--neon)" : s >= 80 ? "var(--gold)" : "var(--hot)";
+}
+
+// SessionStorage cache for takes — same pattern as /trends/research, scoped
+// per tab so back-nav restores instantly.
+function takesSessionKey(subject: string, niche: string) {
+  return `hv:takes:${subject.toLowerCase()}::${niche}`;
 }
 
 export default function AnalyzerPage() {
@@ -87,6 +114,11 @@ function AnalyzerInner() {
   const [rwError, setRwError] = useState("");
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [pro, setPro] = useState(false);
+  // Strategic Takes mode — when the input reads like a subject (not a hook),
+  // we skip scoring and produce 2-3 defendable positions on the subject with
+  // arguments + ready hooks per position. Web-search backed via /api/strategic-takes.
+  const [takes, setTakes] = useState<StrategicTakes | null>(null);
+  const [takesSubject, setTakesSubject] = useState("");
   const prefilled = useRef(false);
 
   useEffect(() => { setPro(isPro()); }, []);
@@ -98,22 +130,72 @@ function AnalyzerInner() {
     setCopiedIdx(null);
   }
 
-  async function analyze(overrideHook?: string, overridePlatform?: string) {
-    const h = (overrideHook ?? hook).trim();
+  function resetAllResults() {
+    setResult(null);
+    setTakes(null);
+    setTakesSubject("");
+    resetRewrites();
+  }
+
+  async function analyze(opts: { forceHook?: boolean; overrideHook?: string; overridePlatform?: string } = {}) {
+    const h = (opts.overrideHook ?? hook).trim();
     if (!h) return;
+
+    // Subject mode: skip the hook scorer entirely. A search-term-shaped input
+    // gets 12/100 no matter what, which frustrated users. Branch to Strategic
+    // Takes (web-search backed positions on the subject) instead. User can
+    // override via "Score as a hook anyway" if our heuristic over-flagged.
+    if (!opts.forceHook && looksLikeTopic(h)) {
+      return fetchTakes(h);
+    }
+
     setLoading(true);
     setError("");
-    setResult(null);
-    resetRewrites();
+    resetAllResults();
     try {
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hook: h, platform: overridePlatform ?? platform, niche }),
+        body: JSON.stringify({ hook: h, platform: opts.overridePlatform ?? platform, niche }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Analysis failed");
       setResult(data.analysis);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function fetchTakes(subject: string) {
+    setLoading(true);
+    setError("");
+    resetAllResults();
+    setTakesSubject(subject);
+    // SessionStorage hit = instant restore on back-nav from another page,
+    // or repeat-clicking Analyze on the same subject in this tab.
+    try {
+      const stored = sessionStorage.getItem(takesSessionKey(subject, niche));
+      if (stored) {
+        setTakes(JSON.parse(stored) as StrategicTakes);
+        setLoading(false);
+        return;
+      }
+    } catch { /* sessionStorage disabled or quota — fall through to fetch */ }
+
+    try {
+      const res = await fetch("/api/strategic-takes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subject, niche }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not compute strategic takes.");
+      setTakes(data.takes);
+      try {
+        sessionStorage.setItem(takesSessionKey(subject, niche), JSON.stringify(data.takes));
+      } catch { /* ignore */ }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
     } finally {
@@ -165,7 +247,7 @@ function AnalyzerInner() {
     const trimmed = h.slice(0, 300);
     if (p && PLATFORMS.includes(p)) setPlatform(p);
     setHook(trimmed);
-    analyze(trimmed, plat);
+    analyze({ overrideHook: trimmed, overridePlatform: plat });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -267,8 +349,8 @@ function AnalyzerInner() {
             }}
           >
             {loading
-              ? <><div style={{ width: "18px", height: "18px", borderRadius: "50%", border: "2px solid rgba(255,255,255,.3)", borderTopColor: "#fff", animation: "spin 1s linear infinite" }} />Analyzing...</>
-              : <>✦ Analyze Retention</>}
+              ? <><div style={{ width: "18px", height: "18px", borderRadius: "50%", border: "2px solid rgba(255,255,255,.3)", borderTopColor: "#fff", animation: "spin 1s linear infinite" }} />{looksLikeTopic(hook) ? <>Researching positions… <span style={{ fontSize: ".82rem", opacity: .8 }}>(~10s)</span></> : <>Analyzing…</>}</>
+              : <>✦ Analyze {looksLikeTopic(hook) && hook.trim() ? "Subject" : "Retention"}</>}
           </button>
 
           {error && (
@@ -277,26 +359,32 @@ function AnalyzerInner() {
             </div>
           )}
 
+          {takes && (
+            <TakesView
+              takes={takes}
+              subject={takesSubject}
+              onForceScore={() => analyze({ forceHook: true, overrideHook: takesSubject })}
+            />
+          )}
+
           {result && (
             <div style={{ background: "var(--s1)", border: "1px solid rgba(108,58,255,.3)", borderRadius: "var(--r3)", padding: "1.75rem", animation: "cardIn .4s ease" }}>
-              {/* Topic detector — when input reads like a search query, route the
-                  user to the right tool instead of leaving them with a low score
-                  and no path forward. Trigger requires *both* low score AND
-                  topic-shape so we don't nag legitimate short hooks. */}
+              {/* Topic-shape fallback. Reached only when the user explicitly
+                  bypassed the auto-detector via "Score as a hook anyway" — the
+                  default path branches to Strategic Takes before this view
+                  renders. Offer the takes flow as the recovery path now that
+                  they've confirmed the score is unhelpful. */}
               {looksLikeTopic(hook) && result.score < 40 && (
                 <div style={{ marginBottom: "1.5rem", background: "rgba(255,184,0,.06)", border: "1px solid rgba(255,184,0,.3)", borderRadius: "var(--r2)", padding: "1rem 1.25rem", display: "flex", flexDirection: "column", gap: "10px" }}>
                   <div style={{ fontSize: ".82rem", color: "var(--gold)", fontFamily: "var(--fb)", fontWeight: 500, lineHeight: 1.6 }}>
-                    💡 This reads like a <strong>topic</strong>, not a hook. A search-bar entry can&apos;t stop the scroll on its own.
+                    💡 This still reads like a <strong>subject</strong>, not a hook. The low score is honest — a search-bar entry can&apos;t stop the scroll on its own.
                   </div>
-                  <div style={{ fontSize: ".82rem", color: "var(--soft)", lineHeight: 1.6 }}>
-                    Turn it into 8 scored hooks instead — that&apos;s what the Generator is for.
-                  </div>
-                  <Link
-                    href={`/generator?topic=${encodeURIComponent(hook.trim())}${niche ? `&niche=${niche}` : ""}`}
-                    style={{ alignSelf: "flex-start", padding: "8px 18px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".82rem", fontWeight: 600, textDecoration: "none", fontFamily: "var(--fb)" }}
+                  <button
+                    onClick={() => fetchTakes(hook.trim())}
+                    style={{ alignSelf: "flex-start", padding: "8px 18px", borderRadius: "100px", border: "none", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".82rem", fontWeight: 600, fontFamily: "var(--fb)", cursor: "pointer" }}
                   >
-                    ⚡ Generate 8 hooks for &ldquo;{hook.trim().slice(0, 40)}{hook.trim().length > 40 ? "…" : ""}&rdquo; →
-                  </Link>
+                    🎯 Get strategic positions on &ldquo;{hook.trim().slice(0, 40)}{hook.trim().length > 40 ? "…" : ""}&rdquo; →
+                  </button>
                 </div>
               )}
 
@@ -481,6 +569,32 @@ function AnalyzerInner() {
                 )}
               </div>
 
+              {/* Push this further with web research. When the model extracted
+                  a clean subject from the hook, link to the same /trends/research
+                  page that powers the deep dive on trend cards. Closes the loop:
+                  hook → score → "now go deeper on the topic itself". */}
+              {result.subject && result.subject.length > 0 && (
+                <div style={{ marginTop: "1.75rem", background: "var(--s2)", border: "1px solid rgba(108,58,255,.3)", borderRadius: "var(--r3)", padding: "1.1rem 1.25rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
+                    <div style={{ flex: 1, minWidth: "200px" }}>
+                      <div style={{ fontSize: ".66rem", color: "var(--electric)", textTransform: "uppercase", letterSpacing: "2px", fontFamily: "var(--fd)", fontWeight: 700, marginBottom: ".4rem" }}>
+                        🔬 Push it further
+                      </div>
+                      <div style={{ fontSize: ".88rem", color: "var(--soft)", lineHeight: 1.5 }}>
+                        Deep research on <strong style={{ color: "var(--text)" }}>&ldquo;{result.subject}&rdquo;</strong> — context, stakes, and 3-5 new angles to film.
+                      </div>
+                    </div>
+                    <Link
+                      href={`/trends/research?q=${encodeURIComponent(result.subject)}${niche ? `&niche=${encodeURIComponent(niche)}` : ""}`}
+                      style={{ padding: "10px 22px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".85rem", fontWeight: 600, textDecoration: "none", fontFamily: "var(--fb)", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: "6px" }}
+                    >
+                      Research &amp; angles
+                      <span style={{ fontSize: ".56rem", padding: "1px 6px", borderRadius: "100px", background: "rgba(255,255,255,.18)", fontFamily: "var(--fd)", fontWeight: 700, letterSpacing: "1px" }}>PRO</span>
+                    </Link>
+                  </div>
+                </div>
+              )}
+
               <div style={{ marginTop: "1.5rem", textAlign: "center" }}>
                 <Link href="/generator" style={{ fontSize: ".85rem", color: "var(--electric)", textDecoration: "none" }}>
                   Need a stronger hook? Generate 8 scored ones →
@@ -492,6 +606,185 @@ function AnalyzerInner() {
 
         <NextStep current="analyze" />
       </div>
+    </div>
+  );
+}
+
+// Strategic Takes view — rendered when the user pasted a subject (not a hook)
+// and the auto-branch sent them here instead of the scoring path. Each take
+// is a defendable position with arguments + ready scored hooks.
+function TakesView({
+  takes,
+  subject,
+  onForceScore,
+}: {
+  takes: StrategicTakes;
+  subject: string;
+  onForceScore: () => void;
+}) {
+  return (
+    <div style={{ animation: "cardIn .4s ease", display: "flex", flexDirection: "column", gap: "1rem" }}>
+      {/* Header explaining the mode switch — the user clicked Analyze but
+          got something different than a score. State that up-front. */}
+      <div style={{ background: "var(--s1)", border: "1px solid rgba(108,58,255,.3)", borderRadius: "var(--r3)", padding: "1.25rem 1.5rem" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
+          <div style={{ flex: 1, minWidth: "240px" }}>
+            <div style={{ fontSize: ".68rem", color: "var(--electric)", textTransform: "uppercase", letterSpacing: "2px", fontFamily: "var(--fd)", fontWeight: 700, marginBottom: ".5rem" }}>
+              🎯 Strategic Takes
+            </div>
+            <div style={{ fontSize: ".95rem", color: "var(--soft)", lineHeight: 1.55 }}>
+              &ldquo;<strong style={{ color: "var(--text)" }}>{subject}</strong>&rdquo; reads as a subject, not a hook. Here are{" "}
+              <strong style={{ color: "var(--text)" }}>{takes.takes.length} defendable position{takes.takes.length === 1 ? "" : "s"}</strong> you could film today, each with arguments + ready scored hooks.
+            </div>
+            {!takes.isControversial && takes.takes.length > 0 && (
+              <div style={{ marginTop: ".5rem", fontSize: ".75rem", color: "var(--muted)", fontStyle: "italic" }}>
+                This subject isn&apos;t inherently polarizing — positions below are angles, not opposing camps.
+              </div>
+            )}
+          </div>
+          <button
+            onClick={onForceScore}
+            style={{ padding: "8px 16px", borderRadius: "100px", border: "1px solid var(--border2)", background: "transparent", color: "var(--muted)", fontSize: ".74rem", fontFamily: "var(--fb)", cursor: "pointer", whiteSpace: "nowrap" }}
+            title="If this actually was a hook, score it anyway"
+          >
+            Score as a hook anyway →
+          </button>
+        </div>
+      </div>
+
+      {/* Take cards */}
+      {takes.takes.map((take, i) => (
+        <TakeCard key={i} take={take} index={i} />
+      ))}
+
+      {takes.takes.length === 0 && (
+        <div style={{ background: "var(--s1)", border: "1px dashed var(--border)", borderRadius: "var(--r2)", padding: "1.5rem", textAlign: "center", color: "var(--muted)", fontSize: ".88rem" }}>
+          No defendable positions returned. The subject may be too narrow — try a more specific or controversial framing.
+        </div>
+      )}
+
+      {/* Sources */}
+      {takes.sources.length > 0 && (
+        <div style={{ background: "var(--s1)", border: "1px solid var(--border)", borderRadius: "var(--r2)", padding: "1rem 1.25rem" }}>
+          <div style={{ fontSize: ".64rem", fontFamily: "var(--fd)", fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: ".6rem" }}>
+            Sources
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+            {takes.sources.map(url => {
+              let host = url;
+              try { host = new URL(url).hostname.replace(/^www\./, ""); } catch { /* keep raw */ }
+              return (
+                <a key={url} href={url} target="_blank" rel="noopener noreferrer"
+                  style={{ fontSize: ".74rem", padding: "4px 12px", borderRadius: "100px", border: "1px solid var(--border2)", color: "var(--electric)", textDecoration: "none", fontFamily: "var(--fb)" }}>
+                  {host} ↗
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TakeCard({ take, index }: { take: Take; index: number }) {
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  // Subtle visual differentiation: red/blue/gold border per take so the eye
+  // distinguishes opposing positions at a glance. Falls back to electric.
+  const accents = ["var(--hot)", "var(--electric)", "var(--gold)"];
+  const accent = accents[index % accents.length];
+
+  async function copyHook(text: string, i: number) {
+    await navigator.clipboard.writeText(text).catch(() => {});
+    setCopiedIdx(i);
+    setTimeout(() => setCopiedIdx(c => (c === i ? null : c)), 1500);
+  }
+
+  return (
+    <div style={{ background: "var(--s1)", border: `1px solid ${accent}33`, borderLeft: `3px solid ${accent}`, borderRadius: "var(--r3)", padding: "1.5rem 1.75rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+      {/* Take header: emoji + name + stance */}
+      <div>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: ".5rem" }}>
+          <span style={{ fontSize: "1.4rem", lineHeight: 1 }}>{take.emoji}</span>
+          <h3 style={{ fontFamily: "var(--fd)", fontSize: "1.1rem", fontWeight: 800, letterSpacing: "-.5px", color: accent }}>
+            {take.name}
+          </h3>
+        </div>
+        <p style={{ fontSize: ".95rem", color: "var(--text)", lineHeight: 1.55, fontWeight: 500 }}>
+          {take.stance}
+        </p>
+        {take.reasoning && (
+          <p style={{ marginTop: ".5rem", fontSize: ".78rem", color: "var(--muted)", lineHeight: 1.55, fontStyle: "italic" }}>
+            💭 {take.reasoning}
+          </p>
+        )}
+      </div>
+
+      {/* Arguments — the talking points to put forward */}
+      {take.arguments.length > 0 && (
+        <div>
+          <div style={{ fontSize: ".62rem", color: "var(--gold)", fontFamily: "var(--fd)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: ".5rem" }}>
+            Arguments to put forward
+          </div>
+          <ul style={{ margin: 0, paddingLeft: "1.1rem", display: "flex", flexDirection: "column", gap: ".4rem" }}>
+            {take.arguments.map((arg, i) => (
+              <li key={i} style={{ fontSize: ".85rem", color: "var(--soft)", lineHeight: 1.55 }}>
+                {arg}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Ready hooks for this take */}
+      {take.hooks.length > 0 && (
+        <div>
+          <div style={{ fontSize: ".62rem", color: "var(--neon)", fontFamily: "var(--fd)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: ".5rem" }}>
+            🪝 Ready hooks for this take
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {take.hooks.map((h, i) => (
+              <div key={i} style={{ background: "var(--s2)", border: "1px solid var(--border)", borderRadius: "var(--r2)", padding: ".85rem 1rem", display: "flex", flexDirection: "column", gap: "8px" }}>
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
+                  <p style={{ flex: 1, fontSize: ".92rem", color: "var(--text)", lineHeight: 1.5, fontWeight: 500 }}>
+                    {h.text}
+                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
+                    <span style={{ fontFamily: "var(--fd)", fontWeight: 800, fontSize: "1.1rem", color: scoreColor(h.score), letterSpacing: "-1px", lineHeight: 1 }}>
+                      {h.score}
+                    </span>
+                    <span style={{ fontSize: ".58rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>/100</span>
+                  </div>
+                </div>
+                {h.patternsUsed && h.patternsUsed.length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                    {h.patternsUsed.map(p => (
+                      <Link key={p} href={patternHref(p)} title="Learn this pattern"
+                        style={{ fontSize: ".62rem", padding: "2px 8px", borderRadius: "100px", background: "rgba(0,255,178,.06)", color: "var(--neon)", border: "1px solid rgba(0,255,178,.2)", textDecoration: "none", fontFamily: "var(--fb)" }}>
+                        {p}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button
+                    onClick={() => copyHook(h.text, i)}
+                    style={{ padding: "5px 12px", borderRadius: "100px", border: "1px solid var(--border2)", background: "transparent", color: copiedIdx === i ? "var(--neon)" : "var(--muted)", fontSize: ".7rem", cursor: "pointer", fontFamily: "var(--fb)" }}
+                  >
+                    {copiedIdx === i ? "✓ Copied" : "Copy"}
+                  </button>
+                  <Link
+                    href={`/analyzer?hook=${encodeURIComponent(h.text)}`}
+                    style={{ padding: "5px 12px", borderRadius: "100px", border: "1px solid rgba(108,58,255,.3)", color: "#C4B5FD", fontSize: ".7rem", textDecoration: "none", fontFamily: "var(--fb)" }}
+                  >
+                    ✦ Analyze
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

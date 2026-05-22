@@ -8,7 +8,7 @@ const PATTERN_NAMES = HOOK_PATTERNS.map(p => p.name);
 
 export type Velocity = "rising" | "steady" | "cooling" | "new";
 export interface Trend { title: string; sub: string; velocity?: Velocity; history?: number[] }
-export type TrendSource = "google" | "youtube";
+export type TrendSource = "google" | "youtube" | "reddit";
 
 export const TREND_CACHE_SECONDS = 21600; // 6h — protects quotas / endpoints
 
@@ -29,9 +29,12 @@ function cdata(s: string): string {
   return s.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").trim();
 }
 
-// Google Trends "Trending Now" RSS. No API key, no scraping lib. Undocumented
-// but stable public endpoint — callers degrade gracefully if it changes.
-export async function googleTrends(geo: string): Promise<Trend[]> {
+// Single-geo Google Trends "Trending Now" RSS — the only free, stable endpoint
+// Google still serves as of 2026 (dailytrends + realtime JSON APIs returned
+// 404 in live testing — decommissioned in the 2024 redesign). Returns ~10
+// items per geo, period. We expose this via googleTrends() with multi-geo
+// merge for the "GLOBAL" pseudo-geo, since one geo alone is now too thin.
+async function googleTrendsSingle(geo: string): Promise<Trend[]> {
   const res = await fetch(
     `https://trends.google.com/trending/rss?geo=${encodeURIComponent(geo)}`,
     { next: { revalidate: TREND_CACHE_SECONDS } }
@@ -51,7 +54,81 @@ export async function googleTrends(geo: string): Promise<Trend[]> {
       return { title, sub: traffic ? `${traffic} searches` : news };
     })
     .filter(t => t.title.length > 0)
-    .slice(0, 12);
+    .slice(0, 30);
+}
+
+// Geos we fan out to when user picks "GLOBAL". Six picks cover the largest
+// English/EU search markets. ~10 items each × 6 → ~30 unique after dedupe.
+const GLOBAL_GEOS = ["US", "GB", "CA", "AU", "DE", "FR"];
+
+export async function googleTrends(geo: string): Promise<Trend[]> {
+  if (geo !== "GLOBAL") return googleTrendsSingle(geo);
+
+  // Parallel fan-out. allSettled so one bad geo (rare 5xx) doesn't kill
+  // the whole merge — we just take what we got. Order: items appearing in
+  // multiple geos float to the top via first-seen position in the array
+  // (US first, then GB, CA…). This gives a rough "broad consensus" ranking.
+  const results = await Promise.allSettled(GLOBAL_GEOS.map(g => googleTrendsSingle(g)));
+  const seen = new Set<string>();
+  const out: Trend[] = [];
+  for (const r of results) {
+    if (r.status !== "fulfilled") continue;
+    for (const t of r.value) {
+      const key = t.title.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(t);
+      if (out.length >= 50) return out;
+    }
+  }
+  return out;
+}
+
+// ── Reddit /r/popular ──
+// Free JSON endpoint, no key. 30-50 trending posts across all subreddits.
+// Different signal from Google: cultural buzz / what people are talking
+// about, not what they're searching. Useful for "what's the conversation"
+// angles a creator can ride. NSFW filtered out. Geo ignored — Reddit's
+// geo_filter param doesn't actually differentiate from a server IP.
+interface RedditChild {
+  data?: {
+    title?: string;
+    subreddit?: string;
+    score?: number;
+    num_comments?: number;
+    over_18?: boolean;
+    stickied?: boolean;
+  };
+}
+
+export async function redditPopular(): Promise<Trend[]> {
+  const res = await fetch("https://www.reddit.com/r/popular.json?limit=50", {
+    next: { revalidate: TREND_CACHE_SECONDS },
+    headers: {
+      // Reddit 429s requests with no UA. Identifying ourselves is courtesy
+      // and makes our traffic distinguishable from generic scrapers.
+      "User-Agent": "HookViral/1.0 (+https://hookviral.ai) by HookViralBot",
+    },
+  });
+  if (!res.ok) throw new Error(`reddit popular ${res.status}`);
+  const data = (await res.json()) as { data?: { children?: RedditChild[] } };
+  const children = data?.data?.children || [];
+  return children
+    .map(c => {
+      const d = c?.data;
+      if (!d || d.over_18 || d.stickied) return null;
+      const title = d.title?.trim();
+      if (!title) return null;
+      const subreddit = d.subreddit?.trim() || "";
+      const score = typeof d.score === "number" ? d.score : 0;
+      // "12.3k upvotes · r/todayilearned" — gives the user context without
+      // being noisy. Format upvotes once we exceed 1k.
+      const formatted = score >= 1000 ? `${(score / 1000).toFixed(1)}k upvotes` : `${score} upvotes`;
+      const sub = subreddit ? `r/${subreddit} · ${formatted}` : formatted;
+      return { title, sub };
+    })
+    .filter((t): t is Trend => t !== null)
+    .slice(0, 50);
 }
 
 interface YouTubeItem { snippet?: { title?: string; channelTitle?: string }; }
@@ -66,7 +143,9 @@ export async function youtubeTrends(nicheSlug: string, geo = "US"): Promise<Tren
   url.searchParams.set("part", "snippet");
   url.searchParams.set("chart", "mostPopular");
   url.searchParams.set("regionCode", geo);
-  url.searchParams.set("maxResults", "20");
+  // YouTube API hard ceiling is 50. We were leaving 60% of the available
+  // signal on the table by asking for 20 — bumped to the cap.
+  url.searchParams.set("maxResults", "50");
   if (categoryId) url.searchParams.set("videoCategoryId", categoryId);
   url.searchParams.set("key", key);
 
@@ -79,7 +158,7 @@ export async function youtubeTrends(nicheSlug: string, geo = "US"): Promise<Tren
       sub: it.snippet?.channelTitle?.trim() || "",
     }))
     .filter(t => t.title.length > 0)
-    .slice(0, 20);
+    .slice(0, 50);
 }
 
 // Best-effort in-memory cache for re-ranked results. On serverless each
@@ -108,7 +187,10 @@ export async function rerankForNiche(
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     const message = await client.messages.create({
       model: "claude-sonnet-4-6",
-      max_tokens: 700,
+      // 1200 tokens (was 700): with up to ~50 input titles and the response
+      // echoing the kept ones verbatim, 700 truncated the JSON array on
+      // larger reranks and the whole filter quietly fell back to the raw feed.
+      max_tokens: 1200,
       system: `You filter trending video titles for a specific creator niche. Keep ONLY titles a "${niche.label}" creator could realistically build a short-form video around. Drop unrelated ones. Order by how easily each becomes a scroll-stopping hook. Respond ONLY with valid JSON: {"titles":["exact title kept", ...]} using the exact input titles.`,
       messages: [
         {
@@ -127,12 +209,15 @@ export async function rerankForNiche(
       .map(title => trends.find(t => t.title === title))
       .filter((t): t is Trend => Boolean(t));
     const result = ranked.length > 0 ? ranked : trends.filter(t => kept.has(t.title));
-    const final = result.length > 0 ? result.slice(0, 12) : trends.slice(0, 12);
+    // Keep everything Claude marked relevant for the niche, with a 40 ceiling
+    // so a misbehaving response doesn't flood the grid. Was 12 — too tight,
+    // killed the long tail that's often where a creator finds an angle.
+    const final = result.length > 0 ? result.slice(0, 40) : trends.slice(0, 40);
     rerankCache.set(cacheKey, { at: Date.now(), data: final });
     return final;
   } catch {
     // Re-ranking is an enhancement — fall back to the raw feed on failure.
-    return trends.slice(0, 12);
+    return trends.slice(0, 40);
   }
 }
 

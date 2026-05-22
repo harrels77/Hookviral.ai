@@ -3,10 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { NICHE_MODES } from "@/lib/niches";
-import { consumeFree, freeRemaining, isPro } from "@/lib/plan";
-import { HOOK_PATTERNS } from "@/lib/patterns";
 import { NextStep } from "@/components/NextStep";
-import { ProNote } from "@/components/ProLock";
 import { getNichePref, setNichePref, getGeoPref, setGeoPref } from "@/lib/prefs";
 
 type Velocity = "rising" | "steady" | "cooling" | "new";
@@ -29,24 +26,19 @@ function Sparkline({ ranks, color }: { ranks: number[]; color: string }) {
     </svg>
   );
 }
-interface TrendAngle { angle: string; reasoning?: string; hook: string; score: number; patternsUsed?: string[]; }
-interface TrendContext { who: string; what: string; whyTrending: string; stakes: string; timeline: string; }
-interface Decoded { context: TrendContext; kind: "news" | "evergreen"; angles: TrendAngle[]; sources: string[]; }
-
-function patternHref(name: string) {
-  const p = HOOK_PATTERNS.find(x => x.name === name);
-  return p ? `/patterns#${p.id}` : "/patterns";
-}
-type Source = "google" | "youtube";
+type Source = "google" | "youtube" | "reddit";
 
 const GEOS: [string, string][] = [
+  ["GLOBAL", "🌍 Global"],
   ["US", "🇺🇸 US"], ["FR", "🇫🇷 FR"], ["GB", "🇬🇧 UK"],
   ["CA", "🇨🇦 CA"], ["ES", "🇪🇸 ES"], ["DE", "🇩🇪 DE"],
 ];
 
-function scoreColor(s: number) {
-  return s >= 90 ? "var(--neon)" : s >= 78 ? "var(--gold)" : "var(--hot)";
-}
+const SOURCE_LABELS: Record<Source, string> = {
+  google: "Google",
+  youtube: "YouTube",
+  reddit: "Reddit",
+};
 
 const VELOCITY: Record<Velocity, { label: string; color: string; bg: string }> = {
   rising:  { label: "🔥 Rising",  color: "var(--hot)",     bg: "rgba(255,45,107,.1)" },
@@ -69,6 +61,13 @@ export default function TrendsPage() {
   // Persist any change for next visit + cross-page consistency.
   useEffect(() => { setNichePref(niche); }, [niche]);
   useEffect(() => { setGeoPref(geo); }, [geo]);
+
+  // YouTube doesn't support our GLOBAL pseudo-geo (server silently degrades
+  // to US, which is confusing if UI still shows GLOBAL selected). Reset to
+  // US when the user switches into YouTube while on GLOBAL.
+  useEffect(() => {
+    if (source === "youtube" && geo === "GLOBAL") setGeo("US");
+  }, [source, geo]);
 
   const load = useCallback(async (src: Source, slug: string, g: string) => {
     setLoading(true);
@@ -121,21 +120,25 @@ export default function TrendsPage() {
             <details style={{ flex: 1 }}>
               <summary style={{ cursor: "pointer", fontSize: ".82rem", color: "var(--muted)", fontFamily: "var(--fb)", padding: "6px 4px", listStyle: "none", userSelect: "none" }}>
                 Filters ▾ <span style={{ color: "var(--muted)", opacity: .6 }}>
-                  ({source === "google" ? "Google" : "YouTube"} · {geo} · {nicheLabel || "All niches"})
+                  ({SOURCE_LABELS[source]} · {source === "reddit" ? "global" : geo} · {nicheLabel || "All niches"})
                 </span>
               </summary>
               <div style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "10px" }}>
                 <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                   <div style={{ display: "flex", border: "1px solid var(--border)", borderRadius: "100px", overflow: "hidden", background: "var(--s1)" }}>
-                    {([["google", "🔎 Google Search"], ["youtube", "▶ YouTube"]] as [Source, string][]).map(([s, label]) => (
-                      <button key={s} onClick={() => setSource(s)} style={{ padding: "9px 22px", border: "none", background: source === s ? "var(--s3)" : "transparent", color: source === s ? "var(--text)" : "var(--muted)", fontSize: ".82rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
+                    {([
+                      ["google", "🔎 Google"],
+                      ["youtube", "▶ YouTube"],
+                      ["reddit", "🟠 Reddit"],
+                    ] as [Source, string][]).map(([s, label]) => (
+                      <button key={s} onClick={() => setSource(s)} style={{ padding: "9px 18px", border: "none", background: source === s ? "var(--s3)" : "transparent", color: source === s ? "var(--text)" : "var(--muted)", fontSize: ".82rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
                         {label}
                       </button>
                     ))}
                   </div>
-                  <div style={{ display: "flex", border: "1px solid var(--border)", borderRadius: "100px", overflow: "hidden", background: "var(--s1)" }}>
+                  <div style={{ display: "flex", border: "1px solid var(--border)", borderRadius: "100px", overflow: "hidden", background: "var(--s1)", opacity: source === "reddit" ? 0.4 : 1 }} title={source === "reddit" ? "Reddit popular is global — geo doesn't apply" : undefined}>
                     {GEOS.map(([code, label]) => (
-                      <button key={code} onClick={() => setGeo(code)} title={`Trends for ${code}`} style={{ padding: "9px 14px", border: "none", background: geo === code ? "var(--s3)" : "transparent", color: geo === code ? "var(--text)" : "var(--muted)", fontSize: ".82rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
+                      <button key={code} onClick={() => setGeo(code)} disabled={source === "reddit"} title={source === "reddit" ? "Reddit popular is global" : `Trends for ${code}`} style={{ padding: "9px 14px", border: "none", background: geo === code ? "var(--s3)" : "transparent", color: geo === code ? "var(--text)" : "var(--muted)", fontSize: ".82rem", cursor: source === "reddit" ? "not-allowed" : "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
                         {label}
                       </button>
                     ))}
@@ -172,11 +175,11 @@ export default function TrendsPage() {
                 style={{ width: "100%", padding: "12px 16px 12px 40px", borderRadius: "var(--r2)", border: "1px solid var(--border2)", background: "var(--s1)", color: "var(--text)", fontSize: ".88rem", fontFamily: "var(--fb)", outline: "none", caretColor: "var(--hot)" }}
               />
               <span style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "var(--muted)", fontSize: ".85rem", pointerEvents: "none" }}>🔎</span>
-              {query && (
-                <span style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", color: "var(--muted)", fontSize: ".72rem" }}>
-                  {filtered.length} match{filtered.length === 1 ? "" : "es"}
-                </span>
-              )}
+              <span style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", color: "var(--muted)", fontSize: ".72rem" }}>
+                {query
+                  ? `${filtered.length} match${filtered.length === 1 ? "" : "es"}`
+                  : `${trends.length} trend${trends.length === 1 ? "" : "s"}`}
+              </span>
             </div>
           )}
 
@@ -235,41 +238,13 @@ export default function TrendsPage() {
 
 function TrendCard({ trend, rank, niche }: { trend: Trend; rank: number; niche: string }) {
   const [hov, setHov] = useState(false);
-  const [open, setOpen] = useState(false);
-  const [state, setState] = useState<"idle" | "loading" | "done" | "error" | "locked">("idle");
-  const [decoded, setDecoded] = useState<Decoded | null>(null);
-  const [left, setLeft] = useState<number | null>(null);
-  const nicheQs = niche ? `&niche=${niche}` : "";
-
-  useEffect(() => { if (!isPro()) setLeft(freeRemaining("decode")); }, []);
-
-  async function decode() {
-    if (state === "done") { setOpen(o => !o); return; }
-    if (!consumeFree("decode")) { setOpen(true); setState("locked"); return; }
-    setLeft(isPro() ? null : freeRemaining("decode"));
-    setOpen(true);
-    setState("loading");
-    try {
-      const res = await fetch("/api/trend-angle", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ trend: trend.title, niche }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Could not decode.");
-      setDecoded(data.decoded);
-      setState("done");
-    } catch {
-      setState("error");
-    }
-  }
-
+  const nicheQs = niche ? `&niche=${encodeURIComponent(niche)}` : "";
 
   return (
     <div
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
-      style={{ background: "var(--s1)", border: `1px solid ${open ? "rgba(108,58,255,.4)" : hov ? "rgba(108,58,255,.4)" : "var(--border)"}`, borderRadius: "var(--r2)", padding: "1.1rem 1.3rem", display: "flex", flexDirection: "column", gap: "12px", transition: "all .25s cubic-bezier(.16,1,.3,1)", transform: hov && !open ? "translateY(-3px)" : "none", boxShadow: hov && !open ? "0 16px 40px rgba(108,58,255,.12)" : "none" }}
+      style={{ background: "var(--s1)", border: `1px solid ${hov ? "rgba(108,58,255,.4)" : "var(--border)"}`, borderRadius: "var(--r2)", padding: "1.1rem 1.3rem", display: "flex", flexDirection: "column", gap: "12px", transition: "all .25s cubic-bezier(.16,1,.3,1)", transform: hov ? "translateY(-3px)" : "none", boxShadow: hov ? "0 16px 40px rgba(108,58,255,.12)" : "none" }}
     >
       <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
         <span style={{ fontFamily: "var(--fd)", fontWeight: 800, fontSize: ".95rem", color: rank <= 3 ? "var(--hot)" : "var(--muted)", flexShrink: 0, width: "22px" }}>
@@ -291,213 +266,32 @@ function TrendCard({ trend, rank, niche }: { trend: Trend; rank: number; niche: 
         </div>
       </div>
 
+      {/* Research is the PRIMARY action now — promoted to the full-width
+          gradient CTA. Generator / Analyzer remain as quick shortcuts below.
+          Click navigates to /trends/research where the result has room to
+          breathe (the inline-in-card expansion was cramped on desktop). */}
+      <Link
+        href={`/trends/research?q=${encodeURIComponent(trend.title)}${nicheQs}`}
+        style={{ width: "100%", textAlign: "center", padding: "10px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".82rem", fontWeight: 600, textDecoration: "none", fontFamily: "var(--fb)", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+      >
+        🔬 Research &amp; angles
+        <span style={{ fontSize: ".58rem", padding: "1px 6px", borderRadius: "100px", background: "rgba(255,255,255,.15)", color: "#fff", fontFamily: "var(--fd)", fontWeight: 700, letterSpacing: "1px" }}>PRO</span>
+      </Link>
+
       <div style={{ display: "flex", gap: "8px" }}>
         <Link
           href={`/generator?topic=${encodeURIComponent(trend.title)}${nicheQs}`}
-          style={{ flex: 1, textAlign: "center", padding: "9px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".78rem", fontWeight: 600, textDecoration: "none", fontFamily: "var(--fb)" }}
+          style={{ flex: 1, textAlign: "center", padding: "8px", borderRadius: "100px", border: "1px solid var(--border2)", color: hov ? "#C4B5FD" : "var(--muted)", fontSize: ".74rem", textDecoration: "none", fontFamily: "var(--fb)", transition: "color .2s" }}
         >
-          ⚡ Get hooks
+          ⚡ Quick hooks
         </Link>
         <Link
           href={`/analyzer?hook=${encodeURIComponent(trend.title)}`}
-          style={{ padding: "9px 16px", borderRadius: "100px", border: "1px solid var(--border2)", color: hov ? "#C4B5FD" : "var(--muted)", fontSize: ".78rem", textDecoration: "none", fontFamily: "var(--fb)", transition: "color .2s", whiteSpace: "nowrap" }}
+          style={{ flex: 1, textAlign: "center", padding: "8px", borderRadius: "100px", border: "1px solid var(--border2)", color: hov ? "#C4B5FD" : "var(--muted)", fontSize: ".74rem", textDecoration: "none", fontFamily: "var(--fb)", transition: "color .2s" }}
         >
-          ✦ Analyze
+          ✦ Score it
         </Link>
       </div>
-
-      {/* Research → context + angles. Web-search backed: slower than a plain
-          decode (~10s), but the angles are grounded in real reporting instead
-          of guessed from the trend name alone. Pro feature — currently open
-          (isPro()=true pre-Stripe), the badge signals the intent. */}
-      <button
-        onClick={decode}
-        disabled={state === "loading"}
-        style={{ width: "100%", padding: "9px", borderRadius: "100px", border: "1px solid rgba(108,58,255,.3)", background: open ? "rgba(108,58,255,.08)" : "transparent", color: state === "loading" ? "var(--muted)" : "#C4B5FD", fontSize: ".78rem", cursor: state === "loading" ? "wait" : "pointer", fontFamily: "var(--fb)", transition: "all .2s", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
-      >
-        {state === "loading"
-          ? <><span style={{ width: "13px", height: "13px", borderRadius: "50%", border: "2px solid rgba(196,181,253,.3)", borderTopColor: "#C4B5FD", animation: "spin 1s linear infinite", display: "inline-block" }} />Researching the web… <span style={{ fontSize: ".68rem", color: "var(--muted)" }}>(~10s)</span></>
-          : state === "done"
-            ? <>🔬 {open ? "Hide research ▲" : "Show research ▼"}</>
-            : <>🔬 Research &amp; angles <span style={{ fontSize: ".58rem", padding: "1px 6px", borderRadius: "100px", background: "rgba(255,184,0,.15)", color: "var(--gold)", border: "1px solid rgba(255,184,0,.3)", fontFamily: "var(--fd)", fontWeight: 700, letterSpacing: "1px" }}>PRO</span>{left !== null && left !== Infinity ? ` · ${left} left` : ""}</>}
-      </button>
-
-      {open && state === "locked" && (
-        <ProNote
-          title="You've used your 3 free decodes today"
-          detail="Resets at midnight. Pro removes the daily cap."
-        />
-      )}
-
-      {open && state === "error" && (
-        <div style={{ fontSize: ".8rem", color: "var(--hot)", textAlign: "center" }}>
-          Could not decode this trend. <button onClick={decode} style={{ background: "none", border: "none", color: "var(--electric)", cursor: "pointer", textDecoration: "underline", fontFamily: "var(--fb)", fontSize: ".8rem" }}>Retry</button>
-        </div>
-      )}
-
-      {open && state === "done" && decoded && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px", animation: "cardIn .35s ease" }}>
-          <span style={{ alignSelf: "flex-start", fontSize: ".66rem", fontFamily: "var(--fd)", fontWeight: 700, padding: "3px 10px", borderRadius: "100px", color: decoded.kind === "news" ? "var(--hot)" : "var(--neon)", background: decoded.kind === "news" ? "rgba(255,45,107,.1)" : "rgba(0,255,178,.08)", border: `1px solid ${decoded.kind === "news" ? "rgba(255,45,107,.3)" : "rgba(0,255,178,.25)"}` }}>
-            {decoded.kind === "news" ? "🗞️ News spike — post today" : "🌱 Evergreen — build a series"}
-          </span>
-
-          {/* Research block — context grounded in web search. Render any field
-              the model returned; skip silently if a field is empty. */}
-          {(decoded.context.who || decoded.context.what || decoded.context.whyTrending || decoded.context.stakes || decoded.context.timeline) && (
-            <div style={{ background: "var(--s2)", border: "1px solid var(--border)", borderRadius: "var(--r2)", padding: ".9rem 1rem", display: "flex", flexDirection: "column", gap: "8px" }}>
-              <div style={{ fontSize: ".62rem", color: "var(--electric)", textTransform: "uppercase", letterSpacing: "1.5px", fontFamily: "var(--fd)", fontWeight: 700 }}>
-                🔍 Research
-              </div>
-              {([
-                ["👤", "Who", decoded.context.who],
-                ["📍", "What", decoded.context.what],
-                ["📈", "Why now", decoded.context.whyTrending],
-                ["⚖️", "Stakes", decoded.context.stakes],
-                ["⏱", "When", decoded.context.timeline],
-              ] as [string, string, string][]).filter(([, , v]) => v).map(([emoji, label, body]) => (
-                <div key={label} style={{ display: "flex", gap: "10px", alignItems: "baseline" }}>
-                  <span style={{ flexShrink: 0, fontSize: ".7rem", fontFamily: "var(--fd)", fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px", width: "72px" }}>
-                    {emoji} {label}
-                  </span>
-                  <span style={{ flex: 1, fontSize: ".82rem", color: "var(--soft)", lineHeight: 1.55 }}>{body}</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {decoded.angles.map((a, i) => (
-            <AngleCard key={i} a={a} i={i} niche={niche} nicheQs={nicheQs} />
-          ))}
-
-          {decoded.sources.length > 0 && (
-            <div style={{ fontSize: ".7rem", color: "var(--muted)", lineHeight: 1.6, paddingTop: "6px" }}>
-              <span style={{ fontFamily: "var(--fd)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", marginRight: "6px" }}>Sources</span>
-              {decoded.sources.map((url, i) => {
-                let host = url;
-                try { host = new URL(url).hostname.replace(/^www\./, ""); } catch { /* keep raw */ }
-                return (
-                  <span key={url}>
-                    {i > 0 && <span style={{ color: "var(--border2)" }}> · </span>}
-                    <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--electric)", textDecoration: "none" }}>{host}</a>
-                  </span>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-interface Brief { voiceover: string[]; broll: string[]; onScreenText: string[]; cta: string; }
-
-function AngleCard({ a, i, niche, nicheQs }: { a: TrendAngle; i: number; niche: string; nicheQs: string }) {
-  const [copied, setCopied] = useState(false);
-  const [bs, setBs] = useState<"idle" | "loading" | "done" | "error" | "locked">("idle");
-  const [brief, setBrief] = useState<Brief | null>(null);
-
-  async function copyHook() {
-    await navigator.clipboard.writeText(a.hook).catch(() => {});
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  }
-
-  async function buildBrief() {
-    if (bs === "done") { setBs("idle"); return; }
-    if (!isPro()) { setBs("locked"); return; }
-    setBs("loading");
-    try {
-      const res = await fetch("/api/trend-brief", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ angle: a.angle, hook: a.hook, niche }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed");
-      setBrief(data.brief);
-      setBs("done");
-    } catch {
-      setBs("error");
-    }
-  }
-
-  return (
-    <div style={{ background: "var(--s2)", border: "1px solid var(--border)", borderRadius: "var(--r2)", padding: "0.9rem 1rem", display: "flex", flexDirection: "column", gap: "8px" }}>
-      <div style={{ fontSize: ".72rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px", fontFamily: "var(--fd)", fontWeight: 600 }}>
-        Angle {i + 1}
-      </div>
-      <div style={{ fontSize: ".82rem", color: "var(--soft)", lineHeight: 1.5 }}>{a.angle}</div>
-      {a.reasoning && (
-        <div style={{ fontSize: ".74rem", color: "var(--muted)", lineHeight: 1.5, fontStyle: "italic" }}>
-          💭 {a.reasoning}
-        </div>
-      )}
-      <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
-        <p style={{ flex: 1, fontSize: ".9rem", color: "var(--text)", lineHeight: 1.5, fontWeight: 500 }}>{a.hook}</p>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
-          <span style={{ fontFamily: "var(--fd)", fontWeight: 800, fontSize: "1.05rem", color: scoreColor(a.score), letterSpacing: "-1px", lineHeight: 1 }}>{a.score}</span>
-          <span style={{ fontSize: ".55rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>/100</span>
-        </div>
-      </div>
-      {a.patternsUsed && a.patternsUsed.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
-          {a.patternsUsed.map(p => (
-            <Link key={p} href={patternHref(p)} title="Learn this pattern"
-              style={{ fontSize: ".62rem", padding: "2px 8px", borderRadius: "100px", background: "rgba(0,255,178,.06)", color: "var(--neon)", border: "1px solid rgba(0,255,178,.2)", textDecoration: "none", fontFamily: "var(--fb)" }}>
-              {p}
-            </Link>
-          ))}
-        </div>
-      )}
-      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-        <button
-          onClick={copyHook}
-          style={{ padding: "6px 14px", borderRadius: "100px", border: "1px solid var(--border2)", background: "transparent", color: copied ? "var(--neon)" : "var(--muted)", fontSize: ".72rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}
-        >
-          {copied ? "✓ Copied" : "Copy hook"}
-        </button>
-        <Link
-          href={`/generator?topic=${encodeURIComponent(a.angle)}${nicheQs}`}
-          style={{ padding: "6px 14px", borderRadius: "100px", border: "1px solid rgba(108,58,255,.3)", color: "#C4B5FD", fontSize: ".72rem", textDecoration: "none", fontFamily: "var(--fb)" }}
-        >
-          ⚡ More hooks
-        </Link>
-        <button
-          onClick={buildBrief}
-          disabled={bs === "loading"}
-          style={{ padding: "6px 14px", borderRadius: "100px", border: "1px solid rgba(255,184,0,.3)", background: bs === "done" ? "rgba(255,184,0,.08)" : "transparent", color: "var(--gold)", fontSize: ".72rem", cursor: bs === "loading" ? "wait" : "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}
-        >
-          {bs === "loading" ? "Building…" : bs === "done" ? "📋 Hide brief" : "📋 Faceless brief"}
-        </button>
-      </div>
-
-      {bs === "locked" && (
-        <ProNote
-          title="Faceless production brief"
-          detail="Voiceover beats, B-roll suggestions, on-screen text, ready to shoot. Pro feature."
-        />
-      )}
-      {bs === "error" && (
-        <div style={{ fontSize: ".78rem", color: "var(--hot)" }}>
-          Couldn&apos;t build the brief. <button onClick={buildBrief} style={{ background: "none", border: "none", color: "var(--electric)", cursor: "pointer", textDecoration: "underline", fontFamily: "var(--fb)", fontSize: ".78rem" }}>Retry</button>
-        </div>
-      )}
-      {bs === "done" && brief && (
-        <div style={{ background: "var(--s1)", border: "1px solid var(--border)", borderRadius: "var(--r2)", padding: "1rem", display: "flex", flexDirection: "column", gap: "10px", animation: "cardIn .3s ease" }}>
-          {brief.voiceover.map((vo, k) => (
-            <div key={k} style={{ display: "flex", flexDirection: "column", gap: "4px", paddingBottom: "8px", borderBottom: k < brief.voiceover.length - 1 ? "1px solid var(--border)" : "none" }}>
-              <div style={{ fontSize: ".62rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px", fontFamily: "var(--fd)", fontWeight: 700 }}>Beat {k + 1}</div>
-              <div style={{ fontSize: ".84rem", color: "var(--text)", lineHeight: 1.5 }}>🎙️ {vo}</div>
-              {brief.broll[k] && <div style={{ fontSize: ".76rem", color: "var(--soft)", lineHeight: 1.5 }}>🎬 {brief.broll[k]}</div>}
-              {brief.onScreenText[k] && <div style={{ fontSize: ".76rem", color: "#C4B5FD", lineHeight: 1.5 }}>🔤 {brief.onScreenText[k]}</div>}
-            </div>
-          ))}
-          {brief.cta && (
-            <div style={{ fontSize: ".84rem", color: "var(--neon)", fontWeight: 500 }}>📣 {brief.cta}</div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

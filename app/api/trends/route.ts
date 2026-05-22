@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit, getClientIp } from "@/lib/rateLimit";
-import { googleTrends, youtubeTrends, rerankForNiche, computeVelocity } from "@/lib/trends";
+import { googleTrends, youtubeTrends, redditPopular, rerankForNiche, computeVelocity, type TrendSource } from "@/lib/trends";
 
 export async function GET(req: NextRequest) {
   const rl = await rateLimit(`trends:${getClientIp(req)}`, 60, 60 * 60 * 1000);
@@ -11,26 +11,41 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const source = req.nextUrl.searchParams.get("source") === "youtube" ? "youtube" : "google";
+  const sourceParam = req.nextUrl.searchParams.get("source");
+  const source: TrendSource =
+    sourceParam === "youtube" ? "youtube" :
+    sourceParam === "reddit" ? "reddit" : "google";
 
-  const geo = (req.nextUrl.searchParams.get("geo") || "US").toUpperCase().slice(0, 2);
+  // "GLOBAL" is a pseudo-geo that fans Google fetches out across markets.
+  // Real ISO codes stay 2 chars; we let GLOBAL pass through verbatim.
+  const rawGeo = (req.nextUrl.searchParams.get("geo") || "US").toUpperCase();
+  const geo = rawGeo === "GLOBAL" ? "GLOBAL" : rawGeo.slice(0, 2);
+  const nicheSlug = req.nextUrl.searchParams.get("niche") || "";
 
   try {
     if (source === "youtube") {
       if (!process.env.YOUTUBE_API_KEY) {
         return NextResponse.json({ configured: false, source, trends: [] });
       }
-      const nicheSlug = req.nextUrl.searchParams.get("niche") || "";
-      let trends = await youtubeTrends(nicheSlug, geo);
+      // YouTube doesn't support GLOBAL — degrade to US silently.
+      const ytGeo = geo === "GLOBAL" ? "US" : geo;
+      let trends = await youtubeTrends(nicheSlug, ytGeo);
       if (nicheSlug) trends = await rerankForNiche(nicheSlug, trends);
-      return NextResponse.json({ configured: true, source, trends: trends.slice(0, 12) });
+      return NextResponse.json({ configured: true, source, trends });
     }
-    const nicheSlug = req.nextUrl.searchParams.get("niche") || "";
+
+    if (source === "reddit") {
+      // Reddit's geo_filter is a no-op from a server IP — we don't pass geo.
+      const raw = await redditPopular();
+      const { velocity, history } = await computeVelocity("reddit", "GLOBAL", raw);
+      let trends = nicheSlug ? await rerankForNiche(nicheSlug, raw, "reddit") : raw;
+      trends = trends.map(t => ({ ...t, velocity: velocity.get(t.title), history: history.get(t.title) }));
+      return NextResponse.json({ configured: true, source, trends });
+    }
+
+    // Google. GLOBAL fans out across 6 geos and dedupes; specific geo is direct.
     const raw = await googleTrends(geo);
-    // Velocity + rank history measured on the true search order, before niche filter.
     const { velocity, history } = await computeVelocity("google", geo, raw);
-    // Google trends aren't category-filterable — let Claude keep only the ones
-    // a creator in this niche could realistically build a video around.
     let trends = nicheSlug ? await rerankForNiche(nicheSlug, raw, "google") : raw;
     trends = trends.map(t => ({ ...t, velocity: velocity.get(t.title), history: history.get(t.title) }));
     return NextResponse.json({ configured: true, source, trends });
