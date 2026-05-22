@@ -89,12 +89,25 @@ export default function HomePage() {
               ))}
             </div>
 
-            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginBottom: "1rem" }}>
-              <HLink href="/analyzer" primary>Analyze My Hook — Free →</HLink>
-              <HLink href="/generator">Generate 8 Hooks</HLink>
+            {/* Two paths under the hero — the product serves two personas and
+                each one has a different right entry point. Labeling them makes
+                the choice explicit instead of betting on which CTA they click. */}
+            <div style={{ display: "flex", gap: "18px", flexWrap: "wrap", marginBottom: "1rem" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <span style={{ fontSize: ".62rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1.5px", fontFamily: "var(--fd)", fontWeight: 700 }}>
+                  ✦ I have a hook
+                </span>
+                <HLink href="/analyzer" primary>Score it — Free →</HLink>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <span style={{ fontSize: ".62rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1.5px", fontFamily: "var(--fd)", fontWeight: 700 }}>
+                  🔬 I have a niche, no idea
+                </span>
+                <HLink href="/trends">Discover trends →</HLink>
+              </div>
             </div>
             <p style={{ fontSize: ".75rem", color: "var(--muted)", marginBottom: "2.5rem" }}>
-              10 free hooks/day · No credit card · Resets at midnight
+              No signup · 10 free generations/day · Resets at midnight
             </p>
 
             {/* Mini stats row (from v2) */}
