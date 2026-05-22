@@ -66,13 +66,13 @@ export default function HomePage() {
             </div>
 
             <h1 style={{ fontFamily: "var(--fd)", fontSize: "clamp(2.5rem,4vw,4.2rem)", fontWeight: 800, lineHeight: .95, letterSpacing: "-3px", marginBottom: "1.25rem" }}>
-              Creators lose viewers in the<br />
-              <span className="gradient-text">first 3 seconds.</span><br />
-              Fix yours.
+              Score your hook in<br />
+              <span className="gradient-text">5 seconds.</span><br />
+              Fix it in one click.
             </h1>
 
-            <p style={{ fontSize: "1rem", color: "var(--soft)", marginBottom: "1.75rem", lineHeight: 1.75, fontWeight: 300, maxWidth: "420px" }}>
-              Analyze any hook for retention, then generate 8 scored ones built to stop the scroll. Specialized for <strong style={{ color: "var(--text)", fontWeight: 500 }}>TikTok, Reels & YouTube Shorts</strong>.
+            <p style={{ fontSize: "1rem", color: "var(--soft)", marginBottom: "1.75rem", lineHeight: 1.75, fontWeight: 300, maxWidth: "440px" }}>
+              Paste your opening line. The Analyzer scores retention, names the attention patterns it&apos;s missing, and rewrites it stronger — without prompting. Built for <strong style={{ color: "var(--text)", fontWeight: 500 }}>TikTok, Reels & YouTube Shorts</strong>.
             </p>
 
             {/* Why better than ChatGPT chips (from v1) */}

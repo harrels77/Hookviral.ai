@@ -11,12 +11,15 @@ export function Nav() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { theme, toggle } = useTheme();
 
-  // Flat nav — Home first, then the loop, then Pricing + History. No "More".
+  // Flat nav — Home first, then the loop. Analyze sits before Generate because
+  // the natural creator workflow starts with "I have a hook, is it any good?"
+  // not "I have nothing, generate something". Analyze is also our flagship
+  // (scoring + patterns + Strategic Takes — the catch we have over ChatGPT).
   const primary = [
     { href: "/", label: "Home" },
     { href: "/trends", label: "Trends" },
-    { href: "/generator", label: "Generate" },
     { href: "/analyzer", label: "Analyze" },
+    { href: "/generator", label: "Generate" },
     { href: "/patterns", label: "Patterns" },
     { href: "/pricing", label: "Pricing" },
     { href: "/history", label: "History" },
@@ -125,8 +128,8 @@ export function Nav() {
           );
         })}
         <div style={{ marginTop: "auto", paddingTop: "1.5rem", borderTop: "1px solid var(--border)" }}>
-          <Link href="/generator" style={{ display: "block", textAlign: "center", padding: "14px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".95rem", fontWeight: 500, textDecoration: "none", fontFamily: "var(--fb)" }}>
-            Start Free →
+          <Link href="/analyzer" style={{ display: "block", textAlign: "center", padding: "14px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".95rem", fontWeight: 500, textDecoration: "none", fontFamily: "var(--fb)" }}>
+            Score my hook →
           </Link>
         </div>
       </div>
@@ -160,8 +163,8 @@ export function Nav() {
             {theme === "dark" ? "☀" : "🌙"}
           </button>
 
-          <Link href="/generator" style={{ marginLeft: "8px", padding: "8px 20px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".85rem", fontWeight: 500, textDecoration: "none", fontFamily: "var(--fb)", boxShadow: "0 4px 16px rgba(255,45,107,.25)" }}>
-            Start Free →
+          <Link href="/analyzer" style={{ marginLeft: "8px", padding: "8px 20px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".85rem", fontWeight: 500, textDecoration: "none", fontFamily: "var(--fb)", boxShadow: "0 4px 16px rgba(255,45,107,.25)" }}>
+            Score my hook →
           </Link>
         </div>
 
