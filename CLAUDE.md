@@ -96,6 +96,7 @@ HV monogram (geometric H + V dans le gradient brand) — `components/Logo.tsx` +
 Tous les changements et améliorations significatifs, du plus récent au plus ancien. Une ligne par commit. Le détail vit dans `git show <sha>`.
 
 **2026-05-22**
+- `346902d` — **Strategic Takes + Trends Research page + Reddit/Global sources** (gros commit, 5 moves connectés autour du flow trend → research → hook) :
 - **🎯 Strategic Takes dans l'Analyzer** : le différenciant catégoriel le plus difficile à copier. Quand l'utilisateur paste un **sujet** (`looksLikeTopic` retourne true), au lieu du score 12/100 inutile l'Analyzer branche vers `/api/strategic-takes` : Claude + `web_search_20250305` (max 3 searches, max_tokens 3000) produit 2-3 **positions opposées défendables** (emoji + name "The takedown" / "The defense" / "The data view" + stance + reasoning + 3-5 arguments concrets avec stats/noms/citations + 2-3 hooks scorés chacun avec patterns chips) + sources URLs. Reasoning par take : pourquoi cette position win attention. Border-left colorée par take (rouge/électrique/or) pour distinguer les camps visuellement. Override "Score as a hook anyway →" pour les false positives du detector (ex: "this changes everything" passe à travers la garde). Loading state distinct ("Researching positions… ~10s"). SessionStorage `hv:takes:<subject>::<niche>` pour back-nav instantané + Upstash 6h pour partage cross-users. C'est la feature qui repositionne le produit : pas "AI hook generator" mais "tool qui te dit comment penser un sujet pour qu'il performe".
 
 **2026-05-21**
