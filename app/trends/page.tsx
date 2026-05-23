@@ -49,18 +49,33 @@ const VELOCITY: Record<Velocity, { label: string; color: string; bg: string }> =
 
 export default function TrendsPage() {
   const [source, setSource] = useState<Source>("google");
-  // Hydrate niche + geo from cross-page prefs so the product remembers you.
-  const [niche, setNiche] = useState(() => typeof window !== "undefined" ? getNichePref() : "");
+  // SSR-safe initial state: defaults that match the server render. We can't
+  // read localStorage in the useState initializer (window is undefined at
+  // SSR, any conditional read makes server + client diverge and React 19
+  // discards the hydrated tree on mismatch). Hydrate prefs in a mount-once
+  // effect below, gated by `hydrated` so we don't (a) clobber saved prefs
+  // by writing the defaults back on first render, or (b) fetch trends twice
+  // (once with defaults, once with the user's real geo/niche).
+  const [niche, setNiche] = useState("");
   const [trends, setTrends] = useState<Trend[]>([]);
   const [loading, setLoading] = useState(true);
   const [configured, setConfigured] = useState(true);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
-  const [geo, setGeo] = useState(() => typeof window !== "undefined" ? (getGeoPref() || "US") : "US");
+  const [geo, setGeo] = useState("US");
+  const [hydrated, setHydrated] = useState(false);
 
-  // Persist any change for next visit + cross-page consistency.
-  useEffect(() => { setNichePref(niche); }, [niche]);
-  useEffect(() => { setGeoPref(geo); }, [geo]);
+  useEffect(() => {
+    setNiche(getNichePref());
+    setGeo(getGeoPref() || "US");
+    setHydrated(true);
+  }, []);
+
+  // Persist any change for next visit + cross-page consistency. Guarded by
+  // `hydrated` — without it, the very first render would write the SSR
+  // defaults ("US", "") to localStorage and overwrite the user's saved prefs.
+  useEffect(() => { if (hydrated) setNichePref(niche); }, [hydrated, niche]);
+  useEffect(() => { if (hydrated) setGeoPref(geo); }, [hydrated, geo]);
 
   // YouTube doesn't support our GLOBAL pseudo-geo (server silently degrades
   // to US, which is confusing if UI still shows GLOBAL selected). Reset to
@@ -88,7 +103,10 @@ export default function TrendsPage() {
     }
   }, []);
 
-  useEffect(() => { load(source, niche, geo); }, [source, niche, geo, load]);
+  // Wait until prefs are hydrated before the first fetch — otherwise we'd
+  // fire one request for the default (US / no-niche) and another the next
+  // tick for the user's actual prefs, doubling the rate-limit hit.
+  useEffect(() => { if (hydrated) load(source, niche, geo); }, [hydrated, source, niche, geo, load]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();

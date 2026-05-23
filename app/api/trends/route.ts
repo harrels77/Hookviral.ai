@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
       // YouTube doesn't support GLOBAL — degrade to US silently.
       const ytGeo = geo === "GLOBAL" ? "US" : geo;
       let trends = await youtubeTrends(nicheSlug, ytGeo);
-      if (nicheSlug) trends = await rerankForNiche(nicheSlug, trends);
+      if (nicheSlug) trends = await rerankForNiche(nicheSlug, trends, "youtube", ytGeo);
       return NextResponse.json({ configured: true, source, trends });
     }
 
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
       // Reddit's geo_filter is a no-op from a server IP — we don't pass geo.
       const raw = await redditPopular();
       const { velocity, history } = await computeVelocity("reddit", "GLOBAL", raw);
-      let trends = nicheSlug ? await rerankForNiche(nicheSlug, raw, "reddit") : raw;
+      let trends = nicheSlug ? await rerankForNiche(nicheSlug, raw, "reddit", "GLOBAL") : raw;
       trends = trends.map(t => ({ ...t, velocity: velocity.get(t.title), history: history.get(t.title) }));
       return NextResponse.json({ configured: true, source, trends });
     }
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
     // Google. GLOBAL fans out across 6 geos and dedupes; specific geo is direct.
     const raw = await googleTrends(geo);
     const { velocity, history } = await computeVelocity("google", geo, raw);
-    let trends = nicheSlug ? await rerankForNiche(nicheSlug, raw, "google") : raw;
+    let trends = nicheSlug ? await rerankForNiche(nicheSlug, raw, "google", geo) : raw;
     trends = trends.map(t => ({ ...t, velocity: velocity.get(t.title), history: history.get(t.title) }));
     return NextResponse.json({ configured: true, source, trends });
   } catch (err) {

@@ -172,12 +172,17 @@ const rerankCache = new Map<string, { at: number; data: Trend[] }>();
 export async function rerankForNiche(
   nicheSlug: string,
   trends: Trend[],
-  source: TrendSource = "youtube"
+  source: TrendSource = "youtube",
+  geo: string = "US"
 ): Promise<Trend[]> {
   const niche = getNiche(nicheSlug);
   if (!niche || trends.length === 0) return trends;
 
-  const cacheKey = `${source}:${niche.slug}`;
+  // Cache key MUST include geo. Without it, changing the geo filter while a
+  // niche is selected silently returned the first geo's rerank — i.e. "no
+  // matter which country I pick, I see the same trends." Reddit always
+  // passes "GLOBAL" since its endpoint is geo-less.
+  const cacheKey = `${source}:${niche.slug}:${geo}`;
   const cached = rerankCache.get(cacheKey);
   if (cached && Date.now() - cached.at < TREND_CACHE_SECONDS * 1000) {
     return cached.data;
@@ -203,7 +208,10 @@ export async function rerankForNiche(
       .filter(b => b.type === "text")
       .map(b => (b as { type: "text"; text: string }).text)
       .join("");
-    const parsed = JSON.parse(raw.replace(/```json|```/g, "").trim()) as { titles?: string[] };
+    // extractJson is the resilient parser (handles ```json fences, preamble,
+    // escapes). The previous JSON.parse(raw.replace(...)) chain threw on any
+    // wrapping prose and the whole rerank silently fell back to the raw feed.
+    const parsed = extractJson<{ titles?: string[] }>(raw);
     const kept = new Set(parsed.titles || []);
     const ranked = (parsed.titles || [])
       .map(title => trends.find(t => t.title === title))
