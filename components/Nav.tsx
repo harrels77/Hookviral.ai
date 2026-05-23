@@ -137,9 +137,11 @@ export function Nav() {
       {/* Main nav */}
       <nav style={{ position: "fixed", top: 0, left: 0, right: 0, height: "var(--nav-h)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 1.5rem", background: "var(--nav-bg)", backdropFilter: "blur(24px) saturate(180%)", borderBottom: "1px solid var(--border)" }}>
 
-        <Link href="/" style={{ fontFamily: "var(--fd)", fontWeight: 800, fontSize: "1.2rem", letterSpacing: "-1px", display: "flex", alignItems: "center", gap: "8px", textDecoration: "none", color: "var(--text)" }}>
+        <Link href="/" style={{ display: "flex", alignItems: "baseline", gap: "2px", textDecoration: "none" }}>
           <Logo size={28} />
-          HookViral<span style={{ color: "var(--hot)" }}>.</span>ai
+          <span style={{ fontFamily: "var(--fd)", fontWeight: 600, fontSize: ".82rem", color: "var(--muted)", letterSpacing: "0px" }}>
+            <span style={{ color: "var(--hot)" }}>.</span>ai
+          </span>
         </Link>
 
         {/* Desktop */}
