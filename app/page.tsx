@@ -374,7 +374,12 @@ function PersonaCard({
         padding: "1.1rem 1.2rem",
         borderRadius: "var(--r3)",
         background: hov ? "var(--s2)" : "var(--s1)",
-        border: `1px solid ${hov ? accent : "var(--border)"}`,
+        // Individual border properties — mixing `border` shorthand with
+        // `borderLeft` on the same element makes React's reconciler reset
+        // borderLeft to default during re-render. Split keeps them stable.
+        borderTop: `1px solid ${hov ? accent : "var(--border)"}`,
+        borderRight: `1px solid ${hov ? accent : "var(--border)"}`,
+        borderBottom: `1px solid ${hov ? accent : "var(--border)"}`,
         borderLeft: `3px solid ${accent}`,
         textDecoration: "none",
         transition: "all .25s cubic-bezier(.16,1,.3,1)",
