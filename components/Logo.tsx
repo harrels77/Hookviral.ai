@@ -1,25 +1,36 @@
-// Bold geometric letterforms: H (electric purple) + V (hot pink).
-// No badge/container — pure shapes, inspired by editorial logo mark style.
+// Wordmark logo — "Hook" in brand gradient, "Viral" in default text color.
+// Pure typography, no symbol. Same pattern as Linear / Vercel / Notion's
+// startup-era wordmarks: indemodable, scales perfectly, reads at any size.
+// Replaces the geometric HV monogram that read amateur ("vraiment laid").
 export function Logo({ size = 28 }: { size?: number }) {
-  const w = Math.round(size * 1.65); // natural 66:40 aspect ratio
   return (
-    <svg
-      width={w}
-      height={size}
-      viewBox="0 0 66 40"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
+    <span
       role="img"
       aria-label="HookViral"
-      style={{ display: "block", flexShrink: 0 }}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        fontFamily: "var(--fd)",
+        fontWeight: 800,
+        fontSize: `${Math.round(size * 0.78)}px`,
+        letterSpacing: "-1.2px",
+        lineHeight: 1,
+        whiteSpace: "nowrap",
+        flexShrink: 0,
+      }}
     >
-      {/* H — electric purple */}
-      <rect x="0"  y="0"  width="7"  height="40" fill="#6C3AFF" />
-      <rect x="23" y="0"  width="7"  height="40" fill="#6C3AFF" />
-      <rect x="0"  y="16" width="30" height="8"  fill="#6C3AFF" />
-      {/* V — hot pink, two converging bars meeting at bottom center */}
-      <polygon points="36,0 43,0 51,40 44,40" fill="#FF2D6B" />
-      <polygon points="59,0 66,0 58,40 51,40" fill="#FF2D6B" />
-    </svg>
+      <span
+        style={{
+          background: "linear-gradient(135deg, var(--hot), var(--electric))",
+          WebkitBackgroundClip: "text",
+          backgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+          color: "transparent",
+        }}
+      >
+        Hook
+      </span>
+      <span style={{ color: "var(--text)" }}>Viral</span>
+    </span>
   );
 }
