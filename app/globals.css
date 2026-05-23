@@ -8,6 +8,10 @@
 }
 
 /* ── DARK MODE (default) ── */
+/* Note: small-text colors (--muted, --electric) are tuned for WCAG AA 4.5:1
+   on the dark backgrounds (--bg #060609, --s1 #0c0c14). Lighthouse caught the
+   earlier values (--muted #46465A = 2.20, --electric #6C3AFF = 3.41) as
+   failing. Brightened to pass. --soft #8A88A8 already passes (~5.45). */
 :root,
 [data-theme="dark"] {
   --bg:       #060609;
@@ -19,13 +23,13 @@
   --nav-bg:   rgba(6,6,9,.9);
 
   --hot:      #FF2D6B;
-  --electric: #6C3AFF;
+  --electric: #8B6BFF;
   --neon:     #00FFB2;
   --gold:     #FFB800;
 
   --text:     #F0EEF8;
   --soft:     #8A88A8;
-  --muted:    #46465A;
+  --muted:    #7C7B98;
 
   --fd: 'Syne', sans-serif;
   --fb: 'DM Sans', sans-serif;
