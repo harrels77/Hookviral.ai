@@ -18,3 +18,8 @@ export const setNichePref = (slug: string) => write("hv_niche", slug);
 
 export const getGeoPref = () => read("hv_geo");
 export const setGeoPref = (code: string) => write("hv_geo", code);
+
+// Sources are persisted as a CSV ("google,youtube,reddit"). Empty value =
+// fall back to defaults at the call site; we never write the empty string.
+export const getSourcesPref = () => read("hv_sources");
+export const setSourcesPref = (csv: string) => write("hv_sources", csv);

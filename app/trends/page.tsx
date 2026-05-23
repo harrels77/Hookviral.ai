@@ -4,10 +4,11 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { NICHE_MODES } from "@/lib/niches";
 import { NextStep } from "@/components/NextStep";
-import { getNichePref, setNichePref, getGeoPref, setGeoPref } from "@/lib/prefs";
+import { getNichePref, setNichePref, getGeoPref, setGeoPref, getSourcesPref, setSourcesPref } from "@/lib/prefs";
 
 type Velocity = "rising" | "steady" | "cooling" | "new";
-interface Trend { title: string; sub: string; velocity?: Velocity; history?: number[]; }
+type Source = "google" | "youtube" | "reddit";
+interface Trend { title: string; sub: string; source?: Source; velocity?: Velocity; history?: number[]; }
 
 // Tiny rank-history sparkline. Input is rank (1 = top), so we invert: a term
 // climbing toward #1 trends upward. Honest — only rendered with ≥3 real points.
@@ -26,7 +27,6 @@ function Sparkline({ ranks, color }: { ranks: number[]; color: string }) {
     </svg>
   );
 }
-type Source = "google" | "youtube" | "reddit";
 
 const GEOS: [string, string][] = [
   ["GLOBAL", "🌍 Global"],
@@ -40,6 +40,27 @@ const SOURCE_LABELS: Record<Source, string> = {
   reddit: "Reddit",
 };
 
+const SOURCE_BADGES: Record<Source, { emoji: string; label: string; color: string }> = {
+  google:  { emoji: "🔎", label: "Google",  color: "#5BA8FF" },
+  youtube: { emoji: "▶",  label: "YouTube", color: "#FF4D5A" },
+  reddit:  { emoji: "🟠", label: "Reddit",  color: "#FF8B4A" },
+};
+
+const ALL_SOURCES: Source[] = ["google", "youtube", "reddit"];
+
+// Canonical order so cache tags + persistence don't depend on click order.
+function sortSources(list: Source[]): Source[] {
+  const set = new Set(list);
+  return ALL_SOURCES.filter(s => set.has(s));
+}
+
+function parseSourcesCsv(csv: string): Source[] {
+  const valid = csv.split(",").map(s => s.trim()).filter(
+    (s): s is Source => s === "google" || s === "youtube" || s === "reddit"
+  );
+  return sortSources(valid);
+}
+
 const VELOCITY: Record<Velocity, { label: string; color: string; bg: string }> = {
   rising:  { label: "🔥 Rising",  color: "var(--hot)",     bg: "rgba(255,45,107,.1)" },
   new:     { label: "🆕 New",     color: "var(--electric)", bg: "rgba(108,58,255,.1)" },
@@ -48,7 +69,6 @@ const VELOCITY: Record<Velocity, { label: string; color: string; bg: string }> =
 };
 
 export default function TrendsPage() {
-  const [source, setSource] = useState<Source>("google");
   // SSR-safe initial state: defaults that match the server render. We can't
   // read localStorage in the useState initializer (window is undefined at
   // SSR, any conditional read makes server + client diverge and React 19
@@ -56,16 +76,23 @@ export default function TrendsPage() {
   // effect below, gated by `hydrated` so we don't (a) clobber saved prefs
   // by writing the defaults back on first render, or (b) fetch trends twice
   // (once with defaults, once with the user's real geo/niche).
+  //
+  // Sources is an array (canonical order) rather than a Set because (a)
+  // Set mutation doesn't trigger React re-renders and (b) we serialize it
+  // as CSV for the API + localStorage anyway.
+  const [sources, setSources] = useState<Source[]>(ALL_SOURCES);
   const [niche, setNiche] = useState("");
   const [trends, setTrends] = useState<Trend[]>([]);
   const [loading, setLoading] = useState(true);
-  const [configured, setConfigured] = useState(true);
+  const [unconfigured, setUnconfigured] = useState<Source[]>([]);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [geo, setGeo] = useState("US");
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    const savedSources = parseSourcesCsv(getSourcesPref());
+    if (savedSources.length > 0) setSources(savedSources);
     setNiche(getNichePref());
     setGeo(getGeoPref() || "US");
     setHydrated(true);
@@ -73,26 +100,35 @@ export default function TrendsPage() {
 
   // Persist any change for next visit + cross-page consistency. Guarded by
   // `hydrated` — without it, the very first render would write the SSR
-  // defaults ("US", "") to localStorage and overwrite the user's saved prefs.
+  // defaults to localStorage and overwrite the user's saved prefs.
   useEffect(() => { if (hydrated) setNichePref(niche); }, [hydrated, niche]);
   useEffect(() => { if (hydrated) setGeoPref(geo); }, [hydrated, geo]);
+  useEffect(() => { if (hydrated) setSourcesPref(sources.join(",")); }, [hydrated, sources]);
 
-  // YouTube doesn't support our GLOBAL pseudo-geo (server silently degrades
-  // to US, which is confusing if UI still shows GLOBAL selected). Reset to
-  // US when the user switches into YouTube while on GLOBAL.
-  useEffect(() => {
-    if (source === "youtube" && geo === "GLOBAL") setGeo("US");
-  }, [source, geo]);
+  // Toggle a source on/off. Never let the user deselect the last one —
+  // an empty selection makes the page pointless and the API falls back to
+  // "google" anyway, which is confusing if the UI still shows nothing
+  // selected. Re-clicking the last active source is a no-op.
+  const toggleSource = useCallback((s: Source) => {
+    setSources(prev => {
+      if (prev.includes(s)) {
+        if (prev.length === 1) return prev;
+        return sortSources(prev.filter(x => x !== s));
+      }
+      return sortSources([...prev, s]);
+    });
+  }, []);
 
-  const load = useCallback(async (src: Source, slug: string, g: string) => {
+  const load = useCallback(async (srcs: Source[], slug: string, g: string) => {
+    if (srcs.length === 0) return;
     setLoading(true);
     setError("");
     try {
-      const qs = new URLSearchParams({ source: src, geo: g });
+      const qs = new URLSearchParams({ sources: srcs.join(","), geo: g });
       if (slug) qs.set("niche", slug);
       const res = await fetch(`/api/trends?${qs.toString()}`);
       const data = await res.json();
-      setConfigured(data.configured !== false);
+      setUnconfigured(Array.isArray(data.unconfigured) ? data.unconfigured : []);
       if (data.error) setError(data.error);
       setTrends(data.trends || []);
     } catch {
@@ -103,10 +139,21 @@ export default function TrendsPage() {
     }
   }, []);
 
+  // sourcesKey collapses the array into a primitive so the effect deps
+  // catch real changes without re-firing on every render that creates a
+  // new array reference. The array is already in canonical order.
+  const sourcesKey = sources.join(",");
   // Wait until prefs are hydrated before the first fetch — otherwise we'd
-  // fire one request for the default (US / no-niche) and another the next
-  // tick for the user's actual prefs, doubling the rate-limit hit.
-  useEffect(() => { if (hydrated) load(source, niche, geo); }, [hydrated, source, niche, geo, load]);
+  // fire one request for the defaults and another the next tick for the
+  // user's actual prefs, doubling the rate-limit hit.
+  useEffect(() => {
+    if (!hydrated) return;
+    load(sourcesKey.split(",") as Source[], niche, geo);
+  }, [hydrated, sourcesKey, niche, geo, load]);
+
+  // Only disable the geo row when Reddit is the *only* selected source —
+  // when mixed with Google/YouTube, geo still applies to those.
+  const redditOnly = sources.length === 1 && sources[0] === "reddit";
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -138,7 +185,9 @@ export default function TrendsPage() {
             <details style={{ flex: 1 }}>
               <summary style={{ cursor: "pointer", fontSize: ".82rem", color: "var(--muted)", fontFamily: "var(--fb)", padding: "6px 4px", listStyle: "none", userSelect: "none" }}>
                 Filters ▾ <span style={{ color: "var(--muted)", opacity: .6 }}>
-                  ({SOURCE_LABELS[source]} · {source === "reddit" ? "global" : geo} · {nicheLabel || "All niches"})
+                  ({sources.length === ALL_SOURCES.length
+                    ? "All sources"
+                    : sources.map(s => SOURCE_LABELS[s]).join(" + ")} · {redditOnly ? "global" : geo} · {nicheLabel || "All niches"})
                 </span>
               </summary>
               <div style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -148,15 +197,24 @@ export default function TrendsPage() {
                       ["google", "🔎 Google"],
                       ["youtube", "▶ YouTube"],
                       ["reddit", "🟠 Reddit"],
-                    ] as [Source, string][]).map(([s, label]) => (
-                      <button key={s} onClick={() => setSource(s)} style={{ padding: "9px 18px", border: "none", background: source === s ? "var(--s3)" : "transparent", color: source === s ? "var(--text)" : "var(--muted)", fontSize: ".82rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
-                        {label}
-                      </button>
-                    ))}
+                    ] as [Source, string][]).map(([s, label]) => {
+                      const active = sources.includes(s);
+                      return (
+                        <button
+                          key={s}
+                          onClick={() => toggleSource(s)}
+                          aria-pressed={active}
+                          title={active ? `Hide ${SOURCE_LABELS[s]} trends` : `Include ${SOURCE_LABELS[s]} trends`}
+                          style={{ padding: "9px 18px", border: "none", background: active ? "var(--s3)" : "transparent", color: active ? "var(--text)" : "var(--muted)", fontSize: ".82rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}
+                        >
+                          {active ? "✓ " : ""}{label}
+                        </button>
+                      );
+                    })}
                   </div>
-                  <div style={{ display: "flex", border: "1px solid var(--border)", borderRadius: "100px", overflow: "hidden", background: "var(--s1)", opacity: source === "reddit" ? 0.4 : 1 }} title={source === "reddit" ? "Reddit popular is global — geo doesn't apply" : undefined}>
+                  <div style={{ display: "flex", border: "1px solid var(--border)", borderRadius: "100px", overflow: "hidden", background: "var(--s1)", opacity: redditOnly ? 0.4 : 1 }} title={redditOnly ? "Reddit popular is global — geo doesn't apply" : undefined}>
                     {GEOS.map(([code, label]) => (
-                      <button key={code} onClick={() => setGeo(code)} disabled={source === "reddit"} title={source === "reddit" ? "Reddit popular is global" : `Trends for ${code}`} style={{ padding: "9px 14px", border: "none", background: geo === code ? "var(--s3)" : "transparent", color: geo === code ? "var(--text)" : "var(--muted)", fontSize: ".82rem", cursor: source === "reddit" ? "not-allowed" : "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
+                      <button key={code} onClick={() => setGeo(code)} disabled={redditOnly} title={redditOnly ? "Reddit popular is global" : `Trends for ${code}`} style={{ padding: "9px 14px", border: "none", background: geo === code ? "var(--s3)" : "transparent", color: geo === code ? "var(--text)" : "var(--muted)", fontSize: ".82rem", cursor: redditOnly ? "not-allowed" : "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
                         {label}
                       </button>
                     ))}
@@ -177,7 +235,7 @@ export default function TrendsPage() {
                 </div>
               </div>
             </details>
-            <button onClick={() => load(source, niche, geo)} disabled={loading} title="Refresh trends"
+            <button onClick={() => load(sources, niche, geo)} disabled={loading} title="Refresh trends"
               style={{ width: "38px", height: "38px", borderRadius: "50%", border: "1px solid var(--border2)", background: "var(--s1)", color: "var(--soft)", cursor: loading ? "not-allowed" : "pointer", fontSize: "15px", transition: "all .2s", opacity: loading ? 0.5 : 1, flexShrink: 0 }}>
               ↻
             </button>
@@ -201,9 +259,9 @@ export default function TrendsPage() {
             </div>
           )}
 
-          {source === "youtube" && !configured && (
-            <div style={{ background: "rgba(255,184,0,.06)", border: "1px solid rgba(255,184,0,.3)", color: "var(--gold)", borderRadius: "var(--r2)", padding: "1.25rem 1.5rem", fontSize: ".85rem", lineHeight: 1.7 }}>
-              YouTube trends need a <strong>YOUTUBE_API_KEY</strong> in <code>.env.local</code> (free). Meanwhile, <button onClick={() => setSource("google")} style={{ background: "none", border: "none", color: "var(--hot)", cursor: "pointer", fontFamily: "var(--fb)", fontSize: ".85rem", textDecoration: "underline", padding: 0 }}>use Google Search trends</button> — no key needed.
+          {sources.includes("youtube") && unconfigured.includes("youtube") && (
+            <div style={{ background: "rgba(255,184,0,.06)", border: "1px solid rgba(255,184,0,.3)", color: "var(--gold)", borderRadius: "var(--r2)", padding: "1.25rem 1.5rem", fontSize: ".85rem", lineHeight: 1.7, marginBottom: "12px" }}>
+              YouTube trends need a <strong>YOUTUBE_API_KEY</strong> in <code>.env.local</code> (free). Other sources keep working — <button onClick={() => toggleSource("youtube")} style={{ background: "none", border: "none", color: "var(--hot)", cursor: "pointer", fontFamily: "var(--fb)", fontSize: ".85rem", textDecoration: "underline", padding: 0 }}>hide YouTube</button> to dismiss this.
             </div>
           )}
 
@@ -241,7 +299,7 @@ export default function TrendsPage() {
             </div>
           )}
 
-          {!loading && !error && trends.length === 0 && configured && (
+          {!loading && !error && trends.length === 0 && (
             <div style={{ textAlign: "center", padding: "4rem 2rem", color: "var(--muted)", fontSize: ".9rem" }}>
               {niche ? "No trend matched this niche right now — try All or another niche." : "No trends found right now."}
             </div>
@@ -271,6 +329,11 @@ function TrendCard({ trend, rank, niche }: { trend: Trend; rank: number; niche: 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: ".95rem", color: "var(--text)", lineHeight: 1.45, fontWeight: 500 }}>{trend.title}</div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px", flexWrap: "wrap" }}>
+            {trend.source && (
+              <span title={`From ${SOURCE_BADGES[trend.source].label}`} style={{ fontSize: ".62rem", fontFamily: "var(--fd)", fontWeight: 700, padding: "2px 7px", borderRadius: "100px", color: SOURCE_BADGES[trend.source].color, background: `${SOURCE_BADGES[trend.source].color}14`, border: `1px solid ${SOURCE_BADGES[trend.source].color}33` }}>
+                {SOURCE_BADGES[trend.source].emoji} {SOURCE_BADGES[trend.source].label}
+              </span>
+            )}
             {trend.velocity && (
               <span style={{ fontSize: ".64rem", fontFamily: "var(--fd)", fontWeight: 700, padding: "2px 8px", borderRadius: "100px", color: VELOCITY[trend.velocity].color, background: VELOCITY[trend.velocity].bg, border: `1px solid ${VELOCITY[trend.velocity].color}33` }}>
                 {VELOCITY[trend.velocity].label}

@@ -7,8 +7,12 @@ import { extractJson } from "@/lib/parseJson";
 const PATTERN_NAMES = HOOK_PATTERNS.map(p => p.name);
 
 export type Velocity = "rising" | "steady" | "cooling" | "new";
-export interface Trend { title: string; sub: string; velocity?: Velocity; history?: number[] }
 export type TrendSource = "google" | "youtube" | "reddit";
+// `source` is tagged when trends from multiple sources are merged into one
+// list, so each card can show which feed it came from. Optional because
+// historical callers (and the still-typed-array returns inside this file
+// before tagging) don't carry it.
+export interface Trend { title: string; sub: string; source?: TrendSource; velocity?: Velocity; history?: number[] }
 
 export const TREND_CACHE_SECONDS = 21600; // 6h — protects quotas / endpoints
 
@@ -172,17 +176,16 @@ const rerankCache = new Map<string, { at: number; data: Trend[] }>();
 export async function rerankForNiche(
   nicheSlug: string,
   trends: Trend[],
-  source: TrendSource = "youtube",
-  geo: string = "US"
+  cacheTag: string = "default"
 ): Promise<Trend[]> {
   const niche = getNiche(nicheSlug);
   if (!niche || trends.length === 0) return trends;
 
-  // Cache key MUST include geo. Without it, changing the geo filter while a
-  // niche is selected silently returned the first geo's rerank — i.e. "no
-  // matter which country I pick, I see the same trends." Reddit always
-  // passes "GLOBAL" since its endpoint is geo-less.
-  const cacheKey = `${source}:${niche.slug}:${geo}`;
+  // Cache key is opaque — caller chooses an identifier that captures every
+  // axis it varies on (source(s) + geo). Earlier versions hardcoded
+  // `source:nicheSlug` and changing the geo (or merging sources) silently
+  // returned a stale rerank — "same trends no matter what filter."
+  const cacheKey = `${niche.slug}:${cacheTag}`;
   const cached = rerankCache.get(cacheKey);
   if (cached && Date.now() - cached.at < TREND_CACHE_SECONDS * 1000) {
     return cached.data;
