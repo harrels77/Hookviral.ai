@@ -106,7 +106,7 @@ export default function StartHere() {
             ⚡ Not sure where to start
           </div>
           <p style={{ fontSize: ".95rem", color: "var(--soft)", lineHeight: 1.75, marginBottom: "1rem" }}>
-            Have a hook in your head? Paste it in the <Link href="/analyzer" style={{ color: "var(--electric)", textDecoration: "none" }}>Analyzer</Link> — you'll see it score, see why, and you can fix it in one click. That single loop is the heart of the product. The rest is for when you want to go wider.
+            Have a hook in your head? Paste it in the <Link href="/analyzer" style={{ color: "var(--electric)", textDecoration: "none" }}>Analyzer</Link> — you&apos;ll see it score, see why, and you can fix it in one click. That single loop is the heart of the product. The rest is for when you want to go wider.
           </p>
           <Link href="/analyzer" style={{ display: "inline-block", padding: "11px 24px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".9rem", fontWeight: 600, textDecoration: "none", fontFamily: "var(--fb)" }}>
             Try the Analyzer — free →

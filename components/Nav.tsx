@@ -25,7 +25,11 @@ export function Nav() {
     { href: "/history", label: "History" },
   ];
 
-  useEffect(() => { setMenuOpen(false); }, [path]);
+  // Menu close happens via explicit onClick on each mobile-drawer Link below,
+  // not via a path-change effect. React 19's react-hooks/set-state-in-effect
+  // lint flags effect-driven setState as an anti-pattern: closing on click is
+  // the actual semantic — the user clicked, the menu should close. Path
+  // change is incidental. Desktop nav is unaffected (no drawer state).
 
   useEffect(() => {
     // Skip on touch/mobile
@@ -121,14 +125,14 @@ export function Nav() {
         {primary.map(l => {
           const active = path === l.href;
           return (
-            <Link key={l.href} href={l.href} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderRadius: "var(--r2)", background: active ? "var(--s3)" : "transparent", color: active ? "var(--text)" : "var(--soft)", textDecoration: "none", fontFamily: "var(--fb)", fontSize: "1rem", fontWeight: active ? 500 : 400, border: active ? "1px solid var(--border2)" : "1px solid transparent", transition: "all .2s" }}>
+            <Link key={l.href} href={l.href} onClick={() => setMenuOpen(false)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderRadius: "var(--r2)", background: active ? "var(--s3)" : "transparent", color: active ? "var(--text)" : "var(--soft)", textDecoration: "none", fontFamily: "var(--fb)", fontSize: "1rem", fontWeight: active ? 500 : 400, border: active ? "1px solid var(--border2)" : "1px solid transparent", transition: "all .2s" }}>
               {l.label}
               {active && <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "linear-gradient(135deg,var(--hot),var(--electric))", flexShrink: 0 }} />}
             </Link>
           );
         })}
         <div style={{ marginTop: "auto", paddingTop: "1.5rem", borderTop: "1px solid var(--border)" }}>
-          <Link href="/analyzer" style={{ display: "block", textAlign: "center", padding: "14px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".95rem", fontWeight: 500, textDecoration: "none", fontFamily: "var(--fb)" }}>
+          <Link href="/analyzer" onClick={() => setMenuOpen(false)} style={{ display: "block", textAlign: "center", padding: "14px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".95rem", fontWeight: 500, textDecoration: "none", fontFamily: "var(--fb)" }}>
             Score my hook →
           </Link>
         </div>

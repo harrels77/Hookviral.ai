@@ -15,10 +15,18 @@ export default function HistoryPage() {
   const [copied, setCopied] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
+  // Mount-once hydration from localStorage. React 19's
+  // react-hooks/set-state-in-effect lint flags setState-in-effect as an
+  // anti-pattern (cascading renders), but for an SSR-safe one-time read of
+  // localStorage there's no cleaner option: useState initializer can't see
+  // window at SSR time and useSyncExternalStore is overkill for two locals
+  // without cross-tab sync. The cascade fires once per mount, never again.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     setSessions(JSON.parse(localStorage.getItem("hv_hist") || "[]"));
     setFavorites((JSON.parse(localStorage.getItem("hv_favs") || "[]") as Hook[]).map(f => f.id));
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   function toggleOpen(id: string) {
     setOpen(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
