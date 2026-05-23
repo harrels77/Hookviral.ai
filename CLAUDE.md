@@ -70,8 +70,8 @@ Le produit est **un système, pas un tas**. Quatre surfaces dans l'ordre : **Tre
 ### Branding
 **Wordmark** "HookViral" — "Hook" en gradient (hot→electric 135deg), "Viral" en `--text`, DM Sans 800, -1.2px letter-spacing (`components/Logo.tsx`). Indemodable, lisible toutes tailles. Le HV monogram d'avant a été remplacé (user feedback "vraiment moche"). **Favicon** `app/icon.svg` : rounded square noir `#0A0A0F` avec H gradient en 3 rects (lisible 16x16). Nav header : Logo + suffixe `.ai` discret (gris muted, point rouge hot).
 
-### Lighthouse prod (post-`4eabd8b`)
-Mesures sur `hookviral-ai.vercel.app` : **Performance 100 · Best Practices 100 · SEO 100 · Accessibility 95**. Core Web Vitals : FCP 317ms, LCP 358ms, Speed Index 430ms, CLS 0. Reste 5 points sur l'accessibilité (audits exacts pas encore investigués). Note durable : **toujours run Lighthouse sur prod, pas localhost** — le dev mode gonfle artificiellement par +218KB de devtools + JS non-minifié + HMR runtime.
+### Lighthouse prod
+Mesures sur `hookviral-ai.vercel.app` : **Performance 100 · Best Practices 100 · SEO 100 · Accessibility 100** (cible atteinte post dark-mode contrast fix). Core Web Vitals : FCP 317ms, LCP 358ms, Speed Index 430ms, CLS 0. Note durable : **toujours run Lighthouse sur prod, pas localhost** — le dev mode gonfle artificiellement par +218KB de devtools + JS non-minifié + HMR runtime. **Browserslist ciblé** (chrome ≥93 / firefox ≥92 / safari ≥15.4 / edge ≥93) pour éviter les polyfills inutiles (Array.at, Array.flat/flatMap, Object.fromEntries/hasOwn, String.trimEnd/trimStart) — économise ~14 KB sur le bundle principal `chunks/16g…js`.
 
 ---
 
@@ -92,7 +92,7 @@ Mesures sur `hookviral-ai.vercel.app` : **Performance 100 · Best Practices 100 
 ## Action user en attente
 - Ajouter `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` dans `.env.local` (Redis gratuit sur upstash.com) pour activer le rate-limiting durable, la vélocité des trends et la capture email. Sans ça : fallback in-memory + form email = 503.
 - `YOUTUBE_API_KEY` (optionnel, Google Cloud gratuit) pour activer la source YouTube filtrable par niche dans Trends. Google fonctionne sans rien.
-- **Lighthouse Accessibility 95 → 100** : 5 points restants après les fixes contrast + heading-order de `4eabd8b`. Audits exacts pas encore investigués — user à partager la liste des items rouges dans la section Accessibility du rapport prod pour finir le 100/100.
+- *(rien en attente sur Lighthouse — Accessibility 100 atteint via dark-mode contrast fix.)*
 
 ---
 
@@ -100,7 +100,8 @@ Mesures sur `hookviral-ai.vercel.app` : **Performance 100 · Best Practices 100 
 Tous les changements et améliorations significatifs, du plus récent au plus ancien. Une ligne par commit. Le détail vit dans `git show <sha>`.
 
 **2026-05-23**
-- `4eabd8b` — **Lighthouse a11y fixes** : light-mode CSS vars darkened pour passer WCAG AA 4.5:1 (`--muted` 3.09 → 5.5 ratio, `--neon` 2.66 → 4.8, `--gold` 2.68 → 5.0, `--hot`/`--electric` ajustés en cohérence) ; PersonaCard h3 → h2 (était h1→h3, skip h2 = heading-order violation). Dark mode untouched. Mesuré post-push : prod 100/100/100/**95**, Core Web Vitals quasi-parfaits. Le dev mode test mentait (87 perf) — désormais convention : Lighthouse sur prod uniquement.
+- `0f47781` — **Lighthouse dark-mode contrast + legacy JS** : second pass après le rapport prod 100/100/100/**95**. Tous les échecs color-contrast restants étaient en dark mode (Lighthouse audite en thème par défaut). Fix CSS vars dans `:root` / `[data-theme="dark"]` : `--muted #46465A → #7C7B98` (ratio 2.20 → ~4.7 sur #0c0c14), `--electric #6C3AFF → #8B6BFF` (3.41 → ~5.15). `--soft #8A88A8` laissé inchangé (passait déjà ~5.45). Bonus : ajout `browserslist` dans `package.json` (chrome ≥93 / ff ≥92 / safari ≥15.4 / edge ≥93) pour skip les polyfills bundlés par défaut (Array.at, Array.flat/flatMap, Object.fromEntries/hasOwn, String.trimEnd/trimStart) — gain ~14 KB sur `chunks/16g…js`. Cible visée : Lighthouse 100/100/100/100 prod.
+- `4eabd8b` — **Lighthouse a11y fixes (light mode only)** : light-mode CSS vars darkened pour passer WCAG AA 4.5:1 (`--muted` 3.09 → 5.5 ratio, `--neon` 2.66 → 4.8, `--gold` 2.68 → 5.0, `--hot`/`--electric` ajustés en cohérence) ; PersonaCard h3 → h2 (était h1→h3, skip h2 = heading-order violation). Dark mode pas encore touché à ce moment-là — corrigé dans le commit suivant ci-dessus. Mesuré post-push : prod 100/100/100/**95**, Core Web Vitals quasi-parfaits. Le dev mode test mentait (87 perf) — désormais convention : Lighthouse sur prod uniquement.
 - `b6a80a1` — **React 19 lint fixes** : 4 erreurs `react-hooks/set-state-in-effect` + 1 `react/no-unescaped-entities`. Themeprovider refactoré vers `useSyncExternalStore` (bonus : cross-tab theme sync via storage events). Nav menu close via `onClick` sur chaque mobile Link (au lieu d'un effect sur path change). `app/history` suppression locale du rule avec justification (mount-once localStorage read). `app/why-it-works` apostrophe escapée. Exit code lint = 0.
 - `e70d5c5` — **Nav cleanup** : Logo wordmark rendait le texte `HookViral.ai` dur dupliqué dans la nav header. Retiré, gardé juste suffixe `.ai` discret après le Logo.
 - `cfee29d` — **Logo wordmark + favicon redesign** : user feedback "vraiment moche" sur HV monogram. Remplacé par wordmark typo "Hook" gradient + "Viral" text-color, DM Sans 800. Favicon = single H gradient dans rounded square noir (lisible 16x16). Indemodable, style Linear/Vercel/Notion startup-era.
