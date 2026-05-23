@@ -38,6 +38,10 @@
 }
 
 /* ── LIGHT MODE ── */
+/* Note: small-text accent colors (--neon, --gold) and --muted are tuned for
+   WCAG AA contrast (4.5:1) on the light backgrounds (--bg #F4F3FF, --s1 #FFF,
+   --s2 #F0EFF8). Lighthouse caught the earlier values (#00A882 neon = 2.66,
+   #C98A00 gold = 2.68, #8A88A8 muted = 3.09) as failing. Darkened to pass. */
 [data-theme="light"] {
   --bg:       #F4F3FF;
   --s1:       #FFFFFF;
@@ -47,14 +51,14 @@
   --border2:  #C4C2DE;
   --nav-bg:   rgba(244,243,255,.92);
 
-  --hot:      #E8185A;
-  --electric: #5A2EE8;
-  --neon:     #00A882;
-  --gold:     #C98A00;
+  --hot:      #C9134B;
+  --electric: #4724BC;
+  --neon:     #007355;
+  --gold:     #7E5800;
 
   --text:     #0E0D1A;
   --soft:     #4A4868;
-  --muted:    #8A88A8;
+  --muted:    #5E5C7A;
 }
 
 html { scroll-behavior: smooth; }

@@ -390,9 +390,11 @@ function PersonaCard({
     >
       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
         <span style={{ fontSize: "1.1rem", lineHeight: 1, color: accent }}>{emoji}</span>
-        <h3 style={{ fontFamily: "var(--fd)", fontSize: ".95rem", fontWeight: 800, letterSpacing: "-.3px", color: "var(--text)", margin: 0 }}>
+        {/* h2 (not h3) — PersonaCard titles sit directly under the hero h1.
+            Lighthouse heading-order rule flags a h1→h3 jump as a11y issue. */}
+        <h2 style={{ fontFamily: "var(--fd)", fontSize: ".95rem", fontWeight: 800, letterSpacing: "-.3px", color: "var(--text)", margin: 0 }}>
           {title}
-        </h3>
+        </h2>
       </div>
       <p style={{ fontSize: ".83rem", color: "var(--soft)", lineHeight: 1.55, margin: 0, fontWeight: 300 }}>
         {desc}
