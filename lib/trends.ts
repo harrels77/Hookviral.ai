@@ -89,11 +89,56 @@ export async function googleTrends(geo: string): Promise<Trend[]> {
 }
 
 // ── Reddit /r/popular ──
-// Free JSON endpoint, no key. 30-50 trending posts across all subreddits.
-// Different signal from Google: cultural buzz / what people are talking
-// about, not what they're searching. Useful for "what's the conversation"
-// angles a creator can ride. NSFW filtered out. Geo ignored — Reddit's
-// geo_filter param doesn't actually differentiate from a server IP.
+// 30-50 trending posts across all subreddits. Different signal from Google:
+// cultural buzz / what people are talking about, not what they're searching.
+//
+// Auth context: the unauthenticated www.reddit.com/r/popular.json endpoint
+// USED to work from anywhere. Since Reddit's mid-2023 API tightening (same
+// wave that killed Apollo), unauthenticated requests from datacenter IPs
+// (Vercel / AWS / GCP) are 403'd or rate-limited into uselessness. The
+// browser-IP path still works locally, which is why this surfaced as
+// "works in dev, breaks in prod." Production requires OAuth.
+//
+// We use the `client_credentials` flow (script-app auth, no user context
+// needed). Register at reddit.com/prefs/apps → set REDDIT_CLIENT_ID +
+// REDDIT_CLIENT_SECRET. Token is good for 1h; we cache it in-memory and
+// refresh 60s before expiry. NSFW + stickied filtered out.
+
+const REDDIT_UA = "HookViral/1.0 (+https://hookviral.ai)";
+
+// Per-instance token cache. 1h validity per Reddit; even with cold starts
+// the worst case is one extra ~50ms token fetch per instance per hour.
+let redditToken: { token: string; exp: number } | null = null;
+
+async function getRedditToken(): Promise<string | null> {
+  const id = process.env.REDDIT_CLIENT_ID;
+  const secret = process.env.REDDIT_CLIENT_SECRET;
+  if (!id || !secret) return null;
+  if (redditToken && Date.now() < redditToken.exp) return redditToken.token;
+
+  // btoa works in both Node and Edge runtimes — avoid Buffer for portability.
+  const basic = btoa(`${id}:${secret}`);
+  const res = await fetch("https://www.reddit.com/api/v1/access_token", {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${basic}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+      "User-Agent": REDDIT_UA,
+    },
+    body: "grant_type=client_credentials",
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`reddit oauth ${res.status}`);
+  const data = (await res.json()) as { access_token?: string; expires_in?: number };
+  if (!data.access_token) throw new Error("reddit oauth no token");
+  // Refresh 60s before actual expiry so we never call with a stale token.
+  redditToken = {
+    token: data.access_token,
+    exp: Date.now() + Math.max(60, (data.expires_in ?? 3600) - 60) * 1000,
+  };
+  return redditToken.token;
+}
+
 interface RedditChild {
   data?: {
     title?: string;
@@ -105,19 +150,31 @@ interface RedditChild {
   };
 }
 
+// Per-instance cache for the /r/popular payload. We can't rely on Next.js's
+// fetch cache here because the Authorization header rotates each token
+// refresh — that would bust the cache key needlessly. Our own 6h cache
+// matches what we do for the YouTube/Google paths conceptually.
+let popularCache: { data: Trend[]; exp: number } | null = null;
+
 export async function redditPopular(): Promise<Trend[]> {
-  const res = await fetch("https://www.reddit.com/r/popular.json?limit=50", {
-    next: { revalidate: TREND_CACHE_SECONDS },
+  if (popularCache && Date.now() < popularCache.exp) return popularCache.data;
+
+  const token = await getRedditToken();
+  // `missing-key` is the convention the route layer catches to set
+  // configured=false and surface the env-var hint banner in the UI.
+  if (!token) throw new Error("missing-key");
+
+  const res = await fetch("https://oauth.reddit.com/r/popular?limit=50", {
+    cache: "no-store",
     headers: {
-      // Reddit 429s requests with no UA. Identifying ourselves is courtesy
-      // and makes our traffic distinguishable from generic scrapers.
-      "User-Agent": "HookViral/1.0 (+https://hookviral.ai) by HookViralBot",
+      Authorization: `Bearer ${token}`,
+      "User-Agent": REDDIT_UA,
     },
   });
   if (!res.ok) throw new Error(`reddit popular ${res.status}`);
   const data = (await res.json()) as { data?: { children?: RedditChild[] } };
   const children = data?.data?.children || [];
-  return children
+  const trends = children
     .map(c => {
       const d = c?.data;
       if (!d || d.over_18 || d.stickied) return null;
@@ -133,6 +190,9 @@ export async function redditPopular(): Promise<Trend[]> {
     })
     .filter((t): t is Trend => t !== null)
     .slice(0, 50);
+
+  popularCache = { data: trends, exp: Date.now() + TREND_CACHE_SECONDS * 1000 };
+  return trends;
 }
 
 interface YouTubeItem { snippet?: { title?: string; channelTitle?: string }; }

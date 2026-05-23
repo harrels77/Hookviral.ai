@@ -49,6 +49,12 @@ export async function GET(req: NextRequest) {
         return { source: s, trends: raw.map(t => ({ ...t, source: s })), configured: true };
       }
       if (s === "reddit") {
+        // Reddit now requires OAuth from cloud IPs (post-2023 API
+        // tightening). If creds aren't set we mirror the YouTube path:
+        // return configured=false so the UI shows an honest nudge.
+        if (!process.env.REDDIT_CLIENT_ID || !process.env.REDDIT_CLIENT_SECRET) {
+          return { source: s, trends: [], configured: false };
+        }
         const raw = await redditPopular();
         return { source: s, trends: raw.map(t => ({ ...t, source: s })), configured: true };
       }
@@ -116,7 +122,7 @@ export async function GET(req: NextRequest) {
     sources,
     unconfigured,
     error: allEmpty && unconfigured.length === sources.length
-      ? "No sources configured — add YOUTUBE_API_KEY to .env to enable YouTube."
+      ? "No selected source is configured — add the missing API keys to .env or enable Google (no key needed)."
       : "",
   });
 }
