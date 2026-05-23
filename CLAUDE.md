@@ -68,7 +68,10 @@ Le produit est **un système, pas un tas**. Quatre surfaces dans l'ordre : **Tre
 `lib/upstash.ts` (REST fetch, zéro dépendance npm) + `lib/rateLimit.ts` async sliding-window. **Inactif tant que `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` absents de `.env.local`** → fallback in-memory. Active automatiquement quand les clés sont présentes. Mêmes clés alimentent `/api/subscribe` (capture email → `SADD hv:subscribers` + `HSET hv:subscriber_meta`, 503 honnête si non configuré) et `computeVelocity` (snapshots de rang trends).
 
 ### Branding
-HV monogram (geometric H + V dans le gradient brand) — `components/Logo.tsx` + `app/icon.svg`.
+**Wordmark** "HookViral" — "Hook" en gradient (hot→electric 135deg), "Viral" en `--text`, DM Sans 800, -1.2px letter-spacing (`components/Logo.tsx`). Indemodable, lisible toutes tailles. Le HV monogram d'avant a été remplacé (user feedback "vraiment moche"). **Favicon** `app/icon.svg` : rounded square noir `#0A0A0F` avec H gradient en 3 rects (lisible 16x16). Nav header : Logo + suffixe `.ai` discret (gris muted, point rouge hot).
+
+### Lighthouse prod (post-`4eabd8b`)
+Mesures sur `hookviral-ai.vercel.app` : **Performance 100 · Best Practices 100 · SEO 100 · Accessibility 95**. Core Web Vitals : FCP 317ms, LCP 358ms, Speed Index 430ms, CLS 0. Reste 5 points sur l'accessibilité (audits exacts pas encore investigués). Note durable : **toujours run Lighthouse sur prod, pas localhost** — le dev mode gonfle artificiellement par +218KB de devtools + JS non-minifié + HMR runtime.
 
 ---
 
@@ -89,11 +92,21 @@ HV monogram (geometric H + V dans le gradient brand) — `components/Logo.tsx` +
 ## Action user en attente
 - Ajouter `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` dans `.env.local` (Redis gratuit sur upstash.com) pour activer le rate-limiting durable, la vélocité des trends et la capture email. Sans ça : fallback in-memory + form email = 503.
 - `YOUTUBE_API_KEY` (optionnel, Google Cloud gratuit) pour activer la source YouTube filtrable par niche dans Trends. Google fonctionne sans rien.
+- **Lighthouse Accessibility 95 → 100** : 5 points restants après les fixes contrast + heading-order de `4eabd8b`. Audits exacts pas encore investigués — user à partager la liste des items rouges dans la section Accessibility du rapport prod pour finir le 100/100.
 
 ---
 
 ## Journal des changements
 Tous les changements et améliorations significatifs, du plus récent au plus ancien. Une ligne par commit. Le détail vit dans `git show <sha>`.
+
+**2026-05-23**
+- `4eabd8b` — **Lighthouse a11y fixes** : light-mode CSS vars darkened pour passer WCAG AA 4.5:1 (`--muted` 3.09 → 5.5 ratio, `--neon` 2.66 → 4.8, `--gold` 2.68 → 5.0, `--hot`/`--electric` ajustés en cohérence) ; PersonaCard h3 → h2 (était h1→h3, skip h2 = heading-order violation). Dark mode untouched. Mesuré post-push : prod 100/100/100/**95**, Core Web Vitals quasi-parfaits. Le dev mode test mentait (87 perf) — désormais convention : Lighthouse sur prod uniquement.
+- `b6a80a1` — **React 19 lint fixes** : 4 erreurs `react-hooks/set-state-in-effect` + 1 `react/no-unescaped-entities`. Themeprovider refactoré vers `useSyncExternalStore` (bonus : cross-tab theme sync via storage events). Nav menu close via `onClick` sur chaque mobile Link (au lieu d'un effect sur path change). `app/history` suppression locale du rule avec justification (mount-once localStorage read). `app/why-it-works` apostrophe escapée. Exit code lint = 0.
+- `e70d5c5` — **Nav cleanup** : Logo wordmark rendait le texte `HookViral.ai` dur dupliqué dans la nav header. Retiré, gardé juste suffixe `.ai` discret après le Logo.
+- `cfee29d` — **Logo wordmark + favicon redesign** : user feedback "vraiment moche" sur HV monogram. Remplacé par wordmark typo "Hook" gradient + "Viral" text-color, DM Sans 800. Favicon = single H gradient dans rounded square noir (lisible 16x16). Indemodable, style Linear/Vercel/Notion startup-era.
+- `9e54ee3` — **PersonaCard border shorthand fix** : React warning sur le mélange `border:` + `borderLeft:`. Split en borderTop/Right/Bottom explicites, borderLeft séparé. Pas de changement visuel.
+- `e88c59e` + `41d3401` — **Home : 2 chemins persona** sous le hero. Bordered cards (Border-left 3px hot/electric, hover translateY + glow), chacune clickable en entier : "✦ I have a hook → Score it" → `/analyzer` et "🔬 I have a niche, no idea → Discover trends" → `/trends`. Ferme le gap UX créé par l'Analyzer-first repositioning (un user sans hook ne savait plus où commencer). Premier essai (`41d3401`) trop discret ("ne se voit presque pas en scrollant" feedback user), upgrade en vraies cards bordées (`e88c59e`).
+- `b4f8b1a` — **Tighten subtitle** : 33 → 28 mots, rythme X/Y/Z. "Paste any opening line. Get the score, the missing patterns, and a stronger rewrite in seconds — no prompting required." Garde "no prompting required" (le diff vs ChatGPT) au lieu du générique "Stop guessing what works" suggéré par Gemini.
 
 **2026-05-22**
 - `02dcf5f` — **Analyzer-first repositioning (3 sharpening moves)** : suite à une critique externe Gemini Pro (dont 4/5 points décrivaient des features déjà implémentées). Les 3 ajustements valides extraits : (1) nav order swap `Generate ↔ Analyze` — workflow naturel = "j'ai un hook → score-le" avant "page blanche → génère". (2) "Start Free →" CTA renommé "Score my hook →" et pointe vers `/analyzer` (était `/generator`) — mobile drawer + desktop nav, alignement avec l'Analyzer comme flagship. (3) Hero copy : "Creators lose viewers in the first 3 seconds. Fix yours." → "Score your hook in **5 seconds**. Fix it in one click." Subtitle remise pour matcher : "Paste your opening line. The Analyzer scores retention, names the attention patterns it's missing, and rewrites it stronger — without prompting." Pas de refonte produit, juste de l'alignement de positionnement.
