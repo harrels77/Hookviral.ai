@@ -89,22 +89,29 @@ export default function HomePage() {
               ))}
             </div>
 
-            {/* Two paths under the hero — the product serves two personas and
-                each one has a different right entry point. Labeling them makes
-                the choice explicit instead of betting on which CTA they click. */}
-            <div style={{ display: "flex", gap: "18px", flexWrap: "wrap", marginBottom: "1rem" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <span style={{ fontSize: ".62rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1.5px", fontFamily: "var(--fd)", fontWeight: 700 }}>
-                  ✦ I have a hook
-                </span>
-                <HLink href="/analyzer" primary>Score it — Free →</HLink>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <span style={{ fontSize: ".62rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1.5px", fontFamily: "var(--fd)", fontWeight: 700 }}>
-                  🔬 I have a niche, no idea
-                </span>
-                <HLink href="/trends">Discover trends →</HLink>
-              </div>
+            {/* Two personas side-by-side as full bordered cards. Previous
+                version used tiny uppercase labels above plain CTAs — visually
+                indistinct from the surrounding hero content and ignored on
+                scroll. These claim space deliberately: each card is the
+                primary action for its persona, not a label-decorated link. */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px", marginBottom: "1.25rem" }}>
+              <PersonaCard
+                accent="var(--hot)"
+                emoji="✦"
+                title="I have a hook"
+                desc="Score it in 5 seconds. See the missing patterns. Rewrite stronger in one click."
+                href="/analyzer"
+                cta="Score it — Free →"
+                primary
+              />
+              <PersonaCard
+                accent="var(--electric)"
+                emoji="🔬"
+                title="I have a niche, no idea"
+                desc="Pick a live trend. Get 3-5 ready angles with scored hooks for your niche."
+                href="/trends"
+                cta="Discover trends →"
+              />
             </div>
             <p style={{ fontSize: ".75rem", color: "var(--muted)", marginBottom: "2.5rem" }}>
               No signup · 10 free generations/day · Resets at midnight
@@ -344,6 +351,64 @@ function SLabel({ children, center }: { children: React.ReactNode; center?: bool
       {children}
       {center && <span style={{ width: "18px", height: "1px", background: "var(--electric)", flexShrink: 0 }} />}
     </div>
+  );
+}
+
+// Persona-choice card — full-bordered, hoverable, with the CTA built in.
+// Each card IS the action for its persona (not a labeled link). Two of these
+// side-by-side under the hero make the workflow fork visually unmissable.
+function PersonaCard({
+  accent, emoji, title, desc, href, cta, primary,
+}: {
+  accent: string; emoji: string; title: string; desc: string;
+  href: string; cta: string; primary?: boolean;
+}) {
+  const [hov, setHov] = useState(false);
+  return (
+    <Link
+      href={href}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        display: "flex", flexDirection: "column", gap: "10px",
+        padding: "1.1rem 1.2rem",
+        borderRadius: "var(--r3)",
+        background: hov ? "var(--s2)" : "var(--s1)",
+        border: `1px solid ${hov ? accent : "var(--border)"}`,
+        borderLeft: `3px solid ${accent}`,
+        textDecoration: "none",
+        transition: "all .25s cubic-bezier(.16,1,.3,1)",
+        transform: hov ? "translateY(-3px)" : "none",
+        boxShadow: hov ? `0 14px 40px ${accent}26` : "none",
+        cursor: "pointer",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <span style={{ fontSize: "1.1rem", lineHeight: 1, color: accent }}>{emoji}</span>
+        <h3 style={{ fontFamily: "var(--fd)", fontSize: ".95rem", fontWeight: 800, letterSpacing: "-.3px", color: "var(--text)", margin: 0 }}>
+          {title}
+        </h3>
+      </div>
+      <p style={{ fontSize: ".83rem", color: "var(--soft)", lineHeight: 1.55, margin: 0, fontWeight: 300 }}>
+        {desc}
+      </p>
+      <span
+        style={{
+          marginTop: "4px",
+          alignSelf: "flex-start",
+          padding: "8px 16px",
+          borderRadius: "100px",
+          fontSize: ".82rem",
+          fontWeight: 600,
+          fontFamily: "var(--fb)",
+          ...(primary
+            ? { background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff" }
+            : { border: `1px solid ${accent}55`, color: accent, background: "transparent" }),
+        }}
+      >
+        {cta}
+      </span>
+    </Link>
   );
 }
 
