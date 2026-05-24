@@ -7,7 +7,7 @@ import { extractJson } from "@/lib/parseJson";
 const PATTERN_NAMES = HOOK_PATTERNS.map(p => p.name);
 
 export type Velocity = "rising" | "steady" | "cooling" | "new";
-export type TrendSource = "google" | "youtube" | "reddit";
+export type TrendSource = "google" | "youtube" | "reddit" | "wikipedia" | "hackernews";
 // `source` is tagged when trends from multiple sources are merged into one
 // list, so each card can show which feed it came from. Optional because
 // historical callers (and the still-typed-array returns inside this file
@@ -193,6 +193,105 @@ export async function redditPopular(): Promise<Trend[]> {
 
   popularCache = { data: trends, exp: Date.now() + TREND_CACHE_SECONDS * 1000 };
   return trends;
+}
+
+// ── Wikipedia top viewed ──
+// Wikimedia pageviews API: top articles by views, up to 1000/day. Free,
+// official, no auth, no rate-limit drama from cloud IPs (unlike Reddit).
+// Signal = what the public is *researching* today — overlaps news but
+// also captures "I saw this on TV/podcast/headline, who is this?"
+// curiosity that Google searches miss.
+const WIKI_UA = "HookViral/1.0 (https://hookviral.ai)";
+
+// Geo → Wikipedia project. The pageviews API is per-language-wiki, which
+// is the closest proxy to "what's trending in this region's reading list."
+// GLOBAL + English-speaking geos fall back to en.wikipedia (largest by
+// volume); FR/ES/DE get their own language wiki.
+const WIKI_PROJECTS: Record<string, string> = {
+  GLOBAL: "en.wikipedia",
+  US: "en.wikipedia",
+  GB: "en.wikipedia",
+  CA: "en.wikipedia",
+  AU: "en.wikipedia",
+  FR: "fr.wikipedia",
+  ES: "es.wikipedia",
+  DE: "de.wikipedia",
+};
+
+// Wikipedia namespace pages (Main_Page, Special:Search, Wikipedia:..., etc.)
+// always top the list and are useless as creator content angles. The regex
+// covers all 14 reserved namespace prefixes; `Main_Page` + bare `Wikipedia`
+// are special cases.
+function isWikipediaMeta(title: string): boolean {
+  if (title === "Main_Page" || title === "Wikipedia" || title === "-") return true;
+  return /^(Special|Wikipedia|Portal|Help|Category|File|Template|User|Talk|Module|Draft|MediaWiki|Book|TimedText):/i.test(title);
+}
+
+export async function wikipediaTrends(geo: string): Promise<Trend[]> {
+  const project = WIKI_PROJECTS[geo] || "en.wikipedia";
+  // The pageviews aggregate is published the day AFTER. Asking for today
+  // returns 404 until ~24h later; we ask for yesterday UTC, which is
+  // always available. If even that 404s (rare aggregation lag), the route
+  // catches and gracefully returns 0 items for this source — other sources
+  // keep responding.
+  const d = new Date(Date.now() - 24 * 3600 * 1000);
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+
+  const url = `https://wikimedia.org/api/rest_v1/metrics/pageviews/top/${project}/all-access/${y}/${m}/${day}`;
+  const res = await fetch(url, {
+    next: { revalidate: TREND_CACHE_SECONDS },
+    headers: { "User-Agent": WIKI_UA },
+  });
+  if (!res.ok) throw new Error(`wikipedia ${res.status}`);
+  const data = (await res.json()) as {
+    items?: { articles?: { article?: string; views?: number; rank?: number }[] }[];
+  };
+  const articles = data.items?.[0]?.articles || [];
+  return articles
+    .map(a => {
+      if (!a.article || isWikipediaMeta(a.article)) return null;
+      // Wikipedia uses underscores in URLs; humanize for display.
+      const title = a.article.replace(/_/g, " ");
+      const views = typeof a.views === "number" ? a.views : 0;
+      const formatted = views >= 1_000_000
+        ? `${(views / 1_000_000).toFixed(1)}M views`
+        : views >= 1000
+          ? `${Math.round(views / 1000)}k views`
+          : `${views} views`;
+      return { title, sub: formatted };
+    })
+    .filter((t): t is Trend => t !== null)
+    .slice(0, 50);
+}
+
+// ── Hacker News front page ──
+// The Firebase API exposes /topstories.json as a list of 500 IDs, requiring
+// one fetch per item — 500 round-trips just for titles. Algolia's HN search
+// (what news.ycombinator.com's own search uses) returns the same front page
+// with titles + scores + comments in one call. Free, no auth, no IP issues.
+// Signal = tech/biz/startup, narrow but punchy. Niche-aware rerank already
+// filters when relevant.
+interface HNHit { title?: string; points?: number; num_comments?: number; }
+
+export async function hackerNewsTrends(): Promise<Trend[]> {
+  const res = await fetch(
+    "https://hn.algolia.com/api/v1/search?tags=front_page&hitsPerPage=50",
+    { next: { revalidate: TREND_CACHE_SECONDS } }
+  );
+  if (!res.ok) throw new Error(`hackernews ${res.status}`);
+  const data = (await res.json()) as { hits?: HNHit[] };
+  return (data.hits || [])
+    .map(h => {
+      const title = h.title?.trim();
+      if (!title) return null;
+      const points = h.points ?? 0;
+      const comments = h.num_comments ?? 0;
+      return { title, sub: `${points} points · ${comments} comments` };
+    })
+    .filter((t): t is Trend => t !== null)
+    .slice(0, 50);
 }
 
 interface YouTubeItem { snippet?: { title?: string; channelTitle?: string }; }

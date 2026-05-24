@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit, getClientIp } from "@/lib/rateLimit";
-import { googleTrends, youtubeTrends, redditPopular, rerankForNiche, computeVelocity, type Trend, type TrendSource } from "@/lib/trends";
+import { googleTrends, youtubeTrends, redditPopular, wikipediaTrends, hackerNewsTrends, rerankForNiche, computeVelocity, type Trend, type TrendSource } from "@/lib/trends";
 
 function parseSources(csv: string | null): TrendSource[] {
   if (!csv) return ["google"];
   const parts = csv.split(",").map(s => s.trim()).filter(Boolean);
   const valid = parts.filter((s): s is TrendSource =>
-    s === "google" || s === "youtube" || s === "reddit"
+    s === "google" || s === "youtube" || s === "reddit" || s === "wikipedia" || s === "hackernews"
   );
   // De-dupe in case "?sources=google,google" sneaks in.
   return Array.from(new Set(valid.length > 0 ? valid : ["google"]));
@@ -58,6 +58,14 @@ export async function GET(req: NextRequest) {
         const raw = await redditPopular();
         return { source: s, trends: raw.map(t => ({ ...t, source: s })), configured: true };
       }
+      if (s === "wikipedia") {
+        const raw = await wikipediaTrends(geo);
+        return { source: s, trends: raw.map(t => ({ ...t, source: s })), configured: true };
+      }
+      if (s === "hackernews") {
+        const raw = await hackerNewsTrends();
+        return { source: s, trends: raw.map(t => ({ ...t, source: s })), configured: true };
+      }
       // google
       const raw = await googleTrends(geo);
       return { source: s, trends: raw.map(t => ({ ...t, source: s })), configured: true };
@@ -74,7 +82,10 @@ export async function GET(req: NextRequest) {
   // ranks with YouTube ranks.
   await Promise.all(results.map(async r => {
     if (r.trends.length === 0) return;
-    const sourceGeo = r.source === "reddit" ? "GLOBAL" : geo;
+    // Reddit's endpoint is geo-less, HN's Algolia front-page is global.
+    // Wikipedia *is* per-geo (different language wikis) so we keep the geo
+    // for it, which gives it its own Upstash bucket per (source, language).
+    const sourceGeo = r.source === "reddit" || r.source === "hackernews" ? "GLOBAL" : geo;
     const { velocity, history } = await computeVelocity(r.source, sourceGeo, r.trends);
     r.trends = r.trends.map(t => ({
       ...t,

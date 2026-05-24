@@ -7,7 +7,7 @@ import { NextStep } from "@/components/NextStep";
 import { getNichePref, setNichePref, getGeoPref, setGeoPref, getSourcesPref, setSourcesPref } from "@/lib/prefs";
 
 type Velocity = "rising" | "steady" | "cooling" | "new";
-type Source = "google" | "youtube" | "reddit";
+type Source = "google" | "youtube" | "reddit" | "wikipedia" | "hackernews";
 interface Trend { title: string; sub: string; source?: Source; velocity?: Velocity; history?: number[]; }
 
 // Tiny rank-history sparkline. Input is rank (1 = top), so we invert: a term
@@ -35,26 +35,31 @@ const GEOS: [string, string][] = [
 ];
 
 const SOURCE_LABELS: Record<Source, string> = {
-  google: "Google",
-  youtube: "YouTube",
-  reddit: "Reddit",
+  google:     "Google",
+  youtube:    "YouTube",
+  reddit:     "Reddit",
+  wikipedia:  "Wikipedia",
+  hackernews: "Hacker News",
 };
 
 const SOURCE_BADGES: Record<Source, { emoji: string; label: string; color: string }> = {
-  google:  { emoji: "🔎", label: "Google",  color: "#5BA8FF" },
-  youtube: { emoji: "▶",  label: "YouTube", color: "#FF4D5A" },
-  reddit:  { emoji: "🟠", label: "Reddit",  color: "#FF8B4A" },
+  google:     { emoji: "🔎", label: "Google",      color: "#5BA8FF" },
+  youtube:    { emoji: "▶",  label: "YouTube",     color: "#FF4D5A" },
+  reddit:     { emoji: "🟠", label: "Reddit",      color: "#FF8B4A" },
+  wikipedia:  { emoji: "📚", label: "Wikipedia",   color: "#9CA3AF" },
+  hackernews: { emoji: "🟠", label: "Hacker News", color: "#FF6600" },
 };
 
-const ALL_SOURCES: Source[] = ["google", "youtube", "reddit"];
-// Default selection on first paint. Reddit is intentionally *off* — its
-// /r/popular endpoint now requires OAuth from cloud IPs (post-2023 API
-// tightening) and forcing every visitor to set REDDIT_CLIENT_ID/SECRET
-// just to see trends is wrong. The toggle stays visible so users with
-// creds can enable it, and the orange banner in the page explains the
-// flow on demand. ALL_SOURCES is still the canonical list — needed for
-// sortSources + the "All sources" summary label.
-const DEFAULT_SOURCES: Source[] = ["google", "youtube"];
+// Canonical order. Sources that need creds (YouTube key, Reddit OAuth)
+// sit at the end so the first-paint button row reads "free → gated."
+const ALL_SOURCES: Source[] = ["google", "wikipedia", "hackernews", "youtube", "reddit"];
+// Default selection on first paint = every zero-auth source. The first-time
+// visitor sees ~110 unique trends merged with no banners and nothing to
+// register. YouTube + Reddit stay in ALL_SOURCES (visible toggles) so users
+// with creds can opt in; their respective banners explain the env-var flow
+// on demand. This pattern beats "force everyone to register before seeing
+// anything" — see [[feedback-tool-vs-value]].
+const DEFAULT_SOURCES: Source[] = ["google", "wikipedia", "hackernews"];
 
 // Canonical order so cache tags + persistence don't depend on click order.
 function sortSources(list: Source[]): Source[] {
@@ -159,9 +164,10 @@ export default function TrendsPage() {
     load(sourcesKey.split(",") as Source[], niche, geo);
   }, [hydrated, sourcesKey, niche, geo, load]);
 
-  // Only disable the geo row when Reddit is the *only* selected source —
-  // when mixed with Google/YouTube, geo still applies to those.
-  const redditOnly = sources.length === 1 && sources[0] === "reddit";
+  // Disable the geo row only when *every* selected source is geo-less
+  // (Reddit, Hacker News). Mixed with any geo-aware source (Google,
+  // YouTube, Wikipedia) → geo still applies to those.
+  const allGeoLess = sources.length > 0 && sources.every(s => s === "reddit" || s === "hackernews");
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -195,16 +201,18 @@ export default function TrendsPage() {
                 Filters ▾ <span style={{ color: "var(--muted)", opacity: .6 }}>
                   ({sources.length === ALL_SOURCES.length
                     ? "All sources"
-                    : sources.map(s => SOURCE_LABELS[s]).join(" + ")} · {redditOnly ? "global" : geo} · {nicheLabel || "All niches"})
+                    : sources.map(s => SOURCE_LABELS[s]).join(" + ")} · {allGeoLess ? "global" : geo} · {nicheLabel || "All niches"})
                 </span>
               </summary>
               <div style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "10px" }}>
                 <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                   <div style={{ display: "flex", border: "1px solid var(--border)", borderRadius: "100px", overflow: "hidden", background: "var(--s1)" }}>
                     {([
-                      ["google", "🔎 Google"],
-                      ["youtube", "▶ YouTube"],
-                      ["reddit", "🟠 Reddit"],
+                      ["google",     "🔎 Google"],
+                      ["wikipedia",  "📚 Wikipedia"],
+                      ["hackernews", "🟧 HN"],
+                      ["youtube",    "▶ YouTube"],
+                      ["reddit",     "🟠 Reddit"],
                     ] as [Source, string][]).map(([s, label]) => {
                       const active = sources.includes(s);
                       return (
@@ -220,9 +228,9 @@ export default function TrendsPage() {
                       );
                     })}
                   </div>
-                  <div style={{ display: "flex", border: "1px solid var(--border)", borderRadius: "100px", overflow: "hidden", background: "var(--s1)", opacity: redditOnly ? 0.4 : 1 }} title={redditOnly ? "Reddit popular is global — geo doesn't apply" : undefined}>
+                  <div style={{ display: "flex", border: "1px solid var(--border)", borderRadius: "100px", overflow: "hidden", background: "var(--s1)", opacity: allGeoLess ? 0.4 : 1 }} title={allGeoLess ? "Selected sources are global — geo doesn't apply" : undefined}>
                     {GEOS.map(([code, label]) => (
-                      <button key={code} onClick={() => setGeo(code)} disabled={redditOnly} title={redditOnly ? "Reddit popular is global" : `Trends for ${code}`} style={{ padding: "9px 14px", border: "none", background: geo === code ? "var(--s3)" : "transparent", color: geo === code ? "var(--text)" : "var(--muted)", fontSize: ".82rem", cursor: redditOnly ? "not-allowed" : "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
+                      <button key={code} onClick={() => setGeo(code)} disabled={allGeoLess} title={allGeoLess ? "Selected sources are global" : `Trends for ${code}`} style={{ padding: "9px 14px", border: "none", background: geo === code ? "var(--s3)" : "transparent", color: geo === code ? "var(--text)" : "var(--muted)", fontSize: ".82rem", cursor: allGeoLess ? "not-allowed" : "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
                         {label}
                       </button>
                     ))}
