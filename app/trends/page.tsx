@@ -47,6 +47,14 @@ const SOURCE_BADGES: Record<Source, { emoji: string; label: string; color: strin
 };
 
 const ALL_SOURCES: Source[] = ["google", "youtube", "reddit"];
+// Default selection on first paint. Reddit is intentionally *off* — its
+// /r/popular endpoint now requires OAuth from cloud IPs (post-2023 API
+// tightening) and forcing every visitor to set REDDIT_CLIENT_ID/SECRET
+// just to see trends is wrong. The toggle stays visible so users with
+// creds can enable it, and the orange banner in the page explains the
+// flow on demand. ALL_SOURCES is still the canonical list — needed for
+// sortSources + the "All sources" summary label.
+const DEFAULT_SOURCES: Source[] = ["google", "youtube"];
 
 // Canonical order so cache tags + persistence don't depend on click order.
 function sortSources(list: Source[]): Source[] {
@@ -80,7 +88,7 @@ export default function TrendsPage() {
   // Sources is an array (canonical order) rather than a Set because (a)
   // Set mutation doesn't trigger React re-renders and (b) we serialize it
   // as CSV for the API + localStorage anyway.
-  const [sources, setSources] = useState<Source[]>(ALL_SOURCES);
+  const [sources, setSources] = useState<Source[]>(DEFAULT_SOURCES);
   const [niche, setNiche] = useState("");
   const [trends, setTrends] = useState<Trend[]>([]);
   const [loading, setLoading] = useState(true);
