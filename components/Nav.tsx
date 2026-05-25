@@ -11,14 +11,15 @@ export function Nav() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { theme, toggle } = useTheme();
 
-  // Flat nav — Home first, then the loop. Analyze sits before Generate because
-  // the natural creator workflow starts with "I have a hook, is it any good?"
-  // not "I have nothing, generate something". Analyze is also our flagship
-  // (scoring + patterns + Strategic Takes — the catch we have over ChatGPT).
+  // Flat nav — Home first, then Analyze (our flagship), then the rest of the
+  // loop. Order signals priority: Analyze is the demo that converts ("paste
+  // hook → 32/100 → fix → 84/100"), Trends is the supporting strategic value.
+  // Generate sits after Analyze because the natural workflow is "I have a
+  // hook, is it any good?" before "I have nothing, generate something."
   const primary = [
     { href: "/", label: "Home" },
-    { href: "/trends", label: "Trends" },
     { href: "/analyzer", label: "Analyze" },
+    { href: "/trends", label: "Trends" },
     { href: "/generator", label: "Generate" },
     { href: "/patterns", label: "Patterns" },
     { href: "/pricing", label: "Pricing" },
