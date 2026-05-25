@@ -89,12 +89,15 @@ export default function HomePage() {
               ))}
             </div>
 
-            {/* Two personas side-by-side as full bordered cards. Previous
-                version used tiny uppercase labels above plain CTAs — visually
-                indistinct from the surrounding hero content and ignored on
-                scroll. These claim space deliberately: each card is the
-                primary action for its persona, not a label-decorated link. */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px", marginBottom: "1.25rem" }}>
+            {/* Three personas side-by-side as full bordered cards. Each card
+                IS the primary action for its persona (not a label-decorated
+                link). Order = "I have something specific" → "I have an idea"
+                → "I have nothing yet" so the visitor's mental state maps
+                directly to the corresponding tool without thinking.
+                Grid minmax dropped to 175px so 3 cards still fit in one row
+                inside the ~520px hero-left column on desktop; they wrap
+                cleanly to a single column on mobile via auto-fit. */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(175px, 1fr))", gap: "10px", marginBottom: "1.25rem" }}>
               <PersonaCard
                 accent="var(--hot)"
                 emoji="✦"
@@ -103,6 +106,14 @@ export default function HomePage() {
                 href="/analyzer"
                 cta="Score it — Free →"
                 primary
+              />
+              <PersonaCard
+                accent="var(--gold)"
+                emoji="💡"
+                title="I have an idea, no hook"
+                desc="Drop your topic. Get 8 scored openings across viral formulas — pick the strongest."
+                href="/generator"
+                cta="Generate 8 hooks →"
               />
               <PersonaCard
                 accent="var(--electric)"
