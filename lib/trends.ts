@@ -7,7 +7,7 @@ import { extractJson } from "@/lib/parseJson";
 const PATTERN_NAMES = HOOK_PATTERNS.map(p => p.name);
 
 export type Velocity = "rising" | "steady" | "cooling" | "new";
-export type TrendSource = "google" | "youtube" | "reddit" | "wikipedia" | "hackernews";
+export type TrendSource = "google" | "youtube" | "reddit" | "wikipedia" | "hackernews" | "bluesky";
 // `source` is tagged when trends from multiple sources are merged into one
 // list, so each card can show which feed it came from. Optional because
 // historical callers (and the still-typed-array returns inside this file
@@ -289,6 +289,58 @@ export async function hackerNewsTrends(): Promise<Trend[]> {
       const points = h.points ?? 0;
       const comments = h.num_comments ?? 0;
       return { title, sub: `${points} points · ${comments} comments` };
+    })
+    .filter((t): t is Trend => t !== null)
+    .slice(0, 50);
+}
+
+// ── Bluesky "what's hot" feed ──
+// atproto's appview exposes public read endpoints with NO auth — unlike
+// Reddit, the platform was built API-first and the data is intentionally
+// crawlable. We read a curated "what's hot" feed via app.bsky.feed.getFeed.
+// Smaller audience than Reddit but growing fast in 2026 and conversationally
+// dense (every post is a take, not a meme link), which makes it a good
+// "what's the discourse" signal to complement Wikipedia (research interest)
+// and Google (search queries).
+//
+// Stability caveat: the feed URI below is a community-curated generator. If
+// the curator ever takes it down or renames it, this 404s — the route catches
+// and other sources keep working, no production breakage. Update the URI then.
+const BLUESKY_HOT_FEED = "at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.generator/whats-hot-classic";
+
+interface BlueskyPost {
+  post?: {
+    record?: { text?: string };
+    author?: { handle?: string };
+    likeCount?: number;
+    replyCount?: number;
+    repostCount?: number;
+  };
+}
+
+export async function blueskyTrends(): Promise<Trend[]> {
+  const url = `https://public.api.bsky.app/xrpc/app.bsky.feed.getFeed?feed=${encodeURIComponent(BLUESKY_HOT_FEED)}&limit=50`;
+  const res = await fetch(url, { next: { revalidate: TREND_CACHE_SECONDS } });
+  if (!res.ok) throw new Error(`bluesky ${res.status}`);
+  const data = (await res.json()) as { feed?: BlueskyPost[] };
+  return (data.feed || [])
+    .map(item => {
+      const p = item.post;
+      // Collapse newlines + extra whitespace — Bluesky posts can be multiline
+      // and we render single-line trend cards. Truncate long posts at 140
+      // chars; gives enough context to judge the topic without dominating the
+      // grid layout.
+      const raw = p?.record?.text?.trim().replace(/\s+/g, " ");
+      if (!raw) return null;
+      const title = raw.length > 140 ? raw.slice(0, 140).trim() + "…" : raw;
+      const handle = p?.author?.handle || "";
+      const likes = p?.likeCount ?? 0;
+      const replies = p?.replyCount ?? 0;
+      const fmtLikes = likes >= 1000 ? `${(likes / 1000).toFixed(1)}k` : `${likes}`;
+      const sub = handle
+        ? `@${handle} · ↑${fmtLikes} · 💬${replies}`
+        : `↑${fmtLikes} · 💬${replies}`;
+      return { title, sub };
     })
     .filter((t): t is Trend => t !== null)
     .slice(0, 50);

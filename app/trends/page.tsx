@@ -7,7 +7,7 @@ import { NextStep } from "@/components/NextStep";
 import { getNichePref, setNichePref, getGeoPref, setGeoPref, getSourcesPref, setSourcesPref } from "@/lib/prefs";
 
 type Velocity = "rising" | "steady" | "cooling" | "new";
-type Source = "google" | "youtube" | "reddit" | "wikipedia" | "hackernews";
+type Source = "google" | "youtube" | "reddit" | "wikipedia" | "hackernews" | "bluesky";
 interface Trend { title: string; sub: string; source?: Source; velocity?: Velocity; history?: number[]; }
 
 // Tiny rank-history sparkline. Input is rank (1 = top), so we invert: a term
@@ -40,6 +40,7 @@ const SOURCE_LABELS: Record<Source, string> = {
   reddit:     "Reddit",
   wikipedia:  "Wikipedia",
   hackernews: "Hacker News",
+  bluesky:    "Bluesky",
 };
 
 const SOURCE_BADGES: Record<Source, { emoji: string; label: string; color: string }> = {
@@ -47,19 +48,20 @@ const SOURCE_BADGES: Record<Source, { emoji: string; label: string; color: strin
   youtube:    { emoji: "▶",  label: "YouTube",     color: "#FF4D5A" },
   reddit:     { emoji: "🟠", label: "Reddit",      color: "#FF8B4A" },
   wikipedia:  { emoji: "📚", label: "Wikipedia",   color: "#9CA3AF" },
-  hackernews: { emoji: "🟠", label: "Hacker News", color: "#FF6600" },
+  hackernews: { emoji: "🟧", label: "Hacker News", color: "#FF6600" },
+  bluesky:    { emoji: "🦋", label: "Bluesky",     color: "#0085FF" },
 };
 
 // Canonical order. Sources that need creds (YouTube key, Reddit OAuth)
 // sit at the end so the first-paint button row reads "free → gated."
-const ALL_SOURCES: Source[] = ["google", "wikipedia", "hackernews", "youtube", "reddit"];
+const ALL_SOURCES: Source[] = ["google", "wikipedia", "hackernews", "bluesky", "youtube", "reddit"];
 // Default selection on first paint = every zero-auth source. The first-time
 // visitor sees ~110 unique trends merged with no banners and nothing to
 // register. YouTube + Reddit stay in ALL_SOURCES (visible toggles) so users
 // with creds can opt in; their respective banners explain the env-var flow
 // on demand. This pattern beats "force everyone to register before seeing
 // anything" — see [[feedback-tool-vs-value]].
-const DEFAULT_SOURCES: Source[] = ["google", "wikipedia", "hackernews"];
+const DEFAULT_SOURCES: Source[] = ["google", "wikipedia", "hackernews", "bluesky"];
 
 // Canonical order so cache tags + persistence don't depend on click order.
 function sortSources(list: Source[]): Source[] {
@@ -165,9 +167,9 @@ export default function TrendsPage() {
   }, [hydrated, sourcesKey, niche, geo, load]);
 
   // Disable the geo row only when *every* selected source is geo-less
-  // (Reddit, Hacker News). Mixed with any geo-aware source (Google,
-  // YouTube, Wikipedia) → geo still applies to those.
-  const allGeoLess = sources.length > 0 && sources.every(s => s === "reddit" || s === "hackernews");
+  // (Reddit, Hacker News, Bluesky). Mixed with any geo-aware source
+  // (Google, YouTube, Wikipedia) → geo still applies to those.
+  const allGeoLess = sources.length > 0 && sources.every(s => s === "reddit" || s === "hackernews" || s === "bluesky");
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -211,6 +213,7 @@ export default function TrendsPage() {
                       ["google",     "🔎 Google"],
                       ["wikipedia",  "📚 Wikipedia"],
                       ["hackernews", "🟧 HN"],
+                      ["bluesky",    "🦋 Bluesky"],
                       ["youtube",    "▶ YouTube"],
                       ["reddit",     "🟠 Reddit"],
                     ] as [Source, string][]).map(([s, label]) => {
