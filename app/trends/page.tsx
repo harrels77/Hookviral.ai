@@ -278,15 +278,19 @@ export default function TrendsPage() {
             </div>
           )}
 
+          {/* Source-specific notices: stay diplomatic — never expose env-var
+              names, OAuth flows, or internal infra in the user-facing copy.
+              The dev knows what to fix from the route's `unconfigured` array;
+              the visitor just needs a calm explanation + a way to move on. */}
           {sources.includes("youtube") && unconfigured.includes("youtube") && (
             <div style={{ background: "rgba(255,184,0,.06)", border: "1px solid rgba(255,184,0,.3)", color: "var(--gold)", borderRadius: "var(--r2)", padding: "1.25rem 1.5rem", fontSize: ".85rem", lineHeight: 1.7, marginBottom: "12px" }}>
-              YouTube trends need a <strong>YOUTUBE_API_KEY</strong> in <code>.env.local</code> (free). Other sources keep working — <button onClick={() => toggleSource("youtube")} style={{ background: "none", border: "none", color: "var(--hot)", cursor: "pointer", fontFamily: "var(--fb)", fontSize: ".85rem", textDecoration: "underline", padding: 0 }}>hide YouTube</button> to dismiss this.
+              YouTube trends aren&apos;t available right now. Other sources are still loading — <button onClick={() => toggleSource("youtube")} style={{ background: "none", border: "none", color: "var(--hot)", cursor: "pointer", fontFamily: "var(--fb)", fontSize: ".85rem", textDecoration: "underline", padding: 0 }}>hide YouTube</button> to continue.
             </div>
           )}
 
           {sources.includes("reddit") && unconfigured.includes("reddit") && (
             <div style={{ background: "rgba(255,138,72,.06)", border: "1px solid rgba(255,138,72,.3)", color: "#FF8A48", borderRadius: "var(--r2)", padding: "1.25rem 1.5rem", fontSize: ".85rem", lineHeight: 1.7, marginBottom: "12px" }}>
-              Reddit now requires OAuth from cloud IPs (post-2023 API tightening — the public JSON endpoint 403s from Vercel/AWS). Add <strong>REDDIT_CLIENT_ID</strong> + <strong>REDDIT_CLIENT_SECRET</strong> to <code>.env.local</code> (free, ~2 min — register a &quot;script&quot; app at <a href="https://www.reddit.com/prefs/apps" target="_blank" rel="noopener noreferrer" style={{ color: "#FF8A48", textDecoration: "underline" }}>reddit.com/prefs/apps</a>). Other sources keep working — <button onClick={() => toggleSource("reddit")} style={{ background: "none", border: "none", color: "var(--hot)", cursor: "pointer", fontFamily: "var(--fb)", fontSize: ".85rem", textDecoration: "underline", padding: 0 }}>hide Reddit</button> to dismiss this.
+              Reddit trends aren&apos;t available right now. Other sources are still loading — <button onClick={() => toggleSource("reddit")} style={{ background: "none", border: "none", color: "var(--hot)", cursor: "pointer", fontFamily: "var(--fb)", fontSize: ".85rem", textDecoration: "underline", padding: 0 }}>hide Reddit</button> to continue.
             </div>
           )}
 

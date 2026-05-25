@@ -138,8 +138,11 @@ export async function GET(req: NextRequest) {
     trends: final,
     sources,
     unconfigured,
+    // User-facing copy: never mention env vars, OAuth, or "configured." The
+    // visitor doesn't owe us a setup step — from their angle the source just
+    // isn't available, period. Suggest the action they can take in-page.
     error: allEmpty && unconfigured.length === sources.length
-      ? "No selected source is configured — add the missing API keys to .env or enable Google (no key needed)."
+      ? "Trends couldn't load from the sources you selected. Try enabling another one above."
       : "",
   });
 }
