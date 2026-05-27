@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getNiche } from "@/lib/niches";
 import { upstashConfigured, pipeline, command } from "@/lib/upstash";
 import { PATTERN_VOCAB, HOOK_PATTERNS } from "@/lib/patterns";
+import { platformGuidance } from "@/lib/platforms";
 import { extractJson } from "@/lib/parseJson";
 
 const PATTERN_NAMES = HOOK_PATTERNS.map(p => p.name);
@@ -576,12 +577,19 @@ async function setCachedResearch(key: string, data: DecodedTrend) {
 
 export async function decodeTrend(
   trend: string,
-  nicheSlug: string
+  nicheSlug: string,
+  // Optional target platform. Research currently runs without a user-selected
+  // platform so we default to TikTok psychology — the most active short-form
+  // market and the natural endpoint for trend → hook. When the Research page
+  // ships a platform selector, pass it through here. Including the slug in
+  // the cache key prevents one platform's hooks from being served for another.
+  platformSlug: string = "tiktok"
 ): Promise<DecodedTrend> {
   const niche = getNiche(nicheSlug);
   const audience = niche ? `a ${niche.label} short-form creator` : "a short-form video creator";
+  const platformBlock = platformGuidance(platformSlug);
 
-  const cacheKey = `${niche?.slug || "any"}:${trend.toLowerCase().slice(0, 160)}`;
+  const cacheKey = `${niche?.slug || "any"}:${platformSlug}:${trend.toLowerCase().slice(0, 160)}`;
   const cached = await getCachedResearch(cacheKey);
   if (cached) return cached;
 
@@ -603,6 +611,9 @@ export async function decodeTrend(
       },
     ],
     system: `You are a content strategist researching a trending topic for ${audience}.
+
+PLATFORM PSYCHOLOGY (every hook you write must hit this lens — score honestly against these criteria)
+${platformBlock}
 
 STEP 1 — RESEARCH. Use web_search 1-3 times to find:
 - Who/what the trend refers to (the specific actors)

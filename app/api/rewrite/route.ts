@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { rateLimit, getClientIp } from "@/lib/rateLimit";
 import { HOOK_PATTERNS } from "@/lib/patterns";
+import { platformGuidance } from "@/lib/platforms";
+import { extractJson } from "@/lib/parseJson";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -13,7 +15,15 @@ export const REWRITE_STYLES = [
   "Punchier",
 ] as const;
 
-const SYSTEM_PROMPT = `You are the world's #1 short-form hook rewriter in 2026. You take a hook the user already wrote and make it stop the scroll in the first 3 seconds, applying the requested transformation (a style OR a specific attention pattern to inject).
+// System prompt is built per call so the platform psychology block reflects
+// the target platform. "More cinematic" on TikTok ≠ "More cinematic" on
+// Reels — the same style instruction lands differently when the audience
+// reflex changes.
+function buildSystemPrompt(platformBlock: string): string {
+  return `You are the world's #1 short-form hook rewriter in 2026. You take a hook the user already wrote and make it stop the scroll in the first 3 seconds, applying the requested transformation (a style OR a specific attention pattern to inject).
+
+PLATFORM PSYCHOLOGY (rewrites must respect this — the style means different things per platform)
+${platformBlock}
 
 RULES:
 - Keep the user's core idea and topic — do not invent a different subject.
@@ -25,6 +35,7 @@ Return 3 distinct rewrites in the requested style. For each, give an honest rete
 
 Respond ONLY with valid JSON, no markdown:
 { "rewrites": [{ "text": "...", "score": 0-100 }, { "text": "...", "score": 0-100 }, { "text": "...", "score": 0-100 }] }`;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -55,7 +66,7 @@ export async function POST(req: NextRequest) {
     const message = await client.messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: 500,
-      system: SYSTEM_PROMPT,
+      system: buildSystemPrompt(platformGuidance(typeof platform === "string" ? platform : undefined)),
       messages: [
         {
           role: "user",
@@ -68,9 +79,12 @@ export async function POST(req: NextRequest) {
       .filter(b => b.type === "text")
       .map(b => (b as { type: "text"; text: string }).text)
       .join("");
-    const parsed = JSON.parse(raw.replace(/```json|```/g, "").trim()) as {
+    // extractJson is resilient to preamble/fences — was the fragile
+    // JSON.parse(raw.replace(...)) chain before, which 500'd on any prose
+    // wrapping. Same dette technique flagged for the other routes.
+    const parsed = extractJson<{
       rewrites?: { text?: string; score?: number }[];
-    };
+    }>(raw);
     const rewrites = (parsed.rewrites || [])
       .filter(r => r && typeof r.text === "string" && r.text.trim())
       .slice(0, 3)

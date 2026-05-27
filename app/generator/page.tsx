@@ -21,7 +21,7 @@ const GOALS = ["Engagement", "Sales", "Education", "Growth", "Brand awareness", 
 const FREE_DAILY = 10;
 
 interface HookAnalysis { why: string; curiosity: number; emotion: number; clarity: number; }
-interface Hook { id: string; text: string; formula: string; platform: string; score: number; hashtags?: string[]; analysis?: HookAnalysis; patternsUsed?: string[]; }
+interface Hook { id: string; text: string; formula: string; platform: string; score: number; hashtags?: string[]; analysis?: HookAnalysis; patternsUsed?: string[]; reasoning?: string; }
 interface Script { hook: string; bridge: string; cta: string; }
 
 function getMidnight() { const d = new Date(); d.setDate(d.getDate()+1); d.setHours(0,0,0,0); return d.toISOString(); }
@@ -333,7 +333,7 @@ function HookCard({ hook, index, isFav, copied, expandedHash, expandedAnalysis, 
 
       {/* Attention patterns this hook uses — same vocabulary as Analyzer & Patterns */}
       {hook.patternsUsed && hook.patternsUsed.length > 0 && (
-        <div style={{display:"flex",flexWrap:"wrap",gap:"4px",marginBottom:"1rem"}}>
+        <div style={{display:"flex",flexWrap:"wrap",gap:"4px",marginBottom:hook.reasoning?"6px":"1rem"}}>
           {hook.patternsUsed.map(p => (
             <Link key={p} href={patternHref(p)} title="Learn this pattern"
               style={{fontSize:".62rem",padding:"2px 8px",borderRadius:"100px",background:"rgba(0,255,178,.06)",color:"var(--neon)",border:"1px solid rgba(0,255,178,.2)",textDecoration:"none",fontFamily:"var(--fb)"}}>
@@ -341,6 +341,16 @@ function HookCard({ hook, index, isFav, copied, expandedHash, expandedAnalysis, 
             </Link>
           ))}
         </div>
+      )}
+
+      {/* Why this hook works — 1-sentence rationale from the Generator's
+          reasoning field. Mirrors the chips' purpose ("what patterns") with
+          the "why those patterns hit, in plain language." Small + italic so
+          it reads as auxiliary context, not noise. */}
+      {hook.reasoning && (
+        <p style={{fontSize:".72rem",lineHeight:1.5,color:"var(--muted)",fontStyle:"italic",marginBottom:"1rem",margin:"0 0 1rem 0"}}>
+          {hook.reasoning}
+        </p>
       )}
 
       {/* Text */}

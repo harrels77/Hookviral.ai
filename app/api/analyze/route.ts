@@ -3,15 +3,23 @@ import Anthropic from "@anthropic-ai/sdk";
 import { rateLimit, getClientIp } from "@/lib/rateLimit";
 import { PATTERN_VOCAB, HOOK_PATTERNS } from "@/lib/patterns";
 import { getNiche } from "@/lib/niches";
+import { platformGuidance } from "@/lib/platforms";
 import { extractJson } from "@/lib/parseJson";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const PATTERN_NAMES = HOOK_PATTERNS.map(p => p.name);
 
-const SYSTEM_PROMPT = `You are the world's #1 viral retention analyst in 2026. You judge whether a short-form hook stops the scroll in the first 3 seconds.
+// System prompt now takes a platform-specific psychology block. Scoring a
+// TikTok pattern-interrupt against Reels aspirational criteria (or vice
+// versa) underrates good hooks for their actual platform. Build per call.
+function buildSystemPrompt(platformBlock: string): string {
+  return `You are the world's #1 viral retention analyst in 2026. You judge whether a short-form hook stops the scroll in the first 3 seconds.
 
-You receive ONE hook the user already wrote. Analyze it honestly — do NOT rewrite it. Be specific and critical; a generic hook should score low.
+You receive ONE hook the user already wrote. Analyze it honestly — do NOT rewrite it. Be specific and critical; a generic hook should score low. Judge the hook AGAINST THE PLATFORM IT'S WRITTEN FOR — a TikTok-style pattern interrupt scored as a Reels aspirational hook will always lose, and vice versa.
+
+PLATFORM PSYCHOLOGY (use this as the scoring lens)
+${platformBlock}
 
 Scoring (0-100, how likely it stops the scroll in 3s):
 - 95-99: Would stop 9/10 scrollers
@@ -53,6 +61,7 @@ Respond ONLY with valid JSON, no markdown:
 }
 
 If the hook is already excellent, weakPoints can be an empty array. Match the language of the hook.`;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -77,7 +86,7 @@ export async function POST(req: NextRequest) {
     const message = await client.messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: 800,
-      system: SYSTEM_PROMPT,
+      system: buildSystemPrompt(platformGuidance(typeof platform === "string" ? platform : undefined)),
       messages: [
         {
           role: "user",
