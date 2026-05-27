@@ -107,7 +107,20 @@ export default function TrendsPage() {
 
   useEffect(() => {
     const savedSources = parseSourcesCsv(getSourcesPref());
-    if (savedSources.length > 0) setSources(savedSources);
+    if (savedSources.length > 0) {
+      // Sanity check before trusting localStorage: if the user's persisted
+      // selection is exclusively gated sources (YouTube/Reddit) and those
+      // aren't configured on the current deployment, the page lands in an
+      // unrecoverable state — all banners fire, no toggle is obviously the
+      // "fix this" button. Force-merge with DEFAULT_SOURCES (which are all
+      // zero-auth, always work) so the visitor always has at least one
+      // working source visible. Preserves their gated choices on top.
+      // Set+sort dedupes; canonical order is restored by sortSources.
+      const hasZeroAuth = savedSources.some(s => DEFAULT_SOURCES.includes(s));
+      setSources(hasZeroAuth
+        ? savedSources
+        : sortSources([...savedSources, ...DEFAULT_SOURCES]));
+    }
     setNiche(getNichePref());
     setGeo(getGeoPref() || "US");
     setHydrated(true);
