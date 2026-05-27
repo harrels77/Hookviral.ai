@@ -100,6 +100,9 @@ Mesures sur `hookviral-ai.vercel.app` : **Performance 100 · Best Practices 100 
 ## Journal des changements
 Tous les changements et améliorations significatifs, du plus récent au plus ancien. Une ligne par commit. Le détail vit dans `git show <sha>`.
 
+**2026-05-27**
+- `a73748b` — **Trends : sanity-check à l'hydration des sources** — fix robustesse pour éviter l'état "tout broken." Quand la sélection persistée dans `localStorage.hv_sources` ne contient *que* des sources gated (YouTube/Reddit) sans creds dans l'env de déploiement, la page atterissait avec tous les banners actifs et aucun bouton évident pour s'en sortir. Maintenant : au mount-once effect, si aucune des sources sauvées n'est dans `DEFAULT_SOURCES` (zero-auth), on force-merge avec les défauts pour garantir qu'il y a toujours au moins une source qui fonctionne. Les toggles gated du user sont préservés en plus.
+
 **2026-05-25**
 - `a889c67` — **3ème PersonaCard sur Home** : feedback user "ceux qui ont une idée de contenu mais ne savent pas par où commencer" non couverts par les 2 cards existantes. Ajout d'une carte intermédiaire entre Hook (Analyzer) et Niche (Trends) → `💡 I have an idea, no hook` accent gold, CTA "Generate 8 hooks →" → `/generator`. Grid minmax 220→175px pour que 3 cards tiennent en une rangée dans la colonne hero-left ~520px sans wrap dégueulasse, auto-fit gère le mobile.
 - `defd74f` — **Trends banners diplomatiques** : feedback user "afficher une sorte de msg diplomatique pas exposer que l'on manque les credentials." Réécriture des 3 messages user-facing (YouTube unconfigured, Reddit unconfigured, all-sources-empty) → plus de mention de YOUTUBE_API_KEY, REDDIT_CLIENT_ID/SECRET, OAuth, .env.local, ou reddit.com/prefs/apps. Copy générique "X trends aren't available right now. Other sources are still loading — [hide X] to continue." Le dev garde la visibilité via la `unconfigured: Source[]` array dans la response + CLAUDE.md pour la doc env.
