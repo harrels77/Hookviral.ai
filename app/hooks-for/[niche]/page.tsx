@@ -14,12 +14,27 @@ export async function generateMetadata(
   const { niche } = await params;
   const n = getNiche(niche);
   if (!n) return { title: "Hooks — HookViral AI" };
+  const low = n.label.toLowerCase();
   const title = `Viral ${n.label} Hooks Generator (Free) — HookViral AI`;
-  const description = `${n.tagline} Generate 8 scored ${n.label.toLowerCase()} hooks built to stop the scroll, then analyze them for retention. Free, no account.`;
+  const description = `${n.tagline} Generate 8 scored ${low} hooks built to stop the scroll, then analyze them for retention. Free, no account.`;
   return {
     title,
     description,
-    openGraph: { title, description },
+    keywords: [
+      `${low} hooks`,
+      `${low} hook generator`,
+      `viral ${low} hooks`,
+      `${low} tiktok hooks`,
+      `${low} reels hooks`,
+      `${low} youtube shorts hooks`,
+      `${low} video ideas`,
+      `${low} content ideas`,
+      `${low} hook examples`,
+      "viral hooks",
+      "hook generator",
+      "short-form retention",
+    ],
+    openGraph: { title, description, url: `/hooks-for/${n.slug}` },
     alternates: { canonical: `/hooks-for/${n.slug}` },
   };
 }
