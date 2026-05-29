@@ -230,41 +230,49 @@ function isWikipediaMeta(title: string): boolean {
 
 export async function wikipediaTrends(geo: string): Promise<Trend[]> {
   const project = WIKI_PROJECTS[geo] || "en.wikipedia";
-  // The pageviews aggregate is published the day AFTER. Asking for today
-  // returns 404 until ~24h later; we ask for yesterday UTC, which is
-  // always available. If even that 404s (rare aggregation lag), the route
-  // catches and gracefully returns 0 items for this source — other sources
-  // keep responding.
-  const d = new Date(Date.now() - 24 * 3600 * 1000);
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(d.getUTCDate()).padStart(2, "0");
+  // The "top" pageviews aggregate lags ~24-48h, NOT 24h — verified live:
+  // J-1 returns 404 until the day is fully aggregated (often well past UTC
+  // midnight), J-2 is reliably available. Hardcoding J-1 meant Wikipedia
+  // silently returned nothing every day until ~midday UTC. Walk back from
+  // J-1 to J-3 and use the first day that's published, so we always serve
+  // the freshest available data.
+  for (let back = 1; back <= 3; back++) {
+    const d = new Date(Date.now() - back * 24 * 3600 * 1000);
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(d.getUTCDate()).padStart(2, "0");
 
-  const url = `https://wikimedia.org/api/rest_v1/metrics/pageviews/top/${project}/all-access/${y}/${m}/${day}`;
-  const res = await fetch(url, {
-    next: { revalidate: TREND_CACHE_SECONDS },
-    headers: { "User-Agent": WIKI_UA },
-  });
-  if (!res.ok) throw new Error(`wikipedia ${res.status}`);
-  const data = (await res.json()) as {
-    items?: { articles?: { article?: string; views?: number; rank?: number }[] }[];
-  };
-  const articles = data.items?.[0]?.articles || [];
-  return articles
-    .map(a => {
-      if (!a.article || isWikipediaMeta(a.article)) return null;
-      // Wikipedia uses underscores in URLs; humanize for display.
-      const title = a.article.replace(/_/g, " ");
-      const views = typeof a.views === "number" ? a.views : 0;
-      const formatted = views >= 1_000_000
-        ? `${(views / 1_000_000).toFixed(1)}M views`
-        : views >= 1000
-          ? `${Math.round(views / 1000)}k views`
-          : `${views} views`;
-      return { title, sub: formatted };
-    })
-    .filter((t): t is Trend => t !== null)
-    .slice(0, 50);
+    const url = `https://wikimedia.org/api/rest_v1/metrics/pageviews/top/${project}/all-access/${y}/${m}/${day}`;
+    const res = await fetch(url, {
+      next: { revalidate: TREND_CACHE_SECONDS },
+      headers: { "User-Agent": WIKI_UA },
+    });
+    // 404 = that day isn't aggregated yet; try the day before.
+    if (res.status === 404) continue;
+    if (!res.ok) throw new Error(`wikipedia ${res.status}`);
+    const data = (await res.json()) as {
+      items?: { articles?: { article?: string; views?: number; rank?: number }[] }[];
+    };
+    const articles = data.items?.[0]?.articles || [];
+    return articles
+      .map(a => {
+        if (!a.article || isWikipediaMeta(a.article)) return null;
+        // Wikipedia uses underscores in URLs; humanize for display.
+        const title = a.article.replace(/_/g, " ");
+        const views = typeof a.views === "number" ? a.views : 0;
+        const formatted = views >= 1_000_000
+          ? `${(views / 1_000_000).toFixed(1)}M views`
+          : views >= 1000
+            ? `${Math.round(views / 1000)}k views`
+            : `${views} views`;
+        return { title, sub: formatted };
+      })
+      .filter((t): t is Trend => t !== null)
+      .slice(0, 50);
+  }
+  // All of J-1..J-3 were 404 (extremely unlikely) — return empty so the
+  // merge keeps the other sources instead of throwing.
+  return [];
 }
 
 // ── Hacker News front page ──
