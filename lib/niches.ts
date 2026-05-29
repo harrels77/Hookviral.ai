@@ -95,6 +95,34 @@ export const NICHE_MODES: NicheMode[] = [
     ],
   },
   {
+    slug: "relationships",
+    label: "Relationships",
+    emoji: "💕",
+    tagline: "Hooks for dating, relationships & breakup content — incl. faceless / AI-presenter podcasts.",
+    guidance:
+      "Relationship viewers reward raw relatability and a strong point of view on dating, breakups, and modern romance. Lead with a confession that mirrors the viewer's own experience, a 'nobody talks about this' truth, or a polarizing take that forces them to pick a side. Specificity and an opinion that risks disagreement beat safe advice. Works for talk/podcast-style and AI-presenter formats.",
+    sampleTopics: ["Why situationships always end the same way", "Red flags everyone excuses", "The dating advice nobody asked for"],
+    exampleHooks: [
+      { text: "💕 He's not confusing. You're just not his priority.", formula: "Relatable Confession", score: 95 },
+      { text: "🚩 The green flag most people mistake for boring.", formula: "Contrarian", score: 93 },
+      { text: "👀 Nobody warns you about year 3 of a relationship.", formula: "Curiosity Gap", score: 92 },
+    ],
+  },
+  {
+    slug: "lifestyle",
+    label: "Lifestyle",
+    emoji: "🌿",
+    tagline: "Hooks for routine, wellness & aesthetic daily-life content.",
+    guidance:
+      "Lifestyle viewers reward aspiration grounded in something real — a habit, a routine, an aesthetic, a mindset shift they can copy. Lead with a transformation, an 'I tried X for Y days' arc, or a contrarian take on a wellness/productivity norm. Avoid vague inspiration; show the specific change and the result. Strong save-this intent.",
+    sampleTopics: ["My 5am routine that actually changed things", "Habits I quit to feel better", "The aesthetic nobody can afford"],
+    exampleHooks: [
+      { text: "🌿 I quit 3 'healthy' habits and finally slept through the night.", formula: "Contrarian", score: 94 },
+      { text: "✨ The 10-minute routine that replaced my $200 therapy bill.", formula: "Number + Promise", score: 93 },
+      { text: "👀 Nobody tells you how lonely 'glowing up' actually feels.", formula: "Relatable Confession", score: 92 },
+    ],
+  },
+  {
     slug: "sports",
     label: "Sports",
     emoji: "🏆",
