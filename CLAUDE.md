@@ -104,6 +104,7 @@ Mesures sur `hookviral-ai.vercel.app` : **Performance 100 · Best Practices 100 
 Tous les changements et améliorations significatifs, du plus récent au plus ancien. Une ligne par commit. Le détail vit dans `git show <sha>`.
 
 **2026-05-28**
+- `c9a030f` — **Niches : Relationships 💕 + Lifestyle 🌿 ajoutées** (séparées, pas fusionnées) — motivées par le dogfooding du founder qui teste HookViral 1 mois sur un podcast faceless IA (féminin, angle relation/lifestyle) ; `faceless` collait mal (orienté narration-documentaire). Auto-propagées partout via `NICHE_MODES` : chips Trends, selects Generator/Analyzer, + 4 nouvelles pages SEO evergreen (`/hooks-for/{relationships,lifestyle}` + `/trends/{relationships,lifestyle}`) via `generateStaticParams`.
 - `aa51024` — **Fix Wikipedia "ne montre rien"** : le endpoint Wikimedia pageviews "top" lag ~24-48h, pas 24h (vérifié live : J-1 = 404 jusqu'à agrégation complète bien après minuit UTC, J-2 = 200 fiable). On hardcodait J-1 → 404 → route catch → Wikipedia retournait vide silencieusement chaque jour jusqu'à ~midi UTC. Fix : `wikipediaTrends` walk-back J-1→J-2→J-3, `continue` sur 404, sert le premier jour agrégé. Le format `en.wikipedia` (sans .org) était bon, c'était pas le souci. Confirmé : J-2 retourne 999 articles réels.
 
 **2026-05-27**
