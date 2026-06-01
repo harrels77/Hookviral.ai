@@ -316,7 +316,10 @@ export async function hackerNewsTrends(): Promise<Trend[]> {
 // Stability caveat: the feed URI below is a community-curated generator. If
 // the curator ever takes it down or renames it, this 404s — the route catches
 // and other sources keep working, no production breakage. Update the URI then.
-const BLUESKY_HOT_FEED = "at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.generator/whats-hot-classic";
+// Originally pointed at "whats-hot-classic" — the curator renamed/removed it
+// (live probe returned `400 InvalidRequest "could not find feed"`). "whats-hot"
+// on the same DID is the live equivalent and responds 200.
+const BLUESKY_HOT_FEED = "at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.generator/whats-hot";
 
 interface BlueskyPost {
   post?: {
@@ -650,20 +653,21 @@ export async function twitterTrends(nicheSlug?: string): Promise<Trend[]> {
 // scraper later (or to the Graph API if Meta ever reopens hashtag search) is
 // a single-function change.
 
-// Niche → 3 hashtags WITHOUT the # prefix (Apify input quirk — it's the
-// hashtag *name*, not the searchable string). Picked for IG post volume +
-// niche audience alignment.
-const INSTAGRAM_NICHE_HASHTAGS: Record<string, string[]> = {
-  fitness:       ["fitness", "workout", "gym"],
-  finance:       ["finance", "investing", "moneymindset"],
-  tech:          ["tech", "ai", "startup"],
-  business:      ["entrepreneur", "business", "marketing"],
-  motivation:    ["motivation", "mindset", "discipline"],
-  faceless:      ["contentcreator", "reels", "viralreels"],
-  relationships: ["relationships", "dating", "love"],
-  lifestyle:     ["lifestyle", "wellness", "aesthetic"],
-  sports:        ["sports", "football", "basketball"],
-  "ai-content":  ["ai", "chatgpt", "aicontent"],
+// Niche → ONE hashtag WITHOUT the # prefix. The apify~instagram-scraper actor
+// accepts a single string for `search` (live tested: passing an array fails
+// with "Field input.search must be string"). Multiple hashtags would require
+// N separate actor runs at N× the cost — not worth it for the marginal breadth.
+const INSTAGRAM_NICHE_HASHTAG: Record<string, string> = {
+  fitness:       "fitness",
+  finance:       "investing",
+  tech:          "tech",
+  business:      "entrepreneur",
+  motivation:    "mindset",
+  faceless:      "contentcreator",
+  relationships: "relationships",
+  lifestyle:     "lifestyle",
+  sports:        "sports",
+  "ai-content":  "ai",
 };
 
 // Actor schema is reasonably stable but we still read every consumed field
@@ -683,7 +687,9 @@ interface InstagramApifyItem {
 
 // Isolated provider call. Swap to another scraper or to a Graph API path by
 // replacing this body — caller untouched.
-async function fetchInstagramViaProvider(search: string[]): Promise<InstagramApifyItem[]> {
+// Note: apify~instagram-scraper requires `search` to be a plain string, not
+// an array — confirmed live (400 "Field input.search must be string").
+async function fetchInstagramViaProvider(search: string): Promise<InstagramApifyItem[]> {
   return runApifyActor<InstagramApifyItem>("apify~instagram-scraper", {
     search,
     searchType: "hashtag",
@@ -695,9 +701,9 @@ async function fetchInstagramViaProvider(search: string[]): Promise<InstagramApi
 
 export async function instagramTrends(nicheSlug?: string): Promise<Trend[]> {
   const niche = nicheSlug ? getNiche(nicheSlug) : undefined;
-  const search = niche && INSTAGRAM_NICHE_HASHTAGS[niche.slug]
-    ? INSTAGRAM_NICHE_HASHTAGS[niche.slug]
-    : ["reels"];
+  const search = (niche && INSTAGRAM_NICHE_HASHTAG[niche.slug])
+    ? INSTAGRAM_NICHE_HASHTAG[niche.slug]
+    : "reels";
 
   // Cache via the shared apifyMemCache + Upstash layer. Keyed by niche so
   // different niches don't collide, and shared across all serverless
