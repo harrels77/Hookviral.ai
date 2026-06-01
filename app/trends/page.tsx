@@ -7,7 +7,7 @@ import { NextStep } from "@/components/NextStep";
 import { getNichePref, setNichePref, getGeoPref, setGeoPref, getSourcesPref, setSourcesPref } from "@/lib/prefs";
 
 type Velocity = "rising" | "steady" | "cooling" | "new";
-type Source = "google" | "youtube" | "reddit" | "wikipedia" | "hackernews" | "bluesky";
+type Source = "google" | "youtube" | "reddit" | "wikipedia" | "hackernews" | "bluesky" | "tiktok" | "twitter" | "instagram";
 interface Trend { title: string; sub: string; source?: Source; velocity?: Velocity; history?: number[]; }
 
 // Tiny rank-history sparkline. Input is rank (1 = top), so we invert: a term
@@ -41,6 +41,9 @@ const SOURCE_LABELS: Record<Source, string> = {
   wikipedia:  "Wikipedia",
   hackernews: "Hacker News",
   bluesky:    "Bluesky",
+  tiktok:     "TikTok",
+  twitter:    "X",
+  instagram:  "Instagram",
 };
 
 const SOURCE_BADGES: Record<Source, { emoji: string; label: string; color: string }> = {
@@ -50,11 +53,14 @@ const SOURCE_BADGES: Record<Source, { emoji: string; label: string; color: strin
   wikipedia:  { emoji: "📚", label: "Wikipedia",   color: "#9CA3AF" },
   hackernews: { emoji: "🟧", label: "Hacker News", color: "#FF6600" },
   bluesky:    { emoji: "🦋", label: "Bluesky",     color: "#0085FF" },
+  tiktok:     { emoji: "🎵", label: "TikTok",      color: "#FE2C55" },
+  twitter:    { emoji: "𝕏",  label: "X",           color: "#1DA1F2" },
+  instagram:  { emoji: "📸", label: "Instagram",   color: "#E1306C" },
 };
 
 // Canonical order. Sources that need creds (YouTube key, Reddit OAuth)
 // sit at the end so the first-paint button row reads "free → gated."
-const ALL_SOURCES: Source[] = ["google", "wikipedia", "hackernews", "bluesky", "youtube", "reddit"];
+const ALL_SOURCES: Source[] = ["google", "wikipedia", "hackernews", "bluesky", "youtube", "reddit", "tiktok", "twitter", "instagram"];
 // Default selection on first paint = every zero-auth source. The first-time
 // visitor sees ~110 unique trends merged with no banners and nothing to
 // register. YouTube + Reddit stay in ALL_SOURCES (visible toggles) so users
@@ -70,8 +76,14 @@ function sortSources(list: Source[]): Source[] {
 }
 
 function parseSourcesCsv(csv: string): Source[] {
+  // Validation matches the live Source union — older versions silently dropped
+  // wikipedia/hackernews/bluesky from localStorage on reload because the
+  // predicate hadn't been updated when those sources were added.
   const valid = csv.split(",").map(s => s.trim()).filter(
-    (s): s is Source => s === "google" || s === "youtube" || s === "reddit"
+    (s): s is Source =>
+      s === "google" || s === "youtube" || s === "reddit" ||
+      s === "wikipedia" || s === "hackernews" || s === "bluesky" ||
+      s === "tiktok" || s === "twitter" || s === "instagram"
   );
   return sortSources(valid);
 }
@@ -182,7 +194,7 @@ export default function TrendsPage() {
   // Disable the geo row only when *every* selected source is geo-less
   // (Reddit, Hacker News, Bluesky). Mixed with any geo-aware source
   // (Google, YouTube, Wikipedia) → geo still applies to those.
-  const allGeoLess = sources.length > 0 && sources.every(s => s === "reddit" || s === "hackernews" || s === "bluesky");
+  const allGeoLess = sources.length > 0 && sources.every(s => s === "reddit" || s === "hackernews" || s === "bluesky" || s === "twitter" || s === "instagram");
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -229,6 +241,9 @@ export default function TrendsPage() {
                       ["bluesky",    "🦋 Bluesky"],
                       ["youtube",    "▶ YouTube"],
                       ["reddit",     "🟠 Reddit"],
+                      ["tiktok",     "🎵 TikTok"],
+                      ["twitter",    "𝕏 X"],
+                      ["instagram",  "📸 Instagram"],
                     ] as [Source, string][]).map(([s, label]) => {
                       const active = sources.includes(s);
                       return (
@@ -304,6 +319,24 @@ export default function TrendsPage() {
           {sources.includes("reddit") && unconfigured.includes("reddit") && (
             <div style={{ background: "rgba(255,138,72,.06)", border: "1px solid rgba(255,138,72,.3)", color: "#FF8A48", borderRadius: "var(--r2)", padding: "1.25rem 1.5rem", fontSize: ".85rem", lineHeight: 1.7, marginBottom: "12px" }}>
               Reddit trends aren&apos;t available right now. Other sources are still loading — <button onClick={() => toggleSource("reddit")} style={{ background: "none", border: "none", color: "var(--hot)", cursor: "pointer", fontFamily: "var(--fb)", fontSize: ".85rem", textDecoration: "underline", padding: 0 }}>hide Reddit</button> to continue.
+            </div>
+          )}
+
+          {sources.includes("tiktok") && unconfigured.includes("tiktok") && (
+            <div style={{ background: "rgba(254,44,85,.06)", border: "1px solid rgba(254,44,85,.3)", color: "#FE2C55", borderRadius: "var(--r2)", padding: "1.25rem 1.5rem", fontSize: ".85rem", lineHeight: 1.7, marginBottom: "12px" }}>
+              TikTok trends aren&apos;t available right now. Other sources are still loading — <button onClick={() => toggleSource("tiktok")} style={{ background: "none", border: "none", color: "var(--hot)", cursor: "pointer", fontFamily: "var(--fb)", fontSize: ".85rem", textDecoration: "underline", padding: 0 }}>hide TikTok</button> to continue.
+            </div>
+          )}
+
+          {sources.includes("twitter") && unconfigured.includes("twitter") && (
+            <div style={{ background: "rgba(29,161,242,.06)", border: "1px solid rgba(29,161,242,.3)", color: "#1DA1F2", borderRadius: "var(--r2)", padding: "1.25rem 1.5rem", fontSize: ".85rem", lineHeight: 1.7, marginBottom: "12px" }}>
+              X trends aren&apos;t available right now. Other sources are still loading — <button onClick={() => toggleSource("twitter")} style={{ background: "none", border: "none", color: "var(--hot)", cursor: "pointer", fontFamily: "var(--fb)", fontSize: ".85rem", textDecoration: "underline", padding: 0 }}>hide X</button> to continue.
+            </div>
+          )}
+
+          {sources.includes("instagram") && unconfigured.includes("instagram") && (
+            <div style={{ background: "rgba(225,48,108,.06)", border: "1px solid rgba(225,48,108,.3)", color: "#E1306C", borderRadius: "var(--r2)", padding: "1.25rem 1.5rem", fontSize: ".85rem", lineHeight: 1.7, marginBottom: "12px" }}>
+              Instagram trends aren&apos;t available right now. Other sources are still loading — <button onClick={() => toggleSource("instagram")} style={{ background: "none", border: "none", color: "var(--hot)", cursor: "pointer", fontFamily: "var(--fb)", fontSize: ".85rem", textDecoration: "underline", padding: 0 }}>hide Instagram</button> to continue.
             </div>
           )}
 

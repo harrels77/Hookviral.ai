@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit, getClientIp } from "@/lib/rateLimit";
-import { googleTrends, youtubeTrends, redditPopular, wikipediaTrends, hackerNewsTrends, blueskyTrends, rerankForNiche, computeVelocity, type Trend, type TrendSource } from "@/lib/trends";
+import { googleTrends, youtubeTrends, redditPopular, wikipediaTrends, hackerNewsTrends, blueskyTrends, tiktokTrends, twitterTrends, instagramTrends, rerankForNiche, computeVelocity, type Trend, type TrendSource } from "@/lib/trends";
 
 function parseSources(csv: string | null): TrendSource[] {
   if (!csv) return ["google"];
   const parts = csv.split(",").map(s => s.trim()).filter(Boolean);
   const valid = parts.filter((s): s is TrendSource =>
-    s === "google" || s === "youtube" || s === "reddit" || s === "wikipedia" || s === "hackernews" || s === "bluesky"
+    s === "google" || s === "youtube" || s === "reddit" || s === "wikipedia" || s === "hackernews" || s === "bluesky" || s === "tiktok" || s === "twitter" || s === "instagram"
   );
   // De-dupe in case "?sources=google,google" sneaks in.
   return Array.from(new Set(valid.length > 0 ? valid : ["google"]));
@@ -70,12 +70,35 @@ export async function GET(req: NextRequest) {
         const raw = await blueskyTrends();
         return { source: s, trends: raw.map(t => ({ ...t, source: s })), configured: true };
       }
+      if (s === "tiktok") {
+        // TikTok needs a country code, not "GLOBAL". Mirrors YouTube's fallback.
+        const tkGeo = geo === "GLOBAL" ? "US" : geo;
+        const raw = await tiktokTrends(tkGeo);
+        return { source: s, trends: raw.map(t => ({ ...t, source: s })), configured: true };
+      }
+      if (s === "twitter") {
+        // Twitter is niche-aware (search terms vary by niche) and geoless —
+        // the Apify actor doesn't take a country filter, results are global.
+        const raw = await twitterTrends(nicheSlug);
+        return { source: s, trends: raw.map(t => ({ ...t, source: s })), configured: true };
+      }
+      if (s === "instagram") {
+        // Instagram is niche-aware (hashtag search varies by niche) and
+        // geoless — the Apify actor doesn't take a country filter.
+        const raw = await instagramTrends(nicheSlug);
+        return { source: s, trends: raw.map(t => ({ ...t, source: s })), configured: true };
+      }
       // google
       const raw = await googleTrends(geo);
       return { source: s, trends: raw.map(t => ({ ...t, source: s })), configured: true };
     } catch (err) {
-      console.error(`trends ${s} failed`, err);
-      return { source: s, trends: [], configured: true };
+      // "missing-key" is the agreed sentinel from sources whose creds aren't
+      // set up (today: TikTok when both direct and Apify fail with no
+      // APIFY_TOKEN). Map it to configured=false so the UI shows the nudge
+      // banner instead of an empty grid + console noise.
+      const isMissingKey = err instanceof Error && err.message === "missing-key";
+      if (!isMissingKey) console.error(`trends ${s} failed`, err);
+      return { source: s, trends: [], configured: !isMissingKey };
     }
   });
 
@@ -91,7 +114,7 @@ export async function GET(req: NextRequest) {
     // generators). Wikipedia *is* per-geo (different language wikis) so we
     // keep the geo for it, which gives it its own Upstash bucket per
     // (source, language).
-    const sourceGeo = r.source === "reddit" || r.source === "hackernews" || r.source === "bluesky" ? "GLOBAL" : geo;
+    const sourceGeo = r.source === "reddit" || r.source === "hackernews" || r.source === "bluesky" || r.source === "twitter" || r.source === "instagram" ? "GLOBAL" : geo;
     const { velocity, history } = await computeVelocity(r.source, sourceGeo, r.trends);
     r.trends = r.trends.map(t => ({
       ...t,

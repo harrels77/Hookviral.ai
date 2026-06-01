@@ -4,11 +4,12 @@ import { upstashConfigured, pipeline, command } from "@/lib/upstash";
 import { PATTERN_VOCAB, HOOK_PATTERNS } from "@/lib/patterns";
 import { platformGuidance } from "@/lib/platforms";
 import { extractJson } from "@/lib/parseJson";
+import { runApifyActor } from "@/lib/apify";
 
 const PATTERN_NAMES = HOOK_PATTERNS.map(p => p.name);
 
 export type Velocity = "rising" | "steady" | "cooling" | "new";
-export type TrendSource = "google" | "youtube" | "reddit" | "wikipedia" | "hackernews" | "bluesky";
+export type TrendSource = "google" | "youtube" | "reddit" | "wikipedia" | "hackernews" | "bluesky" | "tiktok" | "twitter" | "instagram";
 // `source` is tagged when trends from multiple sources are merged into one
 // list, so each card can show which feed it came from. Optional because
 // historical callers (and the still-typed-array returns inside this file
@@ -383,6 +384,358 @@ export async function youtubeTrends(nicheSlug: string, geo = "US"): Promise<Tren
     }))
     .filter(t => t.title.length > 0)
     .slice(0, 50);
+}
+
+// ── Shared cache for Apify-backed sources (TikTok / Twitter / Instagram) ──
+// Apify is paid per run. A per-instance Map alone doesn't protect the budget:
+// serverless cold starts spawn new instances with empty maps, so the same
+// (source, key) can re-hit Apify N times per day even within a 6h window.
+// Upstash makes the cache survive cold starts AND be shared across all
+// instances — 1 run / (source, key) / 6h, total. Per-instance Map kept as a
+// hot-path optimization (avoids the Upstash round-trip on repeat calls within
+// the same instance) and as a dev fallback when Upstash isn't configured.
+const apifyMemCache = new Map<string, { data: Trend[]; exp: number }>();
+
+async function getApifyCache(key: string): Promise<Trend[] | null> {
+  const mem = apifyMemCache.get(key);
+  if (mem && Date.now() < mem.exp) return mem.data;
+  if (!upstashConfigured()) return null;
+  try {
+    const raw = await command(["GET", `tr:apify:${key}`]);
+    if (raw && typeof raw === "string") {
+      const data = JSON.parse(raw) as Trend[];
+      // Hydrate the per-instance map so this instance serves from memory for
+      // the rest of its lifetime instead of round-tripping Upstash each call.
+      apifyMemCache.set(key, { data, exp: Date.now() + TREND_CACHE_SECONDS * 1000 });
+      return data;
+    }
+  } catch {
+    /* Upstash hiccup — fall through, fresh fetch happens upstream */
+  }
+  return null;
+}
+
+async function setApifyCache(key: string, data: Trend[]): Promise<void> {
+  apifyMemCache.set(key, { data, exp: Date.now() + TREND_CACHE_SECONDS * 1000 });
+  if (!upstashConfigured()) return;
+  try {
+    await command(["SET", `tr:apify:${key}`, JSON.stringify(data), "EX", TREND_CACHE_SECONDS]);
+  } catch {
+    /* best-effort — in-memory still serves the rest of this instance */
+  }
+}
+
+// ── TikTok trending hashtags ──
+// Two-step source. TikTok has no official public trends API, so we try the
+// undocumented Creative Center endpoint first (free, often works), then fall
+// back to a paid Apify actor when TikTok's signed-header gate kicks in.
+//
+// Step 1 — ads.tiktok.com/creative_radar_api: public but unstable. TikTok
+// rotates required header signing ("msToken", "X-Bogus") every few weeks. We
+// send a browser UA + Referer; works often enough to be worth trying first,
+// fails silently when it doesn't and we fall through.
+//
+// Step 2 — Apify actor "doliz~tiktok-creative-center-scraper" handles the
+// header signing for us. Costs per run, so we cache per-instance for 6h.
+//
+// If both fail (typically: direct blocked + APIFY_TOKEN absent), throw
+// "missing-key" so the route surfaces configured=false to the UI.
+
+const TIKTOK_UA =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
+  "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
+// Shared count formatter — returns just the number ("1.2M", "12k", "234").
+// Each caller composes its own unit suffix so we can reuse across sources
+// with different units (views, likes, etc.) without duplicating thresholds.
+function formatCount(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${Math.round(n / 1_000)}k`;
+  return `${n}`;
+}
+
+interface TikTokDirectItem { hashtag_name?: string; video_views?: number; }
+
+async function tiktokDirect(country: string): Promise<Trend[]> {
+  const url = `https://ads.tiktok.com/creative_radar_api/v1/popular_trend/hashtag/list?page=1&limit=50&period=7&country_code=${encodeURIComponent(country)}&sort_by=popular`;
+  const res = await fetch(url, {
+    next: { revalidate: TREND_CACHE_SECONDS },
+    headers: {
+      "User-Agent": TIKTOK_UA,
+      Referer: "https://ads.tiktok.com/business/creativecenter/inspiration/popular/hashtag/pc/en",
+      Accept: "application/json",
+    },
+  });
+  if (!res.ok) throw new Error(`tiktok-direct ${res.status}`);
+  const data = (await res.json()) as { code?: number; data?: { list?: TikTokDirectItem[] } };
+  if (data.code !== 0) throw new Error(`tiktok-direct code=${data.code}`);
+  const list = data.data?.list || [];
+  return list
+    .map(it => {
+      const name = it.hashtag_name?.trim();
+      if (!name) return null;
+      const views = typeof it.video_views === "number" ? it.video_views : 0;
+      return { title: `#${name}`, sub: `${formatCount(views)} views` };
+    })
+    .filter((t): t is Trend => t !== null)
+    .slice(0, 50);
+}
+
+interface TikTokApifyItem {
+  hashtagName?: string; name?: string; title?: string;
+  video_views?: number; views?: number; playCount?: number;
+}
+
+async function tiktokViaApify(country: string): Promise<Trend[]> {
+  // Cache via the shared apifyMemCache + Upstash layer so this country's
+  // result is reused across instances within the 6h window.
+  const cacheKey = `tiktok:${country}`;
+  const cached = await getApifyCache(cacheKey);
+  if (cached) return cached;
+
+  const items = await runApifyActor<TikTokApifyItem>(
+    "doliz~tiktok-creative-center-scraper",
+    { countryCode: country, dataType: "trending_hashtags", period: 7, maxItems: 50 }
+  );
+  // Apify actor schemas drift between versions; read every field defensively
+  // so a version bump doesn't silently turn every card into "undefined".
+  const trends = items
+    .map(it => {
+      const rawName = it.hashtagName ?? it.name ?? it.title;
+      const name = typeof rawName === "string" ? rawName.trim().replace(/^#/, "") : "";
+      if (!name) return null;
+      const v = it.video_views ?? it.views ?? it.playCount ?? 0;
+      const n = typeof v === "number" ? v : 0;
+      return { title: `#${name}`, sub: `${formatCount(n)} views` };
+    })
+    .filter((t): t is Trend => t !== null)
+    .slice(0, 50);
+
+  await setApifyCache(cacheKey, trends);
+  return trends;
+}
+
+export async function tiktokTrends(geo: string = "US"): Promise<Trend[]> {
+  // TikTok needs a real ISO country code; "GLOBAL" isn't one. Mirror what
+  // we do for YouTube and fall back to US for the global view.
+  const country = geo === "GLOBAL" ? "US" : geo;
+
+  // Step 1: free Creative Center.
+  try {
+    const direct = await tiktokDirect(country);
+    if (direct.length > 0) return direct;
+  } catch {
+    /* signed-header gate, schema drift, network — fall through to Apify */
+  }
+
+  // Step 2: paid Apify fallback. runApifyActor throws "missing-key" itself
+  // when APIFY_TOKEN is absent — let it bubble so the route reports correctly.
+  try {
+    const apify = await tiktokViaApify(country);
+    if (apify.length > 0) return apify;
+  } catch (err) {
+    if (err instanceof Error && err.message === "missing-key") throw err;
+    /* actor crash / schema drift / empty — fall through to final throw */
+  }
+
+  // Step 3: nothing worked. Surface as missing-key so UI shows the nudge
+  // instead of an empty grid.
+  throw new Error("missing-key");
+}
+
+// ── X (Twitter) trending posts ──
+// Twitter killed its free API in 2023; the only economical path for low-volume
+// keyword search is third-party scrapers. We isolate the actual provider call
+// behind fetchTwitterViaProvider() so we can swap from Apify to a reseller REST
+// (GetXAPI, TwitterAPI.io) later without touching the source's shape.
+//
+// Niche-aware: when no niche is selected we fall back to a generic "#trending"
+// search; when a niche is active we ask for 2-3 niche-aligned hashtags so the
+// merged grid is actually useful for the creator's brief instead of random
+// news/politics that drown the niche signal.
+//
+// APIFY_TOKEN required (helper throws "missing-key" itself; route maps it to
+// configured=false via the parent catch).
+
+// Niche → 3 search terms. Picked for tweet volume + alignment with the niche's
+// content audience. Adjust as niches evolve.
+const TWITTER_NICHE_TERMS: Record<string, string[]> = {
+  fitness:       ["#fitness", "#fitnessmotivation", "#workout"],
+  finance:       ["#finance", "#investing", "#money"],
+  tech:          ["#tech", "#AI", "#startup"],
+  business:      ["#entrepreneur", "#business", "#marketing"],
+  motivation:    ["#mindset", "#motivation", "#productivity"],
+  faceless:      ["#contentcreator", "#storytelling", "#shorts"],
+  relationships: ["#relationships", "#dating", "#love"],
+  lifestyle:     ["#lifestyle", "#wellness", "#aesthetic"],
+  sports:        ["#sports", "#football", "#NBA"],
+  "ai-content":  ["#AI", "#ChatGPT", "#contentcreator"],
+};
+
+// Apify actor schema drifts between versions; read every field defensively.
+// We only consume `text` and `likeCount` in the current mapping, but the rest
+// is declared so a future caller can pick them up without re-investigating.
+interface TwitterApifyItem {
+  text?: string;
+  url?: string;
+  twitterUrl?: string;
+  likeCount?: number;
+  retweetCount?: number;
+  viewCount?: number;
+  author?: { userName?: string };
+  createdAt?: string;
+}
+
+// Isolated so the rest of the source doesn't know it's Apify. Swap to a REST
+// reseller (GetXAPI, TwitterAPI.io) by replacing this body — caller untouched.
+async function fetchTwitterViaProvider(searchTerms: string[]): Promise<TwitterApifyItem[]> {
+  return runApifyActor<TwitterApifyItem>("apidojo~twitter-scraper-lite", {
+    searchTerms,
+    sort: "Top",
+    maxItems: 50,
+    tweetLanguage: "en",
+  });
+}
+
+// Word-boundary truncation. Falls back to char-boundary if cutting on the
+// last space would leave less than 60% of the budget (one very long word).
+function truncateAtWord(s: string, max: number): string {
+  if (s.length <= max) return s;
+  const sliced = s.slice(0, max);
+  const lastSpace = sliced.lastIndexOf(" ");
+  const cut = lastSpace > max * 0.6 ? sliced.slice(0, lastSpace) : sliced;
+  return cut.trimEnd() + "…";
+}
+
+export async function twitterTrends(nicheSlug?: string): Promise<Trend[]> {
+  const niche = nicheSlug ? getNiche(nicheSlug) : undefined;
+  const searchTerms = niche && TWITTER_NICHE_TERMS[niche.slug]
+    ? TWITTER_NICHE_TERMS[niche.slug]
+    : ["#trending"];
+
+  // Cache via the shared apifyMemCache + Upstash layer. Keyed by niche so
+  // different niches don't collide on the same Apify result, and shared
+  // across all serverless instances within the 6h window.
+  const cacheKey = `twitter:${niche?.slug || "default"}`;
+  const cached = await getApifyCache(cacheKey);
+  if (cached) return cached;
+
+  const items = await fetchTwitterViaProvider(searchTerms);
+
+  const trends = items
+    .map(it => {
+      const raw = it.text?.trim().replace(/\s+/g, " ");
+      if (!raw) return null;
+      const title = truncateAtWord(raw, 100);
+      const likes = typeof it.likeCount === "number" ? it.likeCount : 0;
+      return { title, sub: `${formatCount(likes)} likes · X` };
+    })
+    .filter((t): t is Trend => t !== null)
+    .slice(0, 50);
+
+  await setApifyCache(cacheKey, trends);
+  return trends;
+}
+
+// ── Instagram trending posts ──
+// PUBLIC posts only — hashtag-based search via the official `apify~instagram-
+// scraper` actor. No profiles, stories, DM, or auth'd-only data. Niche-aware:
+// no niche → ["reels"] as a generic high-volume tag; with niche → 3 tags from
+// the INSTAGRAM_NICHE_HASHTAGS map.
+//
+// APIFY_TOKEN required (helper throws "missing-key"; route maps it to
+// configured=false). Geoless — the actor doesn't filter by country.
+//
+// Provider-isolated behind fetchInstagramViaProvider() so swapping to another
+// scraper later (or to the Graph API if Meta ever reopens hashtag search) is
+// a single-function change.
+
+// Niche → 3 hashtags WITHOUT the # prefix (Apify input quirk — it's the
+// hashtag *name*, not the searchable string). Picked for IG post volume +
+// niche audience alignment.
+const INSTAGRAM_NICHE_HASHTAGS: Record<string, string[]> = {
+  fitness:       ["fitness", "workout", "gym"],
+  finance:       ["finance", "investing", "moneymindset"],
+  tech:          ["tech", "ai", "startup"],
+  business:      ["entrepreneur", "business", "marketing"],
+  motivation:    ["motivation", "mindset", "discipline"],
+  faceless:      ["contentcreator", "reels", "viralreels"],
+  relationships: ["relationships", "dating", "love"],
+  lifestyle:     ["lifestyle", "wellness", "aesthetic"],
+  sports:        ["sports", "football", "basketball"],
+  "ai-content":  ["ai", "chatgpt", "aicontent"],
+};
+
+// Actor schema is reasonably stable but we still read every consumed field
+// defensively. Declared fields cover both current mapping (caption, likesCount,
+// hashtags) and downstream candidates a future caller might want (url,
+// ownerUsername, commentsCount, videoViewCount, timestamp).
+interface InstagramApifyItem {
+  caption?: string;
+  url?: string;
+  ownerUsername?: string;
+  likesCount?: number;
+  commentsCount?: number;
+  videoViewCount?: number;
+  timestamp?: string;
+  hashtags?: string[];
+}
+
+// Isolated provider call. Swap to another scraper or to a Graph API path by
+// replacing this body — caller untouched.
+async function fetchInstagramViaProvider(search: string[]): Promise<InstagramApifyItem[]> {
+  return runApifyActor<InstagramApifyItem>("apify~instagram-scraper", {
+    search,
+    searchType: "hashtag",
+    resultsType: "posts",
+    resultsLimit: 30,
+    addParentData: false,
+  });
+}
+
+export async function instagramTrends(nicheSlug?: string): Promise<Trend[]> {
+  const niche = nicheSlug ? getNiche(nicheSlug) : undefined;
+  const search = niche && INSTAGRAM_NICHE_HASHTAGS[niche.slug]
+    ? INSTAGRAM_NICHE_HASHTAGS[niche.slug]
+    : ["reels"];
+
+  // Cache via the shared apifyMemCache + Upstash layer. Keyed by niche so
+  // different niches don't collide, and shared across all serverless
+  // instances within the 6h window.
+  const cacheKey = `instagram:${niche?.slug || "default"}`;
+  const cached = await getApifyCache(cacheKey);
+  if (cached) return cached;
+
+  const items = await fetchInstagramViaProvider(search);
+
+  const trends = items
+    .map(it => {
+      const caption = it.caption?.trim().replace(/\s+/g, " ");
+      const firstHashtag = Array.isArray(it.hashtags) && it.hashtags.length > 0
+        ? it.hashtags[0]?.trim().replace(/^#/, "")
+        : "";
+      // Caption first; fall back to first hashtag for image-only / caption-less
+      // posts. If neither, drop — nothing meaningful to show on the card.
+      const title = caption
+        ? truncateAtWord(caption, 100)
+        : firstHashtag ? `#${firstHashtag}` : "";
+      if (!title) return null;
+
+      // IG returns likesCount = -1 when the poster hides their like count
+      // (account-level privacy setting introduced 2019). Treat as unknown
+      // instead of rendering "-1 likes" on the card.
+      const rawLikes = typeof it.likesCount === "number" ? it.likesCount : -1;
+      const sub = rawLikes >= 0
+        ? `${formatCount(rawLikes)} likes · Instagram`
+        : "Instagram";
+
+      return { title, sub };
+    })
+    .filter((t): t is Trend => t !== null)
+    .slice(0, 30);
+
+  await setApifyCache(cacheKey, trends);
+  return trends;
 }
 
 // Best-effort in-memory cache for re-ranked results. On serverless each
