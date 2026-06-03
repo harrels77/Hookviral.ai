@@ -88,6 +88,15 @@ function parseSourcesCsv(csv: string): Source[] {
   return sortSources(valid);
 }
 
+// encodeURIComponent throws "URI malformed" on a lone UTF-16 surrogate — a
+// half-emoji left when an upstream source truncated a title mid-pair. Drop all
+// surrogate code units before encoding: emoji aren't useful in a search/topic
+// query, the title still renders fine in the card, and a single broken title
+// can no longer crash the whole grid.
+function safeEncode(s: string): string {
+  return encodeURIComponent(s.replace(/[\uD800-\uDFFF]/g, ""));
+}
+
 const VELOCITY: Record<Velocity, { label: string; color: string; bg: string }> = {
   rising:  { label: "🔥 Rising",  color: "var(--hot)",     bg: "rgba(255,45,107,.1)" },
   new:     { label: "🆕 New",     color: "var(--electric)", bg: "rgba(108,58,255,.1)" },
@@ -427,7 +436,7 @@ function TrendCard({ trend, rank, niche }: { trend: Trend; rank: number; niche: 
           Click navigates to /trends/research where the result has room to
           breathe (the inline-in-card expansion was cramped on desktop). */}
       <Link
-        href={`/trends/research?q=${encodeURIComponent(trend.title)}${nicheQs}`}
+        href={`/trends/research?q=${safeEncode(trend.title)}${nicheQs}`}
         style={{ width: "100%", textAlign: "center", padding: "10px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".82rem", fontWeight: 600, textDecoration: "none", fontFamily: "var(--fb)", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
       >
         🔬 Research &amp; angles
@@ -436,13 +445,13 @@ function TrendCard({ trend, rank, niche }: { trend: Trend; rank: number; niche: 
 
       <div style={{ display: "flex", gap: "8px" }}>
         <Link
-          href={`/generator?topic=${encodeURIComponent(trend.title)}${nicheQs}`}
+          href={`/generator?topic=${safeEncode(trend.title)}${nicheQs}`}
           style={{ flex: 1, textAlign: "center", padding: "8px", borderRadius: "100px", border: "1px solid var(--border2)", color: hov ? "#C4B5FD" : "var(--muted)", fontSize: ".74rem", textDecoration: "none", fontFamily: "var(--fb)", transition: "color .2s" }}
         >
           ⚡ Quick hooks
         </Link>
         <Link
-          href={`/analyzer?hook=${encodeURIComponent(trend.title)}`}
+          href={`/analyzer?hook=${safeEncode(trend.title)}`}
           style={{ flex: 1, textAlign: "center", padding: "8px", borderRadius: "100px", border: "1px solid var(--border2)", color: hov ? "#C4B5FD" : "var(--muted)", fontSize: ".74rem", textDecoration: "none", fontFamily: "var(--fb)", transition: "color .2s" }}
         >
           ✦ Score it

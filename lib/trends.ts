@@ -35,6 +35,25 @@ function cdata(s: string): string {
   return s.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").trim();
 }
 
+// Remove unpaired UTF-16 surrogates. Truncating a string by code-unit count
+// (.slice) can cut an emoji's surrogate pair in half, leaving a lone surrogate
+// that later crashes encodeURIComponent with "URI malformed" when the title is
+// put into a /trends/research?q= link. Keep valid pairs, drop the lone ones.
+// No regex lookbehind — Safari <16.4 (in our browserslist) doesn't support it.
+function stripLoneSurrogates(s: string): string {
+  return s.replace(/[\uD800-\uDFFF]/g, (ch, offset: number, str: string) => {
+    const code = ch.charCodeAt(0);
+    if (code <= 0xDBFF) {
+      // High surrogate: keep only if the next unit is a low surrogate.
+      const next = str.charCodeAt(offset + 1);
+      return next >= 0xDC00 && next <= 0xDFFF ? ch : "";
+    }
+    // Low surrogate: keep only if the previous unit is a high surrogate.
+    const prev = str.charCodeAt(offset - 1);
+    return prev >= 0xD800 && prev <= 0xDBFF ? ch : "";
+  });
+}
+
 // Single-geo Google Trends "Trending Now" RSS — the only free, stable endpoint
 // Google still serves as of 2026 (dailytrends + realtime JSON APIs returned
 // 404 in live testing — decommissioned in the 2024 redesign). Returns ~10
@@ -345,7 +364,7 @@ export async function blueskyTrends(): Promise<Trend[]> {
       // grid layout.
       const raw = p?.record?.text?.trim().replace(/\s+/g, " ");
       if (!raw) return null;
-      const title = raw.length > 140 ? raw.slice(0, 140).trim() + "…" : raw;
+      const title = raw.length > 140 ? stripLoneSurrogates(raw.slice(0, 140)).trim() + "…" : raw;
       const handle = p?.author?.handle || "";
       const likes = p?.likeCount ?? 0;
       const replies = p?.replyCount ?? 0;
@@ -607,7 +626,7 @@ function truncateAtWord(s: string, max: number): string {
   const sliced = s.slice(0, max);
   const lastSpace = sliced.lastIndexOf(" ");
   const cut = lastSpace > max * 0.6 ? sliced.slice(0, lastSpace) : sliced;
-  return cut.trimEnd() + "…";
+  return stripLoneSurrogates(cut.trimEnd()) + "…";
 }
 
 export async function twitterTrends(nicheSlug?: string): Promise<Trend[]> {

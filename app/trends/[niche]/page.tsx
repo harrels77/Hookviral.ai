@@ -116,7 +116,7 @@ export default async function NicheTrendsPage(
             {trends.map((t, i) => (
               <Link
                 key={i}
-                href={`/generator?topic=${encodeURIComponent(t.title)}&niche=${n.slug}`}
+                href={`/generator?topic=${encodeURIComponent(t.title.replace(/[\uD800-\uDFFF]/g, ""))}&niche=${n.slug}`}
                 style={{ background: "var(--s1)", border: "1px solid var(--border)", borderRadius: "var(--r2)", padding: "1.1rem 1.3rem", display: "flex", alignItems: "center", gap: "1rem", textDecoration: "none" }}
               >
                 <span style={{ fontFamily: "var(--fd)", fontWeight: 800, fontSize: "1rem", color: "var(--muted)", flexShrink: 0, width: "24px" }}>{i + 1}</span>
