@@ -5,8 +5,18 @@ import { googleTrends, youtubeTrends, redditPopular, wikipediaTrends, hackerNews
 function parseSources(csv: string | null): TrendSource[] {
   if (!csv) return ["google"];
   const parts = csv.split(",").map(s => s.trim()).filter(Boolean);
+  // "twitter" is intentionally NOT in this whitelist — hard-gated off here, the
+  // single chokepoint where a source string can reach twitterTrends(). The
+  // apidojo/twitter-scraper-lite actor bills $0.04 PER dataset item (even demo
+  // items) and returns only placeholder data on the FREE plan: one 50-item run
+  // = ~$2 for nothing. It burned $3.20 of a $5 credit in one test session. The
+  // budget-guard lock caps frequency but not the per-run cost, so the only safe
+  // move is to keep the source unreachable. twitterTrends() + its branch in the
+  // fan-out below stay in the code, dormant; re-enable by adding "twitter" back
+  // here AND to ALL_SOURCES + the toggle row in app/trends/page.tsx — but only
+  // on a paid Apify plan where the actor returns real tweets.
   const valid = parts.filter((s): s is TrendSource =>
-    s === "google" || s === "youtube" || s === "reddit" || s === "wikipedia" || s === "hackernews" || s === "bluesky" || s === "tiktok" || s === "twitter" || s === "instagram"
+    s === "google" || s === "youtube" || s === "reddit" || s === "wikipedia" || s === "hackernews" || s === "bluesky" || s === "tiktok" || s === "instagram"
   );
   // De-dupe in case "?sources=google,google" sneaks in.
   return Array.from(new Set(valid.length > 0 ? valid : ["google"]));

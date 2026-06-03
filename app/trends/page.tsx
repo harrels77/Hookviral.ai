@@ -60,7 +60,11 @@ const SOURCE_BADGES: Record<Source, { emoji: string; label: string; color: strin
 
 // Canonical order. Sources that need creds (YouTube key, Reddit OAuth)
 // sit at the end so the first-paint button row reads "free → gated."
-const ALL_SOURCES: Source[] = ["google", "wikipedia", "hackernews", "bluesky", "youtube", "reddit", "tiktok", "twitter", "instagram"];
+// "twitter" is omitted on purpose — the X scraper actor bills $0.04/item and
+// returns demo data on the free plan ($3.20 burned in one test). It's hard-
+// gated in app/api/trends/route.ts too; the source code stays for a future
+// paid-plan reactivation. See the route's parseSources comment.
+const ALL_SOURCES: Source[] = ["google", "wikipedia", "hackernews", "bluesky", "youtube", "reddit", "tiktok", "instagram"];
 // Default selection on first paint = every zero-auth source. The first-time
 // visitor sees ~110 unique trends merged with no banners and nothing to
 // register. YouTube + Reddit stay in ALL_SOURCES (visible toggles) so users
@@ -83,7 +87,7 @@ function parseSourcesCsv(csv: string): Source[] {
     (s): s is Source =>
       s === "google" || s === "youtube" || s === "reddit" ||
       s === "wikipedia" || s === "hackernews" || s === "bluesky" ||
-      s === "tiktok" || s === "twitter" || s === "instagram"
+      s === "tiktok" || s === "instagram"
   );
   return sortSources(valid);
 }
@@ -203,7 +207,7 @@ export default function TrendsPage() {
   // Disable the geo row only when *every* selected source is geo-less
   // (Reddit, Hacker News, Bluesky). Mixed with any geo-aware source
   // (Google, YouTube, Wikipedia) → geo still applies to those.
-  const allGeoLess = sources.length > 0 && sources.every(s => s === "reddit" || s === "hackernews" || s === "bluesky" || s === "twitter" || s === "instagram");
+  const allGeoLess = sources.length > 0 && sources.every(s => s === "reddit" || s === "hackernews" || s === "bluesky" || s === "instagram");
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -251,7 +255,6 @@ export default function TrendsPage() {
                       ["youtube",    "▶ YouTube"],
                       ["reddit",     "🟠 Reddit"],
                       ["tiktok",     "🎵 TikTok"],
-                      ["twitter",    "𝕏 X"],
                       ["instagram",  "📸 Instagram"],
                     ] as [Source, string][]).map(([s, label]) => {
                       const active = sources.includes(s);
@@ -334,12 +337,6 @@ export default function TrendsPage() {
           {sources.includes("tiktok") && unconfigured.includes("tiktok") && (
             <div style={{ background: "rgba(254,44,85,.06)", border: "1px solid rgba(254,44,85,.3)", color: "#FE2C55", borderRadius: "var(--r2)", padding: "1.25rem 1.5rem", fontSize: ".85rem", lineHeight: 1.7, marginBottom: "12px" }}>
               TikTok trends aren&apos;t available right now. Other sources are still loading — <button onClick={() => toggleSource("tiktok")} style={{ background: "none", border: "none", color: "var(--hot)", cursor: "pointer", fontFamily: "var(--fb)", fontSize: ".85rem", textDecoration: "underline", padding: 0 }}>hide TikTok</button> to continue.
-            </div>
-          )}
-
-          {sources.includes("twitter") && unconfigured.includes("twitter") && (
-            <div style={{ background: "rgba(29,161,242,.06)", border: "1px solid rgba(29,161,242,.3)", color: "#1DA1F2", borderRadius: "var(--r2)", padding: "1.25rem 1.5rem", fontSize: ".85rem", lineHeight: 1.7, marginBottom: "12px" }}>
-              X trends aren&apos;t available right now. Other sources are still loading — <button onClick={() => toggleSource("twitter")} style={{ background: "none", border: "none", color: "var(--hot)", cursor: "pointer", fontFamily: "var(--fb)", fontSize: ".85rem", textDecoration: "underline", padding: 0 }}>hide X</button> to continue.
             </div>
           )}
 
