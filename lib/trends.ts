@@ -447,6 +447,79 @@ async function setApifyCache(key: string, data: Trend[]): Promise<void> {
   }
 }
 
+// ── Apify budget guard ──────────────────────────────────────────────────────
+// Short NX lock so a BURST of page loads doesn't each fire the same billed
+// actor while the first run is still in flight. Actor runs take ~10-90s; during
+// that window every concurrent request misses the not-yet-written cache and,
+// without this lock, launches its own paid run. 2 min covers the slowest actor;
+// it auto-expires so a crashed run can retry on the next cycle instead of
+// wedging the source forever.
+const APIFY_LOCK_SECONDS = 120;
+
+async function acquireApifyLock(key: string): Promise<boolean> {
+  // No Upstash (local dev): can't coordinate across requests, so allow the run.
+  // The per-instance apifyMemCache still collapses repeat calls after the first
+  // one completes, and single-instance dev can't have a cross-instance herd.
+  if (!upstashConfigured()) return true;
+  try {
+    // SET ... NX EX → only sets when the key is absent. "OK" = we own the lock
+    // and should run; null = another request already holds it.
+    const res = await command(["SET", `tr:apifylock:${key}`, "1", "NX", "EX", APIFY_LOCK_SECONDS]);
+    return res === "OK";
+  } catch {
+    // Upstash hiccup: don't hard-block trends. The cache (incl. the negative
+    // cache below) is the primary budget guard; the lock is anti-burst only.
+    return true;
+  }
+}
+
+async function releaseApifyLock(key: string): Promise<void> {
+  if (!upstashConfigured()) return;
+  try {
+    await command(["DEL", `tr:apifylock:${key}`]);
+  } catch {
+    /* best-effort — the 2 min TTL releases it anyway */
+  }
+}
+
+// Wraps every Apify-backed source in the full budget guard. Guarantees AT MOST
+// ONE billed actor run per (key) per TREND_CACHE_SECONDS window — even if the
+// page is reloaded 10× in a row or hit concurrently across instances:
+//
+//   1. cache hit (a cached EMPTY [] counts as a hit) → return, no run, no bill
+//   2. NX lock → if another request is mid-run, skip and return [] (no bill)
+//   3. run once, then cache the result — SUCCESS *or* EMPTY — for the full
+//      window, so a broken/demo actor stops re-billing on every render
+//
+// `missing-key` (no APIFY_TOKEN) is the one outcome we do NOT cache: it bubbles
+// so the route reports configured=false, and we release the lock immediately so
+// the source activates the instant a token is added (no 2 min wait).
+async function guardedApifyRun(key: string, run: () => Promise<Trend[]>): Promise<Trend[]> {
+  // (1) Cache-first. getApifyCache returns null only on a true miss; a cached
+  // empty array comes back as [] and short-circuits here — no run.
+  const cached = await getApifyCache(key);
+  if (cached !== null) return cached;
+
+  // (2) Anti-burst lock. If we don't get it, another request is already running
+  // this exact source — return empty rather than firing a duplicate paid run.
+  const gotLock = await acquireApifyLock(key);
+  if (!gotLock) return [];
+
+  // (3) Single run, then cache success OR empty for the whole window.
+  let result: Trend[];
+  try {
+    result = await run();
+  } catch (err) {
+    if (err instanceof Error && err.message === "missing-key") {
+      await releaseApifyLock(key); // let a token-add take effect immediately
+      throw err;                   // not cached → route shows configured=false
+    }
+    result = []; // real actor error → cache empty so we don't re-bill each render
+  }
+  await setApifyCache(key, result);
+  return result;
+}
+
 // ── TikTok trending hashtags ──
 // Two-step source. TikTok has no official public trends API, so we try the
 // undocumented Creative Center endpoint first (free, often works), then fall
@@ -508,20 +581,17 @@ interface TikTokApifyItem {
   video_views?: number; views?: number; playCount?: number;
 }
 
+// Raw Apify run + mapping only — caching and the budget lock live in
+// guardedApifyRun (the single caller, via tiktokTrends), so this stays a pure
+// "fetch + shape" with no cache logic of its own.
 async function tiktokViaApify(country: string): Promise<Trend[]> {
-  // Cache via the shared apifyMemCache + Upstash layer so this country's
-  // result is reused across instances within the 6h window.
-  const cacheKey = `tiktok:${country}`;
-  const cached = await getApifyCache(cacheKey);
-  if (cached) return cached;
-
   const items = await runApifyActor<TikTokApifyItem>(
     "doliz~tiktok-creative-center-scraper",
     { countryCode: country, dataType: "trending_hashtags", period: 7, maxItems: 50 }
   );
   // Apify actor schemas drift between versions; read every field defensively
   // so a version bump doesn't silently turn every card into "undefined".
-  const trends = items
+  return items
     .map(it => {
       const rawName = it.hashtagName ?? it.name ?? it.title;
       const name = typeof rawName === "string" ? rawName.trim().replace(/^#/, "") : "";
@@ -532,9 +602,6 @@ async function tiktokViaApify(country: string): Promise<Trend[]> {
     })
     .filter((t): t is Trend => t !== null)
     .slice(0, 50);
-
-  await setApifyCache(cacheKey, trends);
-  return trends;
 }
 
 export async function tiktokTrends(geo: string = "US"): Promise<Trend[]> {
@@ -542,27 +609,26 @@ export async function tiktokTrends(geo: string = "US"): Promise<Trend[]> {
   // we do for YouTube and fall back to US for the global view.
   const country = geo === "GLOBAL" ? "US" : geo;
 
-  // Step 1: free Creative Center.
-  try {
-    const direct = await tiktokDirect(country);
-    if (direct.length > 0) return direct;
-  } catch {
-    /* signed-header gate, schema drift, network — fall through to Apify */
-  }
+  // The whole two-step lives inside guardedApifyRun so the OUTCOME — including
+  // a total failure — is cached for TREND_CACHE_SECONDS. This is the fix for
+  // the main TikTok burn: previously, when both direct and Apify failed, we
+  // threw and cached nothing, so every single render re-ran the paid actor.
+  return guardedApifyRun(`tiktok:${country}`, async () => {
+    // Step 1: free Creative Center direct endpoint.
+    try {
+      const direct = await tiktokDirect(country);
+      if (direct.length > 0) return direct;
+    } catch {
+      /* signed-header gate, schema drift, network — fall through to Apify */
+    }
 
-  // Step 2: paid Apify fallback. runApifyActor throws "missing-key" itself
-  // when APIFY_TOKEN is absent — let it bubble so the route reports correctly.
-  try {
-    const apify = await tiktokViaApify(country);
-    if (apify.length > 0) return apify;
-  } catch (err) {
-    if (err instanceof Error && err.message === "missing-key") throw err;
-    /* actor crash / schema drift / empty — fall through to final throw */
-  }
-
-  // Step 3: nothing worked. Surface as missing-key so UI shows the nudge
-  // instead of an empty grid.
-  throw new Error("missing-key");
+    // Step 2: paid Apify fallback. If APIFY_TOKEN is absent, runApifyActor
+    // throws "missing-key" → guardedApifyRun lets it bubble (uncached) so the
+    // route reports configured=false. If the actor runs but yields nothing,
+    // we return [] and guardedApifyRun caches that empty — so a failing TikTok
+    // actor is retried at most once per 6h, not on every page render.
+    return tiktokViaApify(country);
+  });
 }
 
 // ── X (Twitter) trending posts ──
@@ -635,28 +701,21 @@ export async function twitterTrends(nicheSlug?: string): Promise<Trend[]> {
     ? TWITTER_NICHE_TERMS[niche.slug]
     : ["#trending"];
 
-  // Cache via the shared apifyMemCache + Upstash layer. Keyed by niche so
-  // different niches don't collide on the same Apify result, and shared
-  // across all serverless instances within the 6h window.
-  const cacheKey = `twitter:${niche?.slug || "default"}`;
-  const cached = await getApifyCache(cacheKey);
-  if (cached) return cached;
-
-  const items = await fetchTwitterViaProvider(searchTerms);
-
-  const trends = items
-    .map(it => {
-      const raw = it.text?.trim().replace(/\s+/g, " ");
-      if (!raw) return null;
-      const title = truncateAtWord(raw, 100);
-      const likes = typeof it.likeCount === "number" ? it.likeCount : 0;
-      return { title, sub: `${formatCount(likes)} likes · X` };
-    })
-    .filter((t): t is Trend => t !== null)
-    .slice(0, 50);
-
-  await setApifyCache(cacheKey, trends);
-  return trends;
+  // Keyed by niche so different niches don't collide on the same Apify result.
+  // guardedApifyRun owns cache + anti-burst lock: ≤1 paid run per niche per 6h.
+  return guardedApifyRun(`twitter:${niche?.slug || "default"}`, async () => {
+    const items = await fetchTwitterViaProvider(searchTerms);
+    return items
+      .map(it => {
+        const raw = it.text?.trim().replace(/\s+/g, " ");
+        if (!raw) return null;
+        const title = truncateAtWord(raw, 100);
+        const likes = typeof it.likeCount === "number" ? it.likeCount : 0;
+        return { title, sub: `${formatCount(likes)} likes · X` };
+      })
+      .filter((t): t is Trend => t !== null)
+      .slice(0, 50);
+  });
 }
 
 // ── Instagram trending posts ──
@@ -724,43 +783,36 @@ export async function instagramTrends(nicheSlug?: string): Promise<Trend[]> {
     ? INSTAGRAM_NICHE_HASHTAG[niche.slug]
     : "reels";
 
-  // Cache via the shared apifyMemCache + Upstash layer. Keyed by niche so
-  // different niches don't collide, and shared across all serverless
-  // instances within the 6h window.
-  const cacheKey = `instagram:${niche?.slug || "default"}`;
-  const cached = await getApifyCache(cacheKey);
-  if (cached) return cached;
+  // Keyed by niche so different niches don't collide on the same Apify result.
+  // guardedApifyRun owns cache + anti-burst lock: ≤1 paid run per niche per 6h.
+  return guardedApifyRun(`instagram:${niche?.slug || "default"}`, async () => {
+    const items = await fetchInstagramViaProvider(search);
+    return items
+      .map(it => {
+        const caption = it.caption?.trim().replace(/\s+/g, " ");
+        const firstHashtag = Array.isArray(it.hashtags) && it.hashtags.length > 0
+          ? it.hashtags[0]?.trim().replace(/^#/, "")
+          : "";
+        // Caption first; fall back to first hashtag for image-only / caption-less
+        // posts. If neither, drop — nothing meaningful to show on the card.
+        const title = caption
+          ? truncateAtWord(caption, 100)
+          : firstHashtag ? `#${firstHashtag}` : "";
+        if (!title) return null;
 
-  const items = await fetchInstagramViaProvider(search);
+        // IG returns likesCount = -1 when the poster hides their like count
+        // (account-level privacy setting introduced 2019). Treat as unknown
+        // instead of rendering "-1 likes" on the card.
+        const rawLikes = typeof it.likesCount === "number" ? it.likesCount : -1;
+        const sub = rawLikes >= 0
+          ? `${formatCount(rawLikes)} likes · Instagram`
+          : "Instagram";
 
-  const trends = items
-    .map(it => {
-      const caption = it.caption?.trim().replace(/\s+/g, " ");
-      const firstHashtag = Array.isArray(it.hashtags) && it.hashtags.length > 0
-        ? it.hashtags[0]?.trim().replace(/^#/, "")
-        : "";
-      // Caption first; fall back to first hashtag for image-only / caption-less
-      // posts. If neither, drop — nothing meaningful to show on the card.
-      const title = caption
-        ? truncateAtWord(caption, 100)
-        : firstHashtag ? `#${firstHashtag}` : "";
-      if (!title) return null;
-
-      // IG returns likesCount = -1 when the poster hides their like count
-      // (account-level privacy setting introduced 2019). Treat as unknown
-      // instead of rendering "-1 likes" on the card.
-      const rawLikes = typeof it.likesCount === "number" ? it.likesCount : -1;
-      const sub = rawLikes >= 0
-        ? `${formatCount(rawLikes)} likes · Instagram`
-        : "Instagram";
-
-      return { title, sub };
-    })
-    .filter((t): t is Trend => t !== null)
-    .slice(0, 30);
-
-  await setApifyCache(cacheKey, trends);
-  return trends;
+        return { title, sub };
+      })
+      .filter((t): t is Trend => t !== null)
+      .slice(0, 30);
+  });
 }
 
 // Best-effort in-memory cache for re-ranked results. On serverless each
