@@ -494,11 +494,21 @@ async function releaseApifyLock(key: string): Promise<void> {
 // `missing-key` (no APIFY_TOKEN) is the one outcome we do NOT cache: it bubbles
 // so the route reports configured=false, and we release the lock immediately so
 // the source activates the instant a token is added (no 2 min wait).
+//
+// Dev kill-switch: set APIFY_DISABLE=1 in the env and NO run is ever launched —
+// you get the last Upstash cache if one exists, otherwise configured=false. Lets
+// you reload the dev page all day without ever spending an Apify credit.
 async function guardedApifyRun(key: string, run: () => Promise<Trend[]>): Promise<Trend[]> {
   // (1) Cache-first. getApifyCache returns null only on a true miss; a cached
   // empty array comes back as [] and short-circuits here — no run.
   const cached = await getApifyCache(key);
   if (cached !== null) return cached;
+
+  // (B) Dev kill-switch. APIFY_DISABLE=1 → never spend a credit. The cache-first
+  // check above already served the last cache if there was one; on a miss we
+  // report unconfigured instead of running anything (free TikTok-direct included,
+  // since it shares this wrapper). missing-key → route maps to configured=false.
+  if (process.env.APIFY_DISABLE === "1") throw new Error("missing-key");
 
   // (2) Anti-burst lock. If we don't get it, another request is already running
   // this exact source — return empty rather than firing a duplicate paid run.
