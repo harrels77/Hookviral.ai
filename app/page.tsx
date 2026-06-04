@@ -98,7 +98,7 @@ export default function HomePage() {
                 Grid minmax dropped to 175px so 3 cards still fit in one row
                 inside the ~520px hero-left column on desktop; they wrap
                 cleanly to a single column on mobile via auto-fit. */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(175px, 1fr))", gap: "10px", marginBottom: "1.25rem" }}>
+            <div className="hv-persona-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(175px, 1fr))", gap: "10px", marginBottom: "1.25rem" }}>
               <PersonaCard
                 accent="var(--hot)"
                 emoji="✦"

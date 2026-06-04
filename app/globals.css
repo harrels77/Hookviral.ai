@@ -109,6 +109,42 @@ body {
   padding: 2.5rem 1.25rem 6rem;
 }
 
+/* ── Mobile (≤480px) ──────────────────────────────────────────────────────
+   The layout is otherwise fluid (flex-wrap + grid auto-fit), so these rules
+   only patch the few spots where inline styles don't degrade well on a ~390px
+   viewport. Inline styles win the cascade, so the conflicting properties use
+   !important — scoped to mobile only, desktop (>480px) is completely untouched.
+   The class names are plain hooks (no desktop styling of their own). */
+@media (max-width: 480px) {
+  /* Analyzer — "patterns it uses" vs "missing" stack to one column instead of
+     two ~135px columns that cram the headers and force chips one-per-row. */
+  .hv-an-patterns { grid-template-columns: 1fr !important; }
+
+  /* Trends — the source row (8 toggles ≈ 720px) and geo row (7 toggles ≈
+     385px) overflow a 350px viewport. Stack the two pills, and let each one
+     scroll horizontally instead of being clipped by its overflow:hidden. */
+  .hv-controls-row { flex-direction: column !important; align-items: stretch; }
+  .hv-scroll-pill {
+    min-width: 0;                       /* let the flex item shrink below content */
+    max-width: calc(100vw - 2.5rem);    /* clamp to .page-wrap content width so it
+                                           scrolls internally instead of widening
+                                           the whole page (the 8 toggles are ~640px) */
+    overflow-x: auto !important;        /* beats inline overflow:hidden on x */
+    -webkit-overflow-scrolling: touch;  /* momentum scroll on iOS */
+    scrollbar-width: none;              /* Firefox — hide the bar, keep scroll */
+  }
+  .hv-scroll-pill::-webkit-scrollbar { display: none; } /* WebKit */
+  .hv-scroll-pill > button { flex: 0 0 auto; white-space: nowrap; }
+
+  /* Home — 3 persona cards go single-column so a 414–480px screen doesn't get
+     a 2-up row plus a stretched orphan on the second line. */
+  .hv-persona-grid { grid-template-columns: 1fr !important; }
+
+  /* Home — the before/after ScoreDemo stacks (Before above After) instead of
+     two cramped half-width cards. */
+  .hv-scoredemo-grid { grid-template-columns: 1fr !important; }
+}
+
 /* ── Animations ── */
 @keyframes gradShift {
   0%,100% { background-position: 0% center; }

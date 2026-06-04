@@ -439,7 +439,7 @@ function AnalyzerInner() {
 
               {/* Attention patterns */}
               {(result.patternsUsed?.length > 0 || result.patternsMissing?.length > 0) && (
-                <div style={{ marginTop: "1.25rem", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                <div className="hv-an-patterns" style={{ marginTop: "1.25rem", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                   <div style={{ background: "var(--s2)", borderRadius: "var(--r2)", padding: "1rem 1.1rem", border: "1px solid var(--border)" }}>
                     <div style={{ fontSize: ".64rem", fontFamily: "var(--fd)", fontWeight: 700, color: "var(--neon)", letterSpacing: "1px", textTransform: "uppercase", marginBottom: ".6rem" }}>Patterns it uses</div>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>

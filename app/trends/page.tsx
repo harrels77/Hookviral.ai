@@ -237,8 +237,8 @@ export default function TrendsPage() {
                 </span>
               </summary>
               <div style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "10px" }}>
-                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                  <div style={{ display: "flex", border: "1px solid var(--border)", borderRadius: "100px", overflow: "hidden", background: "var(--s1)" }}>
+                <div className="hv-controls-row" style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                  <div className="hv-scroll-pill" style={{ display: "flex", border: "1px solid var(--border)", borderRadius: "100px", overflow: "hidden", background: "var(--s1)" }}>
                     {([
                       ["google",     "🔎 Google"],
                       ["wikipedia",  "📚 Wikipedia"],
@@ -263,7 +263,7 @@ export default function TrendsPage() {
                       );
                     })}
                   </div>
-                  <div style={{ display: "flex", border: "1px solid var(--border)", borderRadius: "100px", overflow: "hidden", background: "var(--s1)", opacity: allGeoLess ? 0.4 : 1 }} title={allGeoLess ? "Selected sources are global — geo doesn't apply" : undefined}>
+                  <div className="hv-scroll-pill" style={{ display: "flex", border: "1px solid var(--border)", borderRadius: "100px", overflow: "hidden", background: "var(--s1)", opacity: allGeoLess ? 0.4 : 1 }} title={allGeoLess ? "Selected sources are global — geo doesn't apply" : undefined}>
                     {GEOS.map(([code, label]) => (
                       <button key={code} onClick={() => setGeo(code)} disabled={allGeoLess} title={allGeoLess ? "Selected sources are global" : `Trends for ${code}`} style={{ padding: "9px 14px", border: "none", background: geo === code ? "var(--s3)" : "transparent", color: geo === code ? "var(--text)" : "var(--muted)", fontSize: ".82rem", cursor: allGeoLess ? "not-allowed" : "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
                         {label}
