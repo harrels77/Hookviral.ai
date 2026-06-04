@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { HOOK_PATTERNS } from "@/lib/patterns";
+import { ScoreDemo } from "@/components/ScoreDemo";
 
 function patternHref(name: string) {
   const p = HOOK_PATTERNS.find(x => x.name === name);
@@ -142,6 +143,25 @@ export default function HomePage() {
           {/* Right — Phone mockup (from v2) */}
           <div className="hero-right" style={{ display: "flex", justifyContent: "center", position: "relative" }}>
             <PhoneMockup hook={DEMO_HOOKS[demoActive]} />
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════
+            PROOF — the product doing its job (before/after, animated)
+            Honest: no stock photos, just a real weak hook → its rewrite.
+        ══════════════════════════════════ */}
+        <section style={{ borderTop: "1px solid var(--border)" }}>
+          <div style={{ maxWidth: "900px", margin: "0 auto", padding: "5rem 1.5rem" }}>
+            <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
+              <SLabel center>Watch the fix happen</SLabel>
+              <h2 style={{ fontFamily: "var(--fd)", fontSize: "clamp(1.8rem,4vw,2.8rem)", fontWeight: 800, letterSpacing: "-2px", lineHeight: 1.05, marginBottom: ".75rem" }}>
+                The same idea, <span className="gradient-text">rewritten to score</span>.
+              </h2>
+              <p style={{ color: "var(--soft)", fontSize: ".95rem", fontWeight: 300, maxWidth: "560px", margin: "0 auto", lineHeight: 1.7 }}>
+                One weak opening. The Analyzer names the attention patterns it&apos;s missing and rewrites it — here&apos;s the before and after, scored.
+              </p>
+            </div>
+            <ScoreDemo />
           </div>
         </section>
 
