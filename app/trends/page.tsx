@@ -4,10 +4,12 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { NICHE_MODES } from "@/lib/niches";
 import { NextStep } from "@/components/NextStep";
-import { getNichePref, setNichePref, getGeoPref, setGeoPref, getSourcesPref, setSourcesPref } from "@/lib/prefs";
+import { getNichePref, setNichePref, getGeoPref, setGeoPref, getSourcesPref, setSourcesPref,
+         saveTrend, unsaveTrend, isTrendSaved, trendId } from "@/lib/prefs";
+import { SOURCE_BADGES, type SourceKey } from "@/lib/sourceBadges";
 
 type Velocity = "rising" | "steady" | "cooling" | "new";
-type Source = "google" | "youtube" | "reddit" | "wikipedia" | "hackernews" | "bluesky" | "tiktok" | "twitter" | "instagram";
+type Source = SourceKey;
 interface Trend { title: string; sub: string; source?: Source; velocity?: Velocity; history?: number[]; }
 
 // Tiny rank-history sparkline. Input is rank (1 = top), so we invert: a term
@@ -46,17 +48,7 @@ const SOURCE_LABELS: Record<Source, string> = {
   instagram:  "Instagram",
 };
 
-const SOURCE_BADGES: Record<Source, { emoji: string; label: string; color: string }> = {
-  google:     { emoji: "🔎", label: "Google",      color: "#5BA8FF" },
-  youtube:    { emoji: "▶",  label: "YouTube",     color: "#FF4D5A" },
-  reddit:     { emoji: "🟠", label: "Reddit",      color: "#FF8B4A" },
-  wikipedia:  { emoji: "📚", label: "Wikipedia",   color: "#9CA3AF" },
-  hackernews: { emoji: "🟧", label: "Hacker News", color: "#FF6600" },
-  bluesky:    { emoji: "🦋", label: "Bluesky",     color: "#0085FF" },
-  tiktok:     { emoji: "🎵", label: "TikTok",      color: "#FE2C55" },
-  twitter:    { emoji: "𝕏",  label: "X",           color: "#1DA1F2" },
-  instagram:  { emoji: "📸", label: "Instagram",   color: "#E1306C" },
-};
+// SOURCE_BADGES now lives in lib/sourceBadges.ts (shared with the Saved page).
 
 // Canonical order. Sources that need creds (YouTube key, Reddit OAuth)
 // sit at the end so the first-paint button row reads "free → gated."
@@ -395,15 +387,42 @@ export default function TrendsPage() {
 
 function TrendCard({ trend, rank, niche }: { trend: Trend; rank: number; niche: string }) {
   const [hov, setHov] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [pop, setPop] = useState(false); // brief scale feedback on click
+  const id = trendId(trend.title);
   const nicheQs = niche ? `&niche=${encodeURIComponent(niche)}` : "";
+
+  // Hydrate from localStorage (SSR-safe — can't read storage on the server, so
+  // initial render is "not saved" then this corrects it). Re-runs if id changes.
+  useEffect(() => { setSaved(isTrendSaved(id)); }, [id]);
+
+  function toggleSave(e: React.MouseEvent) {
+    e.preventDefault(); e.stopPropagation();
+    if (saved) { unsaveTrend(id); setSaved(false); }
+    else {
+      saveTrend({ id, title: trend.title, source: trend.source ?? "", url: `/trends/research?q=${safeEncode(trend.title)}` });
+      setSaved(true);
+    }
+    setPop(true); setTimeout(() => setPop(false), 220);
+  }
 
   return (
     <div
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
-      style={{ background: "var(--s1)", border: `1px solid ${hov ? "rgba(108,58,255,.4)" : "var(--border)"}`, borderRadius: "var(--r2)", padding: "1.1rem 1.3rem", display: "flex", flexDirection: "column", gap: "12px", transition: "all .25s cubic-bezier(.16,1,.3,1)", transform: hov ? "translateY(-3px)" : "none", boxShadow: hov ? "0 16px 40px rgba(108,58,255,.12)" : "none" }}
+      style={{ background: "var(--s1)", border: `1px solid ${hov ? "rgba(108,58,255,.4)" : "var(--border)"}`, borderRadius: "var(--r2)", padding: "1.1rem 1.3rem", display: "flex", flexDirection: "column", gap: "12px", position: "relative", transition: "all .25s cubic-bezier(.16,1,.3,1)", transform: hov ? "translateY(-3px)" : "none", boxShadow: hov ? "0 16px 40px rgba(108,58,255,.12)" : "none" }}
     >
-      <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+      {/* ⭐ save toggle — absolute, out of the flow, top-right */}
+      <button
+        onClick={toggleSave}
+        aria-pressed={saved}
+        title={saved ? "Remove from Saved" : "Save this trend"}
+        style={{ position: "absolute", top: "10px", right: "10px", width: "28px", height: "28px", border: "none", background: "transparent", cursor: "pointer", padding: 0, fontSize: "15px", lineHeight: 1, color: saved ? "var(--gold)" : "var(--muted)", transform: pop ? "scale(1.35)" : "scale(1)", transition: "transform .2s cubic-bezier(.16,1,.3,1), color .2s" }}
+      >
+        {saved ? "★" : "☆"}
+      </button>
+
+      <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", paddingRight: "26px" }}>
         <span style={{ fontFamily: "var(--fd)", fontWeight: 800, fontSize: ".95rem", color: rank <= 3 ? "var(--hot)" : "var(--muted)", flexShrink: 0, width: "22px" }}>
           {rank <= 3 ? "🔥" : rank}
         </span>

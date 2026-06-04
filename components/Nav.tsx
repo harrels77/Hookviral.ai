@@ -20,6 +20,7 @@ export function Nav() {
     { href: "/", label: "Home" },
     { href: "/analyzer", label: "Analyze" },
     { href: "/trends", label: "Trends" },
+    { href: "/saved", label: "Saved" },
     { href: "/generator", label: "Generate" },
     { href: "/patterns", label: "Patterns" },
     { href: "/pricing", label: "Pricing" },
