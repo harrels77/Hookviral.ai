@@ -5,7 +5,7 @@ import { createContext, useCallback, useContext, useEffect, useSyncExternalStore
 type Theme = "dark" | "light";
 
 const ThemeContext = createContext<{ theme: Theme; toggle: () => void }>({
-  theme: "dark",
+  theme: "light",
   toggle: () => {},
 });
 
@@ -19,10 +19,13 @@ export function useTheme() {
 // renders). useSyncExternalStore is the React-blessed way to bind external
 // state into a component without that pattern.
 //
-// Server snapshot is always "dark" so SSR + initial client hydration match;
-// after hydration React switches to the real localStorage snapshot. Users who
-// saved "light" still see a brief flicker — fixing that needs a blocking
-// pre-hydration script in <head>, which is out of scope here.
+// Default theme is "light" (see globals.css rationale): first-touch SEO
+// visitors get a lighter, more approachable first contact. Server snapshot is
+// always "light" so SSR + initial client hydration match, and the CSS :root
+// (no data-theme attribute) is the light palette too, so default visitors see
+// no flash. After hydration React switches to the real localStorage snapshot;
+// only users who saved "dark" see a brief flip — fixing that fully needs a
+// blocking pre-hydration script in <head>, which is out of scope here.
 
 const STORAGE_KEY = "hv_theme";
 
@@ -48,14 +51,14 @@ function subscribe(cb: () => void) {
 function getSnapshot(): Theme {
   try {
     const v = localStorage.getItem(STORAGE_KEY);
-    return v === "light" || v === "dark" ? v : "dark";
+    return v === "light" || v === "dark" ? v : "light";
   } catch {
-    return "dark";
+    return "light";
   }
 }
 
 function getServerSnapshot(): Theme {
-  return "dark";
+  return "light";
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {

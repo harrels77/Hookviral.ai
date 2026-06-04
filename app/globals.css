@@ -7,30 +7,17 @@
   -webkit-font-smoothing: antialiased;
 }
 
-/* ── DARK MODE (default) ── */
-/* Note: small-text colors (--muted, --electric) are tuned for WCAG AA 4.5:1
-   on the dark backgrounds (--bg #060609, --s1 #0c0c14). Lighthouse caught the
-   earlier values (--muted #46465A = 2.20, --electric #6C3AFF = 3.41) as
-   failing. Brightened to pass. --soft #8A88A8 already passes (~5.45). */
-:root,
-[data-theme="dark"] {
-  --bg:       #060609;
-  --s1:       #0C0C14;
-  --s2:       #111120;
-  --s3:       #171728;
-  --border:   #1E1E30;
-  --border2:  #272740;
-  --nav-bg:   rgba(6,6,9,.9);
+/* ── THEME TOKENS ──
+   Default theme is LIGHT. Most first-touch visitors arrive from SEO in daylight
+   on mobile, where a light UI is more approachable. The bare :root (no
+   data-theme attribute — i.e. SSR + pre-hydration) carries the light palette, so
+   default visitors get no flash. ThemeProvider sets data-theme explicitly after
+   mount; only users who saved "dark" see a brief flip. Dark opts in via
+   [data-theme="dark"], placed last so it wins at equal specificity over the
+   :root light defaults. */
 
-  --hot:      #FF2D6B;
-  --electric: #8B6BFF;
-  --neon:     #00FFB2;
-  --gold:     #FFB800;
-
-  --text:     #F0EEF8;
-  --soft:     #8A88A8;
-  --muted:    #7C7B98;
-
+/* Structural tokens — theme-independent (fonts, sizes, radii). */
+:root {
   --fd: 'Syne', sans-serif;
   --fb: 'DM Sans', sans-serif;
 
@@ -41,11 +28,14 @@
   --r3: 24px;
 }
 
-/* ── LIGHT MODE ── */
-/* Note: small-text accent colors (--neon, --gold) and --muted are tuned for
-   WCAG AA contrast (4.5:1) on the light backgrounds (--bg #F4F3FF, --s1 #FFF,
-   --s2 #F0EFF8). Lighthouse caught the earlier values (#00A882 neon = 2.66,
-   #C98A00 gold = 2.68, #8A88A8 muted = 3.09) as failing. Darkened to pass. */
+/* ── LIGHT MODE (default) ── */
+/* small-text accent colors (--neon, --gold) and --muted/--hot are tuned for
+   WCAG AA 4.5:1 on the light backgrounds (--bg #F4F3FF, --s1 #FFF, --s2 #F0EFF8,
+   --s3 #E8E7F5). Verified worst-case ratios: --muted 5.23, --hot 4.67,
+   --neon 4.79, --gold 5.23, --soft 7.11, --electric 7.65, --text 15.74 — all
+   ≥ 4.5. Earlier values (#00A882 neon = 2.66, #C98A00 gold = 2.68, #8A88A8
+   muted = 3.09) failed Lighthouse and were darkened. */
+:root,
 [data-theme="light"] {
   --bg:       #F4F3FF;
   --s1:       #FFFFFF;
@@ -63,6 +53,30 @@
   --text:     #0E0D1A;
   --soft:     #4A4868;
   --muted:    #5E5C7A;
+}
+
+/* ── DARK MODE (opt-in) ── */
+/* small-text colors (--muted, --electric) tuned for WCAG AA 4.5:1 on the dark
+   backgrounds (--bg #060609, --s1 #0c0c14). Lighthouse caught the earlier
+   values (--muted #46465A = 2.20, --electric #6C3AFF = 3.41) as failing;
+   brightened to pass. --soft #8A88A8 already passes (~5.45). */
+[data-theme="dark"] {
+  --bg:       #060609;
+  --s1:       #0C0C14;
+  --s2:       #111120;
+  --s3:       #171728;
+  --border:   #1E1E30;
+  --border2:  #272740;
+  --nav-bg:   rgba(6,6,9,.9);
+
+  --hot:      #FF2D6B;
+  --electric: #8B6BFF;
+  --neon:     #00FFB2;
+  --gold:     #FFB800;
+
+  --text:     #F0EEF8;
+  --soft:     #8A88A8;
+  --muted:    #7C7B98;
 }
 
 html { scroll-behavior: smooth; }
