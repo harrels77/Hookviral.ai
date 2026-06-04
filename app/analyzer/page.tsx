@@ -266,7 +266,7 @@ function AnalyzerInner() {
             Hook <span className="gradient-text">Analyzer</span>
           </h1>
           <p style={{ color: "var(--soft)", fontWeight: 300, fontSize: ".95rem" }}>
-            Paste a hook you already wrote. See if it stops the scroll in the first 3 seconds.
+            Paste any opening line — get the score, the missing patterns, and a stronger rewrite in seconds.
           </p>
         </div>
 

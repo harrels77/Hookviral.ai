@@ -229,7 +229,7 @@ export default function TrendsPage() {
             What&apos;s <span className="gradient-text">trending</span> now
           </h1>
           <p style={{ color: "var(--soft)", fontWeight: 300, fontSize: ".95rem" }}>
-            Don&apos;t just see a trend — research the context and turn it into ready-to-film angles for your niche.
+            See what&apos;s moving across platforms right now — then turn any trend into a hook angle in one click.
           </p>
         </div>
 

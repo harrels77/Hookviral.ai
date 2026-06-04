@@ -151,7 +151,7 @@ function GeneratorInner() {
           <h1 style={{fontFamily:"var(--fd)",fontSize:"clamp(2rem,5vw,3rem)",fontWeight:800,letterSpacing:"-2px",marginBottom:".5rem"}}>
             Hook <span className="gradient-text">Generator</span>
           </h1>
-          <p style={{color:"var(--soft)",fontWeight:300,fontSize:".95rem"}}>Describe your content. Get 8 scored viral hooks + hashtags. Copy. Post. Win.</p>
+          <p style={{color:"var(--soft)",fontWeight:300,fontSize:".95rem"}}>Pick a topic and niche. Get 8 scored hooks with the attention patterns that make each one work.</p>
         </div>
 
         <div className="page-wrap">
