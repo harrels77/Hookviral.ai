@@ -166,7 +166,7 @@ export default function TikTokHookGeneratorPage() {
             {[
               ["YouTube Hook Generator", "/youtube-hook-generator"],
               ["Instagram Hook Generator", "/instagram-hook-generator"],
-              ["Viral Hook Examples", "/viral-hook-examples"],
+              ["Hook Examples by Niche", "/hooks-for/fitness"],
               ["Generator", "/generator"],
             ].map(([label, href]) => (
               <Link key={href} href={href} style={{ padding: "8px 16px", borderRadius: "100px", border: "1px solid var(--border2)", color: "var(--soft)", fontSize: ".82rem", textDecoration: "none", fontFamily: "var(--fb)", transition: "all .2s" }}>

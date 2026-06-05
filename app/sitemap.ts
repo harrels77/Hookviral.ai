@@ -13,6 +13,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/generator", priority: 0.9, changeFrequency: "weekly" },
     { path: "/trends", priority: 0.8, changeFrequency: "daily" },
     { path: "/tiktok-hook-generator", priority: 0.8, changeFrequency: "weekly" },
+    { path: "/youtube-hook-generator", priority: 0.8, changeFrequency: "weekly" },
+    { path: "/instagram-hook-generator", priority: 0.8, changeFrequency: "weekly" },
     { path: "/patterns", priority: 0.7, changeFrequency: "monthly" },
     { path: "/why-it-works", priority: 0.6, changeFrequency: "monthly" },
     { path: "/pricing", priority: 0.5, changeFrequency: "monthly" },
