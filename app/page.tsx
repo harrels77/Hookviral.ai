@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { HOOK_PATTERNS } from "@/lib/patterns";
 import { ScoreDemo } from "@/components/ScoreDemo";
+import { PhoneShowcase } from "@/components/PhoneShowcase";
 
 function patternHref(name: string) {
   const p = HOOK_PATTERNS.find(x => x.name === name);
@@ -178,6 +179,12 @@ export default function HomePage() {
               <p style={{ color: "var(--soft)", fontSize: ".95rem", fontWeight: 300, maxWidth: "580px", margin: "0 auto", lineHeight: 1.7 }}>
                 Each tool does one job in a loop. You can start anywhere — but here&apos;s the path that turns a blank screen into a hook you&apos;re ready to film.
               </p>
+            </div>
+
+            {/* Real product screens on a phone — the 3 "doing" tools made
+                concrete (Trends / Generator / Analyzer), no stock imagery. */}
+            <div style={{ marginBottom: "3.5rem" }}>
+              <PhoneShowcase />
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(205px,1fr))", gap: "12px" }}>
