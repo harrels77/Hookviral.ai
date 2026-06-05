@@ -52,7 +52,10 @@ export default function PatternsPage() {
               </div>
               {/* Patterns is the hub: act on each pattern, never dead-end on a definition. */}
               <div style={{ display: "flex", gap: "8px", marginTop: "1rem", flexWrap: "wrap" }}>
-                <Link href="/analyzer" style={{ fontSize: ".75rem", padding: "6px 14px", borderRadius: "100px", border: "1px solid rgba(108,58,255,.3)", color: "#C4B5FD", textDecoration: "none", fontFamily: "var(--fb)" }}>
+                <Link href={`/patterns/${p.id}`} style={{ fontSize: ".75rem", padding: "6px 14px", borderRadius: "100px", background: "rgba(108,58,255,.1)", border: "1px solid rgba(108,58,255,.3)", color: "#C4B5FD", textDecoration: "none", fontFamily: "var(--fb)", fontWeight: 600 }}>
+                  See {p.examples.length + 1} {p.name} examples →
+                </Link>
+                <Link href="/analyzer" style={{ fontSize: ".75rem", padding: "6px 14px", borderRadius: "100px", border: "1px solid var(--border2)", color: "var(--soft)", textDecoration: "none", fontFamily: "var(--fb)" }}>
                   ✦ Analyze a hook for this →
                 </Link>
                 <Link href={`/generator?topic=${encodeURIComponent(p.example)}`} style={{ fontSize: ".75rem", padding: "6px 14px", borderRadius: "100px", border: "1px solid var(--border2)", color: "var(--soft)", textDecoration: "none", fontFamily: "var(--fb)" }}>

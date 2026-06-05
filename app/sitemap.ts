@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { NICHE_MODES } from "@/lib/niches";
+import { HOOK_PATTERNS } from "@/lib/patterns";
 
 const SITE_URL = "https://hookviral.ai";
 
@@ -45,5 +46,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   ]);
 
-  return [...core, ...niches];
+  // Programmatic SEO: one detail page per owned attention pattern.
+  const patterns: MetadataRoute.Sitemap = HOOK_PATTERNS.map(p => ({
+    url: `${SITE_URL}/patterns/${p.id}`,
+    lastModified: now,
+    changeFrequency: "monthly" as const,
+    priority: 0.6,
+  }));
+
+  return [...core, ...niches, ...patterns];
 }
