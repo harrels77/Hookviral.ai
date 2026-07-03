@@ -3,12 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { scoreColor, scoreSoft } from "@/lib/score";
 import { Icon } from "@/lib/icons";
+import { ScoreRing } from "@/components/ScoreRing";
 
 // Honest "show the product doing its job" — no stock photos. One real weak
 // opening, scored low with the attention patterns it's missing, beside its
 // rewrite scored high with those patterns now present. Pattern names are the
-// real taxonomy from lib/patterns.ts. Pure SVG + CSS vars, no external deps.
-// Ring color follows the single global score semantic (lib/score.ts).
+// real taxonomy from lib/patterns.ts. Ring = shared components/ScoreRing.
 
 const BEFORE = {
   score: 32,
@@ -20,52 +20,6 @@ const AFTER = {
   hook: "I saved $9,000 in six months with one rule my bank hoped I'd never find.",
   patterns: ["Concrete Specificity", "Open Loop", "Stakes", "Knowledge Gap"], // present
 };
-
-const R = 42;
-const CIRC = 2 * Math.PI * R; // circumference for the stroke-dash trick
-
-function ScoreRing({
-  score, play, instant,
-}: {
-  score: number; play: boolean; instant: boolean;
-}) {
-  const [animated, setAnimated] = useState(0);
-  const color = scoreColor(score);
-
-  // Count the number up from 0 to the target in sync with the ring sweep.
-  // Reduced-motion (instant) skips this entirely — `display` is derived below.
-  useEffect(() => {
-    if (instant || !play) return;
-    let raf = 0;
-    const start = performance.now();
-    const dur = 1200;
-    const tick = (t: number) => {
-      const p = Math.min(1, (t - start) / dur);
-      const eased = 1 - Math.pow(1 - p, 3); // easeOutCubic — matches the CSS curve
-      setAnimated(Math.round(eased * score));
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [play, instant, score]);
-
-  const display = instant ? score : animated;
-  const filled = play || instant;
-  const offset = filled ? CIRC * (1 - score / 100) : CIRC;
-
-  return (
-    <svg width="92" height="92" viewBox="0 0 96 96" style={{ flexShrink: 0 }} role="img" aria-label={`Retention score ${score} out of 100`}>
-      <circle cx="48" cy="48" r={R} fill="none" stroke="var(--border)" strokeWidth="8" />
-      <circle
-        cx="48" cy="48" r={R} fill="none" stroke={color} strokeWidth="8" strokeLinecap="round"
-        strokeDasharray={CIRC} strokeDashoffset={offset} transform="rotate(-90 48 48)"
-        style={{ transition: instant ? "none" : "stroke-dashoffset 1.2s cubic-bezier(.16,1,.3,1)" }}
-      />
-      <text x="48" y="46" textAnchor="middle" dominantBaseline="middle" style={{ fontFamily: "var(--fd)", fontWeight: 800, fontSize: "26px", fill: color }}>{display}</text>
-      <text x="48" y="64" textAnchor="middle" style={{ fontFamily: "var(--fb)", fontSize: "9px", fill: "var(--text-muted)" }}>/ 100</text>
-    </svg>
-  );
-}
 
 function DemoCard({ after, play, instant }: { after: boolean; play: boolean; instant: boolean }) {
   const d = after ? AFTER : BEFORE;

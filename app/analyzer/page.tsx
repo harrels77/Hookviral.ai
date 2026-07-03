@@ -9,8 +9,9 @@ import { NextStep } from "@/components/NextStep";
 import { ProNote } from "@/components/ProLock";
 import { patternHref } from "@/lib/patterns";
 import { scoreColor } from "@/lib/score";
-import { Icon } from "@/lib/icons";
+import { Icon, nicheIcon } from "@/lib/icons";
 import { Button, Spinner } from "@/components/ui";
+import { ScoreRing } from "@/components/ScoreRing";
 import { PLATFORMS as PLATFORM_MODES, getPlatform } from "@/lib/platforms";
 import { getNichePref, setNichePref } from "@/lib/prefs";
 
@@ -317,7 +318,7 @@ function AnalyzerInner() {
                   </button>
                   {NICHE_MODES.map(nm => (
                     <button key={nm.slug} onClick={() => setNiche(nm.slug)} className="chip" data-active={niche === nm.slug}>
-                      {nm.label}
+                      <Icon name={nicheIcon(nm.slug)} /> {nm.label}
                     </button>
                   ))}
                 </div>
@@ -367,25 +368,19 @@ function AnalyzerInner() {
                 </div>
               )}
 
-              {/* Score header */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem", flexWrap: "wrap", gap: "1rem" }}>
-                <div>
-                  <div style={{ fontSize: ".68rem", textTransform: "uppercase", letterSpacing: "2px", color: "var(--muted)", marginBottom: "4px", fontFamily: "var(--fd)", fontWeight: 600, display: "flex", alignItems: "center", gap: "8px" }}>
+              {/* Score header — the flagship moment gets the signature ring
+                  (shared with ScoreDemo / home widget), not a bare number. */}
+              <div style={{ display: "flex", alignItems: "center", gap: "1.25rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+                <ScoreRing score={result.score} size={104} />
+                <div style={{ flex: 1, minWidth: "180px" }}>
+                  <div className="kicker" style={{ marginBottom: "8px", display: "flex", alignItems: "center", gap: "8px" }}>
                     Retention score
-                    <Link href="/why-it-works" title="How is this computed?" style={{ fontSize: ".68rem", color: "var(--electric)", textDecoration: "none", textTransform: "none", letterSpacing: 0, fontWeight: 400 }}>
+                    <Link href="/why-it-works" title="How is this computed?" style={{ fontSize: "var(--text-xs)", color: "var(--accent)", textDecoration: "none", textTransform: "none", letterSpacing: 0, fontWeight: 400 }}>
                       How?
                     </Link>
                   </div>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
-                    <span style={{ fontFamily: "var(--fd)", fontSize: "2.6rem", fontWeight: 800, letterSpacing: "-2px", color: scoreColor(result.score), lineHeight: 1 }}>{result.score}</span>
-                    <span style={{ fontSize: ".8rem", color: "var(--muted)" }}>/100</span>
-                  </div>
+                  <span style={{ display: "inline-flex", fontSize: "var(--text-xs)", fontFamily: "var(--fd)", fontWeight: 700, padding: "5px 14px", borderRadius: "var(--r-pill)", background: "var(--accent-soft)", color: "var(--accent)" }}>{result.formula}</span>
                 </div>
-                <span style={{ fontSize: "var(--text-xs)", fontFamily: "var(--fd)", fontWeight: 700, padding: "5px 14px", borderRadius: "var(--r-pill)", background: "var(--accent-soft)", color: "var(--accent)" }}>{result.formula}</span>
-              </div>
-
-              <div style={{ height: "5px", background: "var(--surface-3)", borderRadius: "3px", overflow: "hidden", marginBottom: "1.5rem" }}>
-                <div style={{ height: "100%", borderRadius: "3px", background: scoreColor(result.score), width: `${result.score}%`, transition: "width .8s cubic-bezier(.16,1,.3,1)" }} />
               </div>
 
               {/* Why */}

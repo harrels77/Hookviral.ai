@@ -6,6 +6,7 @@ import { patternHref } from "@/lib/patterns";
 import { scoreColor } from "@/lib/score";
 import { Icon, type IconName } from "@/lib/icons";
 import { Button, Spinner } from "@/components/ui";
+import { ScoreRing } from "@/components/ScoreRing";
 import { ScoreDemo } from "@/components/ScoreDemo";
 import { PhoneShowcase } from "@/components/PhoneShowcase";
 
@@ -44,10 +45,13 @@ export default function HomePage() {
           Left: copy + persona fork + mini-stats
           Right: Phone mockup
       ══════════════════════════════════ */}
-      <section
-        className="hero-grid"
-        style={{ maxWidth: "1100px", margin: "0 auto", padding: "5rem 1.5rem 4rem", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4rem", alignItems: "center" }}
-      >
+      <section style={{ position: "relative" }}>
+        {/* The page's single decorative wash — static, one accent (DS §3) */}
+        <div aria-hidden style={{ position: "absolute", top: "-180px", right: "-140px", width: "560px", height: "560px", borderRadius: "50%", background: "radial-gradient(circle at center, var(--accent-soft), transparent 68%)", opacity: .8, pointerEvents: "none" }} />
+        <div
+          className="hero-grid"
+          style={{ position: "relative", maxWidth: "1100px", margin: "0 auto", padding: "5rem 1.5rem 4rem", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4rem", alignItems: "center" }}
+        >
         {/* Left */}
         <div>
           <div className="kicker" style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "5px 14px", borderRadius: "var(--r-pill)", border: "1px solid var(--border)", background: "var(--surface)", marginBottom: "var(--sp-6)" }}>
@@ -111,6 +115,7 @@ export default function HomePage() {
         <div className="hero-right" style={{ display: "flex", justifyContent: "center", position: "relative" }}>
           <PhoneMockup hook={DEMO_HOOKS[demoActive]} />
         </div>
+        </div>
       </section>
 
       {/* ══════════════════════════════════
@@ -156,22 +161,22 @@ export default function HomePage() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(205px,1fr))", gap: "12px" }}>
             {[
               {
-                n: "1", step: "Discover", tool: "Trends", href: "/trends", cta: "Open Trends",
+                n: "1", step: "Discover", tool: "Trends", icon: "trending-up" as const, href: "/trends", cta: "Open Trends",
                 you: "Pick what's already getting attention in your niche.",
                 get: "3 niche-specific content angles + a ready scored hook for each trend.",
               },
               {
-                n: "2", step: "Create", tool: "Generator", href: "/generator", cta: "Generate 8 hooks",
+                n: "2", step: "Create", tool: "Generator", icon: "zap" as const, href: "/generator", cta: "Generate 8 hooks",
                 you: "Drop a topic in, pick a platform.",
                 get: "8 openings, each scored 0–100 for retention, with hashtags.",
               },
               {
-                n: "3", step: "Diagnose & fix", tool: "Analyzer", href: "/analyzer", cta: "Analyze a hook",
+                n: "3", step: "Diagnose & fix", tool: "Analyzer", icon: "sparkles" as const, href: "/analyzer", cta: "Analyze a hook",
                 you: "Paste a hook you already wrote.",
                 get: "Score, the “why”, the attention patterns it's missing, and a 1-click rewrite that injects them.",
               },
               {
-                n: "4", step: "Learn", tool: "Patterns", href: "/patterns", cta: "See the 9 patterns",
+                n: "4", step: "Learn", tool: "Patterns", icon: "book" as const, href: "/patterns", cta: "See the 9 patterns",
                 you: "Read the 9 attention patterns once.",
                 get: "The vocabulary behind every score — so you know WHY a hook works, not just whether.",
               },
@@ -181,7 +186,10 @@ export default function HomePage() {
                   <span style={{ width: "30px", height: "30px", borderRadius: "50%", background: "var(--accent)", color: "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--fd)", fontWeight: 800, fontSize: "var(--text-sm)", flexShrink: 0 }}>{s.n}</span>
                   <div className="kicker">{s.step}</div>
                 </div>
-                <div style={{ fontFamily: "var(--fd)", fontSize: "var(--text-lg)", fontWeight: 800, marginBottom: "var(--sp-3)" }}>{s.tool}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "var(--sp-3)" }}>
+                  <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "28px", height: "28px", borderRadius: "9px", background: "var(--accent-soft)", color: "var(--accent)", flexShrink: 0 }}><Icon name={s.icon} /></span>
+                  <span style={{ fontFamily: "var(--fd)", fontSize: "var(--text-lg)", fontWeight: 800 }}>{s.tool}</span>
+                </div>
                 <div style={{ flex: 1, marginBottom: "var(--sp-4)" }}>
                   <div className="kicker" style={{ fontSize: ".7rem", marginBottom: "4px" }}>You do</div>
                   <p style={{ fontSize: "var(--text-sm)", color: "var(--text-soft)", lineHeight: 1.6, marginBottom: "var(--sp-3)" }}>{s.you}</p>
@@ -367,7 +375,7 @@ function PersonaCard({
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-        <span style={{ display: "flex", color: "var(--accent)" }}><Icon name={icon} /></span>
+        <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "32px", height: "32px", borderRadius: "10px", background: "var(--accent-soft)", color: "var(--accent)", flexShrink: 0 }}><Icon name={icon} /></span>
         {/* h2 (not h3) — PersonaCard titles sit directly under the hero h1.
             Lighthouse heading-order rule flags a h1→h3 jump as a11y issue. */}
         <h2 style={{ fontFamily: "var(--fd)", fontSize: "var(--text-sm)", fontWeight: 800, color: "var(--text)", margin: 0 }}>
@@ -419,8 +427,6 @@ function HomeAnalyzeWidget() {
     }
   }
 
-  const sc = result ? scoreColor(result.score) : "var(--text-muted)";
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
       <div className="card" style={{ borderRadius: "var(--r-lg)", padding: "1rem", display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -454,20 +460,13 @@ function HomeAnalyzeWidget() {
 
       {result && (
         <div className="card" style={{ borderRadius: "var(--r-lg)", padding: "var(--sp-5)", display: "flex", flexDirection: "column", gap: "1rem", textAlign: "left", animation: "cardIn .4s ease" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
-            <div>
-              <div className="kicker" style={{ fontSize: ".7rem", marginBottom: "2px" }}>Retention score</div>
-              <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
-                <span style={{ fontFamily: "var(--fd)", fontSize: "2.6rem", fontWeight: 800, color: sc, lineHeight: 1 }}>{result.score}</span>
-                <span style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>/100</span>
-              </div>
-            </div>
-            <div style={{ height: "5px", flex: 1, minWidth: "120px", background: "var(--surface-3)", borderRadius: "3px", overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${result.score}%`, background: sc, borderRadius: "3px", transition: "width .8s cubic-bezier(.16,1,.3,1)" }} />
+          <div style={{ display: "flex", alignItems: "center", gap: "1.25rem", flexWrap: "wrap" }}>
+            <ScoreRing score={result.score} size={96} />
+            <div style={{ flex: 1, minWidth: "200px" }}>
+              <div className="kicker" style={{ fontSize: ".7rem", marginBottom: "6px" }}>Retention score</div>
+              <p style={{ fontSize: "var(--text-sm)", color: "var(--text-soft)", lineHeight: 1.7 }}>{result.why}</p>
             </div>
           </div>
-
-          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-soft)", lineHeight: 1.7 }}>{result.why}</p>
 
           {result.missing.length > 0 && (
             <div>

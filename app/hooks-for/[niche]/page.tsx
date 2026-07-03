@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { NICHE_MODES, getNiche } from "@/lib/niches";
 import { NextStep } from "@/components/NextStep";
 import { scoreColor } from "@/lib/score";
+import { Icon, nicheIcon } from "@/lib/icons";
 
 export function generateStaticParams() {
   return NICHE_MODES.map(n => ({ niche: n.slug }));
@@ -52,6 +53,11 @@ export default async function NicheHooksPage(
       <div className="page-wrap">
         {/* Hero */}
         <div style={{ textAlign: "center", padding: "2rem 0 2.5rem", borderBottom: "1px solid var(--border)", marginBottom: "2rem" }}>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: "1rem" }}>
+            <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "56px", height: "56px", borderRadius: "18px", background: "var(--accent-soft)", color: "var(--accent)" }}>
+              <Icon name={nicheIcon(n.slug)} size={20} />
+            </span>
+          </div>
           <h1 style={{ fontFamily: "var(--fd)", fontSize: "clamp(2rem,5vw,3rem)", fontWeight: 800, letterSpacing: "-2px", marginBottom: ".75rem", lineHeight: 1.05 }}>
             Viral <span>{n.label}</span> hooks
           </h1>
@@ -112,8 +118,8 @@ export default async function NicheHooksPage(
           <div style={{ fontSize: ".7rem", textTransform: "uppercase", letterSpacing: "2px", color: "var(--muted)", marginBottom: ".75rem", fontFamily: "var(--fd)", fontWeight: 600 }}>More niches</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
             {NICHE_MODES.filter(o => o.slug !== n.slug).map(o => (
-              <Link key={o.slug} href={`/hooks-for/${o.slug}`} style={{ padding: "6px 14px", borderRadius: "100px", border: "1px solid var(--border2)", color: "var(--muted)", fontSize: ".8rem", textDecoration: "none", fontFamily: "var(--fb)" }}>
-                {o.label}
+              <Link key={o.slug} href={`/hooks-for/${o.slug}`} style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "6px 14px", borderRadius: "var(--r-pill)", border: "1px solid var(--border-strong)", color: "var(--text-muted)", fontSize: "var(--text-sm)", textDecoration: "none", fontFamily: "var(--fb)" }}>
+                <Icon name={nicheIcon(o.slug)} /> {o.label}
               </Link>
             ))}
           </div>

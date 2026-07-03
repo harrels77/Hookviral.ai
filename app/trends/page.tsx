@@ -7,7 +7,7 @@ import { NextStep } from "@/components/NextStep";
 import { getNichePref, setNichePref, getGeoPref, setGeoPref, getSourcesPref, setSourcesPref,
          saveTrend, unsaveTrend, isTrendSaved, trendId } from "@/lib/prefs";
 import { SOURCE_BADGES, type SourceKey } from "@/lib/sourceBadges";
-import { Icon, type IconName } from "@/lib/icons";
+import { Icon, nicheIcon, type IconName } from "@/lib/icons";
 
 type Velocity = "rising" | "steady" | "cooling" | "new";
 type Source = SourceKey;
@@ -255,15 +255,17 @@ export default function TrendsPage() {
                           title={active ? `Hide ${SOURCE_LABELS[s]} trends` : `Include ${SOURCE_LABELS[s]} trends`}
                           style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "9px 16px", border: "none", background: active ? "var(--surface-3)" : "transparent", color: active ? "var(--text)" : "var(--text-muted)", fontSize: "var(--text-sm)", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}
                         >
-                          {active && <Icon name="check" />}{label}
+                          <span aria-hidden style={{ width: "8px", height: "8px", borderRadius: "50%", background: SOURCE_BADGES[s].color, opacity: active ? 1 : .45, flexShrink: 0 }} />
+                          {label}
+                          {active && <Icon name="check" />}
                         </button>
                       );
                     })}
                   </div>
                   <div className="hv-scroll-pill" style={{ display: "flex", border: "1px solid var(--border)", borderRadius: "100px", overflow: "hidden", background: "var(--s1)", opacity: allGeoLess ? 0.4 : 1 }} title={allGeoLess ? "Selected sources are global — geo doesn't apply" : undefined}>
                     {GEOS.map(([code, label]) => (
-                      <button key={code} onClick={() => setGeo(code)} disabled={allGeoLess} title={allGeoLess ? "Selected sources are global" : `Trends for ${code}`} style={{ padding: "9px 14px", border: "none", background: geo === code ? "var(--s3)" : "transparent", color: geo === code ? "var(--text)" : "var(--muted)", fontSize: ".82rem", cursor: allGeoLess ? "not-allowed" : "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
-                        {label}
+                      <button key={code} onClick={() => setGeo(code)} disabled={allGeoLess} title={allGeoLess ? "Selected sources are global" : `Trends for ${code}`} style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "9px 14px", border: "none", background: geo === code ? "var(--surface-3)" : "transparent", color: geo === code ? "var(--text)" : "var(--text-muted)", fontSize: "var(--text-sm)", cursor: allGeoLess ? "not-allowed" : "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
+                        {code === "GLOBAL" && <Icon name="globe" />}{label}
                       </button>
                     ))}
                   </div>
@@ -276,7 +278,7 @@ export default function TrendsPage() {
                     </button>
                     {NICHE_MODES.map(n => (
                       <button key={n.slug} onClick={() => setNiche(n.slug)} className="chip" data-active={niche === n.slug}>
-                        {n.label}
+                        <Icon name={nicheIcon(n.slug)} /> {n.label}
                       </button>
                     ))}
                   </div>
@@ -428,7 +430,8 @@ function TrendCard({ trend, rank, niche }: { trend: Trend; rank: number; niche: 
           <div style={{ fontSize: ".95rem", color: "var(--text)", lineHeight: 1.45, fontWeight: 500 }}>{trend.title}</div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px", flexWrap: "wrap" }}>
             {trend.source && (
-              <span title={`From ${SOURCE_BADGES[trend.source].label}`} style={{ fontSize: ".7rem", fontFamily: "var(--fd)", fontWeight: 700, padding: "2px 8px", borderRadius: "var(--r-pill)", color: SOURCE_BADGES[trend.source].color, background: `${SOURCE_BADGES[trend.source].color}14`, border: `1px solid ${SOURCE_BADGES[trend.source].color}33` }}>
+              <span title={`From ${SOURCE_BADGES[trend.source].label}`} style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: ".7rem", fontFamily: "var(--fd)", fontWeight: 700, padding: "2px 8px", borderRadius: "var(--r-pill)", color: SOURCE_BADGES[trend.source].color, background: `${SOURCE_BADGES[trend.source].color}14`, border: `1px solid ${SOURCE_BADGES[trend.source].color}33` }}>
+                <span aria-hidden style={{ width: "6px", height: "6px", borderRadius: "50%", background: SOURCE_BADGES[trend.source].color }} />
                 {SOURCE_BADGES[trend.source].label}
               </span>
             )}

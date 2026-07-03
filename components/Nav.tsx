@@ -89,6 +89,15 @@ export function Nav() {
 
         {/* Desktop */}
         <div className="hv-desktop-nav" style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+          {/* Explicit way back home — the logo alone wasn't an obvious affordance */}
+          <Link
+            href="/"
+            aria-label="Home"
+            title="Home"
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "34px", height: "34px", borderRadius: "var(--r-pill)", color: path === "/" ? "var(--text)" : "var(--text-soft)", background: path === "/" ? "var(--surface-3)" : "transparent", textDecoration: "none", transition: "background .15s ease, color .15s ease", marginRight: "2px" }}
+          >
+            <Icon name="house" />
+          </Link>
           {PRIMARY.map(l => {
             const active = path === l.href;
             return (

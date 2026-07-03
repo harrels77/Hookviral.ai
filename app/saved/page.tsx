@@ -37,7 +37,10 @@ export default function SavedPage() {
     <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
       <div className="page-wrap">
         <div style={{ marginBottom: "2rem" }}>
-          <h1 style={{ fontFamily: "var(--fd)", fontSize: "clamp(2rem,5vw,2.8rem)", fontWeight: 800, letterSpacing: "-2px" }}>
+          <h1 style={{ display: "flex", alignItems: "center", gap: "12px", fontFamily: "var(--fd)", fontSize: "clamp(2rem,5vw,2.8rem)", fontWeight: 800, letterSpacing: "-2px" }}>
+            <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "44px", height: "44px", borderRadius: "14px", background: "var(--warning-soft)", color: "var(--warning)", flexShrink: 0 }}>
+              <Icon name="star" size={20} fill="currentColor" />
+            </span>
             Saved trends
           </h1>
           <p style={{ color: "var(--soft)", fontSize: ".875rem", marginTop: ".3rem", fontWeight: 300 }}>
