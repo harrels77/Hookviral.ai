@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { NextStep } from "@/components/NextStep";
+import { Icon } from "@/lib/icons";
+import { scoreColor } from "@/lib/score";
 
 interface Hook { id: string; text: string; formula: string; platform: string; score: number; }
 interface Session { id: string; topic: string; platforms: string[]; tone: string; hooks: Hook[]; dateLabel: string; }
@@ -56,7 +58,7 @@ export default function HistoryPage() {
           <div style={{ display: "flex", border: "1px solid var(--border)", borderRadius: "100px", overflow: "hidden", background: "var(--s1)" }}>
             {(["all", "favorites"] as const).map(t => (
               <button key={t} onClick={() => setTab(t)} style={{ padding: "8px 22px", border: "none", background: tab === t ? "var(--s3)" : "transparent", color: tab === t ? "var(--text)" : "var(--muted)", fontSize: ".8rem", cursor: "pointer", fontFamily: "var(--fb)" }}>
-                {t === "favorites" ? `★ Favorites (${favorites.length})` : "All"}
+                {t === "favorites" ? `Favorites (${favorites.length})` : "All"}
               </button>
             ))}
           </div>
@@ -64,10 +66,10 @@ export default function HistoryPage() {
 
         {sessions.length > 0 && (
           <div style={{ position: "relative", marginBottom: "1.5rem" }}>
-            <span style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", color: "var(--muted)", fontSize: "14px", pointerEvents: "none" }}>🔍</span>
+            <span style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", display: "flex", pointerEvents: "none" }}><Icon name="search" /></span>
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by topic or hook text..."
-              style={{ width: "100%", background: "var(--s1)", border: "1px solid var(--border)", borderRadius: "100px", padding: "10px 2.5rem", color: "var(--text)", fontSize: ".875rem", fontFamily: "var(--fb)", outline: "none", caretColor: "var(--hot)" }} />
-            {search && <button onClick={() => setSearch("")} style={{ position: "absolute", right: "1rem", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "var(--muted)", cursor: "pointer" }}>✕</button>}
+              style={{ width: "100%", background: "var(--s1)", border: "1px solid var(--border)", borderRadius: "100px", padding: "10px 2.5rem", color: "var(--text)", fontSize: ".875rem", fontFamily: "var(--fb)", caretColor: "var(--accent)" }} />
+            {search && <button onClick={() => setSearch("")} aria-label="Clear search" style={{ position: "absolute", right: "1rem", top: "50%", transform: "translateY(-50%)", display: "flex", background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}><Icon name="x" /></button>}
           </div>
         )}
 
@@ -75,13 +77,13 @@ export default function HistoryPage() {
 
         {filtered.length === 0 && (
           <div style={{ textAlign: "center", padding: "6rem 2rem" }}>
-            <div style={{ fontSize: "3rem", opacity: .12, marginBottom: "1.5rem" }}>{search ? "🔍" : tab === "favorites" ? "★" : "📭"}</div>
             <p style={{ color: "var(--muted)", fontSize: ".9rem", lineHeight: 1.7, marginBottom: search ? 0 : "1.5rem" }}>
               {search ? `No results for "${search}"` : tab === "favorites" ? "No favorites yet." : "No generations yet — the loop starts with an idea."}
             </p>
             {!search && tab !== "favorites" && (
-              <Link href="/trends" style={{ display: "inline-flex", padding: "12px 24px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".9rem", fontWeight: 600, textDecoration: "none", fontFamily: "var(--fb)" }}>
-                Find a trend to post →
+              <Link href="/trends" className="btn btn-primary btn-md">
+                Find a trend to post
+                <Icon name="arrow-right" />
               </Link>
             )}
           </div>
@@ -99,7 +101,7 @@ export default function HistoryPage() {
                     ))}
                   </div>
                 </div>
-                <div style={{ width: "28px", height: "28px", borderRadius: "50%", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)", fontSize: ".7rem", transition: "transform .2s", transform: open.includes(s.id) ? "rotate(180deg)" : "none", flexShrink: 0 }}>▼</div>
+                <div style={{ width: "28px", height: "28px", borderRadius: "50%", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", transition: "transform .2s", transform: open.includes(s.id) ? "rotate(180deg)" : "none", flexShrink: 0 }}><Icon name="chevron-down" /></div>
               </div>
               {open.includes(s.id) && (
                 <div style={{ padding: "0 1rem 1rem", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
@@ -107,19 +109,19 @@ export default function HistoryPage() {
                     <div key={h.id} onClick={() => copyText(h.text, h.id)} style={{ background: "var(--s2)", border: "1px solid var(--border)", borderRadius: "var(--r)", padding: "1rem", cursor: "pointer", position: "relative", transition: "all .2s" }}>
                       <div style={{ fontSize: ".82rem", color: "var(--soft)", lineHeight: 1.6, marginBottom: ".6rem" }}>{h.text}</div>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontSize: ".68rem", color: "#9B8CFF", fontFamily: "var(--fd)", fontWeight: 700 }}>{h.formula}</span>
+                        <span style={{ fontSize: "var(--text-xs)", color: "var(--accent)", fontFamily: "var(--fd)", fontWeight: 700 }}>{h.formula}</span>
                         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                           <Link
                             href={`/analyzer?hook=${encodeURIComponent(h.text)}&platform=${encodeURIComponent(h.platform || "TikTok")}`}
                             onClick={e => e.stopPropagation()}
-                            style={{ fontSize: ".68rem", color: "var(--electric)", fontFamily: "var(--fb)", textDecoration: "none" }}
+                            style={{ fontSize: "var(--text-xs)", color: "var(--accent)", fontFamily: "var(--fb)", textDecoration: "none" }}
                           >
-                            ✦ Improve →
+                            Improve
                           </Link>
-                          <span style={{ fontSize: ".68rem", color: "var(--neon)", fontFamily: "var(--fd)", fontWeight: 700 }}>{h.score}/100</span>
+                          <span style={{ fontSize: "var(--text-xs)", color: scoreColor(h.score), fontFamily: "var(--fd)", fontWeight: 700 }}>{h.score}/100</span>
                         </div>
                       </div>
-                      {copied === h.id && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,255,178,.06)", borderRadius: "var(--r)", color: "var(--neon)", fontSize: ".8rem", fontFamily: "var(--fd)", fontWeight: 700 }}>COPIED ✓</div>}
+                      {copied === h.id && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: "5px", background: "var(--success-soft)", borderRadius: "var(--r-sm)", color: "var(--success)", fontSize: "var(--text-xs)", fontFamily: "var(--fd)", fontWeight: 700 }}><Icon name="check" /> Copied</div>}
                     </div>
                   ))}
                 </div>

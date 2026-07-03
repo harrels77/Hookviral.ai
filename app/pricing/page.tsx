@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Icon } from "@/lib/icons";
 
 export default function PricingPage() {
   const [annual, setAnnual] = useState(false);
@@ -24,11 +25,10 @@ export default function PricingPage() {
 
         {/* Title */}
         <div style={{ textAlign: "center", marginBottom: "3rem" }}>
-          <h1 style={{ fontFamily: "var(--fd)", fontSize: "clamp(2.2rem,6vw,3.5rem)", fontWeight: 800, letterSpacing: "-2px", marginBottom: ".75rem", lineHeight: 1.05 }}>
-            One plan.<br />
-            <span className="gradient-text">Everything unlocked.</span>
+          <h1 style={{ fontFamily: "var(--fd)", fontSize: "var(--text-3xl)", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: ".75rem", lineHeight: 1.1 }}>
+            One plan that unlocks everything
           </h1>
-          <p style={{ color: "var(--soft)", fontSize: "1rem", fontWeight: 300, maxWidth: "380px", margin: "0 auto" }}>
+          <p style={{ color: "var(--text-soft)", fontSize: "var(--text-base)", maxWidth: "380px", margin: "0 auto" }}>
             Start free. Upgrade to Pro when you need unlimited.
           </p>
         </div>
@@ -43,7 +43,7 @@ export default function PricingPage() {
             <button onClick={() => setAnnual(true)}
               style={{ padding: "8px 22px", borderRadius: "100px", border: "none", background: annual ? "var(--s3)" : "transparent", color: annual ? "var(--text)" : "var(--muted)", fontSize: ".85rem", cursor: "pointer", fontFamily: "var(--fb)", display: "flex", alignItems: "center", gap: "8px", transition: "all .2s" }}>
               Annual
-              <span style={{ background: "rgba(0,255,178,.1)", color: "var(--neon)", border: "1px solid rgba(0,255,178,.2)", padding: "2px 8px", borderRadius: "100px", fontSize: ".7rem", fontFamily: "var(--fd)", fontWeight: 700 }}>
+              <span style={{ background: "var(--success-soft)", color: "var(--success)", padding: "2px 8px", borderRadius: "var(--r-pill)", fontSize: "var(--text-xs)", fontFamily: "var(--fd)", fontWeight: 700 }}>
                 Save 25%
               </span>
             </button>
@@ -55,7 +55,7 @@ export default function PricingPage() {
 
           {/* FREE */}
           <PCard>
-            <div style={{ fontSize: ".72rem", letterSpacing: "3px", textTransform: "uppercase", fontFamily: "var(--fd)", fontWeight: 700, color: "var(--muted)", marginBottom: "1.25rem" }}>Free</div>
+            <div className="kicker" style={{ marginBottom: "1.25rem" }}>Free</div>
             <div style={{ fontFamily: "var(--fd)", fontSize: "3rem", fontWeight: 800, letterSpacing: "-2px", lineHeight: 1, marginBottom: ".25rem" }}>$0</div>
             <div style={{ fontSize: ".875rem", color: "var(--muted)", marginBottom: "2rem", fontWeight: 300 }}>forever, no card needed</div>
             <Divider />
@@ -67,8 +67,8 @@ export default function PricingPage() {
                 "Patterns library, history, hashtags",
                 "No account, no card",
               ].map(f => (
-                <li key={f} style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: ".875rem", color: "var(--soft)", fontWeight: 300 }}>
-                  <span style={{ color: "var(--neon)", fontSize: ".8rem", flexShrink: 0 }}>✓</span>{f}
+                <li key={f} style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "var(--text-sm)", color: "var(--text-soft)" }}>
+                  <Icon name="check" style={{ color: "var(--success)" }} />{f}
                 </li>
               ))}
             </ul>
@@ -76,22 +76,8 @@ export default function PricingPage() {
           </PCard>
 
           {/* PRO */}
-          {/* ★ Most Popular badge only shows when annual=true (plan at $9) ★ */}
           <PCard featured>
-            {annual && (
-              <div style={{
-                position: "absolute", top: "-1px", right: "1.5rem",
-                background: "linear-gradient(135deg,var(--hot),var(--electric))",
-                color: "#fff", fontSize: ".62rem", fontFamily: "var(--fd)",
-                fontWeight: 700, letterSpacing: "2px", padding: "4px 14px",
-                borderRadius: "0 0 10px 10px",
-                boxShadow: "0 4px 16px rgba(255,45,107,.3)",
-              }}>
-                MOST POPULAR
-              </div>
-            )}
-
-            <div style={{ fontSize: ".72rem", letterSpacing: "3px", textTransform: "uppercase", fontFamily: "var(--fd)", fontWeight: 700, color: "var(--hot)", marginBottom: "1.25rem" }}>Pro</div>
+            <div className="kicker" style={{ color: "var(--accent)", marginBottom: "1.25rem" }}>Pro</div>
 
             <div style={{ display: "flex", alignItems: "flex-end", gap: "4px", marginBottom: ".25rem" }}>
               <div style={{ fontFamily: "var(--fd)", fontSize: "3rem", fontWeight: 800, letterSpacing: "-2px", lineHeight: 1 }}>${proPrice}</div>
@@ -99,7 +85,7 @@ export default function PricingPage() {
             </div>
 
             {annual && (
-              <div style={{ fontSize: ".75rem", color: "var(--neon)", marginBottom: ".25rem" }}>
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--success)", marginBottom: ".25rem" }}>
                 Billed ${proPrice * 12}/year — save $36
               </div>
             )}
@@ -118,8 +104,8 @@ export default function PricingPage() {
                 "Script generator + faceless production brief",
                 "Priority support",
               ].map(f => (
-                <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: "10px", fontSize: ".875rem", color: "var(--soft)", fontWeight: 300 }}>
-                  <span style={{ color: "var(--neon)", fontSize: ".8rem", flexShrink: 0, marginTop: "2px" }}>✓</span>{f}
+                <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: "10px", fontSize: "var(--text-sm)", color: "var(--text-soft)" }}>
+                  <Icon name="check" style={{ color: "var(--success)", marginTop: "2px" }} />{f}
                 </li>
               ))}
             </ul>
@@ -133,26 +119,29 @@ export default function PricingPage() {
         <div style={{ textAlign: "center", padding: "1.75rem", background: "var(--s1)", borderRadius: "var(--r2)", border: "1px solid var(--border)", marginBottom: "4rem" }}>
           <p style={{ fontSize: ".875rem", color: "var(--soft)", fontWeight: 300, lineHeight: 1.7 }}>
             <strong style={{ color: "var(--text)", fontWeight: 500 }}>Same AI on both plans. Pro = unlimited.</strong>{" "}
-            <Link href="/generator" style={{ color: "var(--electric)", textDecoration: "none" }}>Try free first →</Link>
+            <Link href="/generator" style={{ color: "var(--accent)", textDecoration: "none" }}>Try free first</Link>
           </p>
         </div>
 
         {/* FAQ */}
         <div>
-          <h2 style={{ fontFamily: "var(--fd)", fontSize: "1.6rem", fontWeight: 800, letterSpacing: "-1px", marginBottom: "1.75rem", textAlign: "center" }}>
-            Frequently asked
+          <h2 style={{ fontFamily: "var(--fd)", fontSize: "var(--text-xl)", fontWeight: 800, marginBottom: "1.75rem", textAlign: "center" }}>
+            Frequently asked questions
           </h2>
           {faqs.map(([q, a], i) => (
-            <div key={i} onClick={() => setOpenFaq(openFaq === i ? null : i)}
-              style={{ borderTop: "1px solid var(--border)", padding: "1.25rem 0", cursor: "pointer" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: ".9rem", fontWeight: 500, gap: "1rem", color: "var(--text)" }}>
+            <div key={i} style={{ borderTop: "1px solid var(--border)" }}>
+              <button
+                onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                aria-expanded={openFaq === i}
+                style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", padding: "1.25rem 0", background: "none", border: "none", cursor: "pointer", fontSize: "var(--text-sm)", fontWeight: 500, color: "var(--text)", fontFamily: "var(--fb)", textAlign: "left" }}
+              >
                 <span>{q}</span>
-                <div style={{ width: "24px", height: "24px", borderRadius: "50%", border: "1px solid var(--border2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: ".7rem", color: openFaq === i ? "#fff" : "var(--muted)", background: openFaq === i ? "var(--electric)" : "transparent", transition: "all .25s", flexShrink: 0, transform: openFaq === i ? "rotate(45deg)" : "none" }}>
-                  +
-                </div>
-              </div>
+                <span style={{ display: "flex", color: "var(--text-muted)", transform: openFaq === i ? "rotate(180deg)" : "none", transition: "transform .2s ease" }}>
+                  <Icon name="chevron-down" size={20} />
+                </span>
+              </button>
               {openFaq === i && (
-                <div style={{ fontSize: ".875rem", color: "var(--soft)", marginTop: ".875rem", lineHeight: 1.8, fontWeight: 300 }}>{a}</div>
+                <div style={{ fontSize: "var(--text-sm)", color: "var(--text-soft)", paddingBottom: "1.25rem", lineHeight: 1.8 }}>{a}</div>
               )}
             </div>
           ))}
@@ -174,15 +163,12 @@ export default function PricingPage() {
 // ── Sub-components ──
 
 function PCard({ children, featured }: { children: React.ReactNode; featured?: boolean }) {
-  const [hov, setHov] = useState(false);
   return (
-    <div onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{
-      background: featured ? "linear-gradient(180deg,rgba(255,45,107,.05) 0%,var(--s1) 50%)" : "var(--s1)",
-      border: `1px solid ${featured ? "rgba(255,45,107,.45)" : hov ? "rgba(108,58,255,.3)" : "var(--border)"}`,
-      borderRadius: "24px", padding: "2rem", position: "relative",
-      transition: "all .3s cubic-bezier(.16,1,.3,1)",
-      transform: hov ? "translateY(-4px)" : "none",
-      boxShadow: hov ? "0 20px 50px rgba(108,58,255,.1)" : featured ? "0 0 40px rgba(255,45,107,.07)" : "none",
+    <div style={{
+      background: "var(--surface)",
+      border: `1px solid ${featured ? "var(--accent)" : "var(--border)"}`,
+      borderRadius: "var(--r-lg)", padding: "2rem", position: "relative",
+      boxShadow: featured ? "0 8px 24px rgb(16 16 25 / .08)" : "none",
     }}>
       {children}
     </div>
@@ -194,26 +180,20 @@ function Divider() {
 }
 
 function FreeBtn() {
-  const [hov, setHov] = useState(false);
   return (
-    <Link href="/generator"
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{ display: "block", textAlign: "center", padding: "13px", borderRadius: "100px", background: hov ? "var(--s2)" : "var(--s3)", color: hov ? "var(--text)" : "var(--soft)", border: `1px solid ${hov ? "rgba(108,58,255,.4)" : "var(--border2)"}`, fontSize: ".9rem", textDecoration: "none", fontFamily: "var(--fb)", transition: "all .25s", transform: hov ? "translateY(-2px)" : "none" }}>
-      Start Free
+    <Link href="/generator" className="btn btn-secondary btn-md btn-block">
+      Start free
     </Link>
   );
 }
 
 function ProBtn() {
-  const [hov, setHov] = useState(false);
+  // Stripe wiring is deferred — the click behavior is intentionally untouched.
   return (
     <button
       onClick={() => alert("Connect your Stripe keys to activate!")}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{ width: "100%", padding: "14px", borderRadius: "100px", border: "none", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".95rem", fontWeight: 500, cursor: "pointer", fontFamily: "var(--fb)", transition: "all .3s", transform: hov ? "translateY(-2px)" : "none", boxShadow: hov ? "0 16px 40px rgba(255,45,107,.45)" : "0 6px 20px rgba(255,45,107,.25)" }}>
-      Get Pro — Unlimited Access →
+      className="btn btn-primary btn-md btn-block">
+      Get Pro — unlimited access
     </button>
   );
 }

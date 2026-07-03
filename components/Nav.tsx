@@ -2,197 +2,163 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTheme } from "@/components/Themeprovider";
 import { Logo } from "@/components/Logo";
+import { Icon } from "@/lib/icons";
+
+// Five primary entries + Library (personal, localStorage-backed pages).
+// Order signals priority: Analyze is the demo that converts ("paste hook →
+// 32/100 → fix → 84/100"); Generate follows because the natural workflow is
+// "I have a hook, is it any good?" before "blank page, generate something".
+const PRIMARY = [
+  { href: "/analyzer", label: "Analyze" },
+  { href: "/generator", label: "Generate" },
+  { href: "/trends", label: "Trends" },
+  { href: "/patterns", label: "Patterns" },
+  { href: "/pricing", label: "Pricing" },
+];
+
+const LIBRARY = [
+  { href: "/saved", label: "Saved trends" },
+  { href: "/history", label: "History" },
+  { href: "/why-it-works", label: "Start here" },
+];
 
 export function Nav() {
   const path = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [libOpen, setLibOpen] = useState(false);
+  const libRef = useRef<HTMLDivElement>(null);
   const { theme, toggle } = useTheme();
 
-  // Flat nav — Home first, then Analyze (our flagship), then the rest of the
-  // loop. Order signals priority: Analyze is the demo that converts ("paste
-  // hook → 32/100 → fix → 84/100"), Trends is the supporting strategic value.
-  // Generate sits after Analyze because the natural workflow is "I have a
-  // hook, is it any good?" before "I have nothing, generate something."
-  const primary = [
-    { href: "/", label: "Home" },
-    { href: "/analyzer", label: "Analyze" },
-    { href: "/trends", label: "Trends" },
-    { href: "/saved", label: "Saved" },
-    { href: "/generator", label: "Generate" },
-    { href: "/patterns", label: "Patterns" },
-    { href: "/pricing", label: "Pricing" },
-    { href: "/history", label: "History" },
-  ];
-
-  // Menu close happens via explicit onClick on each mobile-drawer Link below,
-  // not via a path-change effect. React 19's react-hooks/set-state-in-effect
-  // lint flags effect-driven setState as an anti-pattern: closing on click is
-  // the actual semantic — the user clicked, the menu should close. Path
-  // change is incidental. Desktop nav is unaffected (no drawer state).
-
+  // Close the Library dropdown on outside click.
   useEffect(() => {
-    // Skip on touch/mobile
-    const isTouch = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
-    if (isTouch) return;
-
-    const ring = document.getElementById("hv-cursor-ring");
-    if (!ring) return;
-
-    ring.style.display = "block";
-
-    let tx = 0, ty = 0, cx = 0, cy = 0, raf: number;
-    let hovering = false;
-
-    const onMove = (e: MouseEvent) => {
-      tx = e.clientX;
-      ty = e.clientY;
-      if (ring.style.opacity === "0") ring.style.opacity = "1";
+    if (!libOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (libRef.current && !libRef.current.contains(e.target as Node)) setLibOpen(false);
     };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [libOpen]);
 
-    const tick = () => {
-      // Smooth lag follow
-      cx += (tx - cx) * 0.15;
-      cy += (ty - cy) * 0.15;
-      ring.style.left = cx - (hovering ? 22 : 16) + "px";
-      ring.style.top  = cy - (hovering ? 22 : 16) + "px";
-      raf = requestAnimationFrame(tick);
-    };
-
-    const onEnter = () => {
-      hovering = true;
-      ring.style.width = "44px";
-      ring.style.height = "44px";
-      ring.style.borderColor = "rgba(108,58,255,.5)";
-      ring.style.background = "rgba(108,58,255,.04)";
-    };
-    const onLeave = () => {
-      hovering = false;
-      ring.style.width = "32px";
-      ring.style.height = "32px";
-      ring.style.borderColor = "rgba(255,255,255,.12)";
-      ring.style.background = "transparent";
-    };
-
-    document.addEventListener("mousemove", onMove);
-    raf = requestAnimationFrame(tick);
-
-    const attach = () => {
-      document.querySelectorAll("button,a,input,textarea,select").forEach(el => {
-        el.addEventListener("mouseenter", onEnter);
-        el.addEventListener("mouseleave", onLeave);
-      });
-    };
-    attach();
-    const obs = new MutationObserver(attach);
-    obs.observe(document.body, { childList: true, subtree: true });
-
-    return () => {
-      document.removeEventListener("mousemove", onMove);
-      cancelAnimationFrame(raf);
-      obs.disconnect();
-    };
-  }, []);
+  const inLibrary = LIBRARY.some(l => l.href === path);
 
   return (
     <>
-      {/* Minimal cursor ring — display:none by default, JS shows it on desktop */}
-      <div
-        id="hv-cursor-ring"
-        style={{
-          display: "none",
-          position: "fixed",
-          width: "32px",
-          height: "32px",
-          border: "1px solid rgba(255,255,255,.12)",
-          borderRadius: "50%",
-          pointerEvents: "none",
-          zIndex: 9999,
-          opacity: 0,
-          background: "transparent",
-          transition:
-            "width .25s cubic-bezier(.16,1,.3,1), height .25s cubic-bezier(.16,1,.3,1), border-color .25s ease, background .25s ease, opacity .4s ease",
-        }}
-      />
-
       {/* Mobile overlay */}
       {menuOpen && (
-        <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.6)", zIndex: 150, backdropFilter: "blur(6px)" }} />
+        <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(16,16,25,.45)", zIndex: 150 }} />
       )}
 
       {/* Mobile drawer */}
-      <div style={{ position: "fixed", top: 0, right: 0, bottom: 0, width: "280px", background: "var(--s1)", borderLeft: "1px solid var(--border)", zIndex: 200, padding: "5rem 1.5rem 2rem", display: "flex", flexDirection: "column", gap: "6px", transform: menuOpen ? "translateX(0)" : "translateX(100%)", transition: "transform .3s cubic-bezier(.16,1,.3,1)" }}>
-        {primary.map(l => {
+      <div style={{ position: "fixed", top: 0, right: 0, bottom: 0, width: "280px", background: "var(--surface)", borderLeft: "1px solid var(--border)", zIndex: 200, padding: "4.5rem 1.5rem 2rem", display: "flex", flexDirection: "column", gap: "4px", transform: menuOpen ? "translateX(0)" : "translateX(100%)", transition: "transform .3s cubic-bezier(.16,1,.3,1)", overflowY: "auto" }}>
+        <button
+          onClick={() => setMenuOpen(false)}
+          aria-label="Close menu"
+          style={{ position: "absolute", top: "14px", right: "1.5rem", width: "38px", height: "38px", display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", color: "var(--text-soft)", cursor: "pointer" }}
+        >
+          <Icon name="x" size={20} />
+        </button>
+        {[{ href: "/", label: "Home" }, ...PRIMARY, ...LIBRARY].map(l => {
           const active = path === l.href;
           return (
-            <Link key={l.href} href={l.href} onClick={() => setMenuOpen(false)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderRadius: "var(--r2)", background: active ? "var(--s3)" : "transparent", color: active ? "var(--text)" : "var(--soft)", textDecoration: "none", fontFamily: "var(--fb)", fontSize: "1rem", fontWeight: active ? 500 : 400, border: active ? "1px solid var(--border2)" : "1px solid transparent", transition: "all .2s" }}>
+            <Link key={l.href} href={l.href} onClick={() => setMenuOpen(false)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 16px", borderRadius: "var(--r-md)", background: active ? "var(--surface-3)" : "transparent", color: active ? "var(--text)" : "var(--text-soft)", textDecoration: "none", fontSize: "var(--text-base)", fontWeight: active ? 500 : 400 }}>
               {l.label}
-              {active && <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "linear-gradient(135deg,var(--hot),var(--electric))", flexShrink: 0 }} />}
+              {active && <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--accent)", flexShrink: 0 }} />}
             </Link>
           );
         })}
         <div style={{ marginTop: "auto", paddingTop: "1.5rem", borderTop: "1px solid var(--border)" }}>
-          <Link href="/analyzer" onClick={() => setMenuOpen(false)} style={{ display: "block", textAlign: "center", padding: "14px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".95rem", fontWeight: 500, textDecoration: "none", fontFamily: "var(--fb)" }}>
-            Score my hook →
+          <Link href="/analyzer" onClick={() => setMenuOpen(false)} className="btn btn-primary btn-md btn-block">
+            Score my hook
+            <Icon name="arrow-right" />
           </Link>
         </div>
       </div>
 
       {/* Main nav */}
-      <nav style={{ position: "fixed", top: 0, left: 0, right: 0, height: "var(--nav-h)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 1.5rem", background: "var(--nav-bg)", backdropFilter: "blur(24px) saturate(180%)", borderBottom: "1px solid var(--border)" }}>
+      <nav style={{ position: "fixed", top: 0, left: 0, right: 0, height: "var(--nav-h)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 1.5rem", background: "var(--nav-bg)", backdropFilter: "blur(12px)", borderBottom: "1px solid var(--border)" }}>
 
-        <Link href="/" style={{ display: "flex", alignItems: "baseline", gap: "2px", textDecoration: "none" }}>
+        <Link href="/" style={{ display: "flex", alignItems: "baseline", gap: "2px", textDecoration: "none" }} aria-label="HookViral — home">
           <Logo size={28} />
-          <span style={{ fontFamily: "var(--fd)", fontWeight: 600, fontSize: ".82rem", color: "var(--muted)", letterSpacing: "0px" }}>
-            <span style={{ color: "var(--hot)" }}>.</span>ai
+          <span style={{ fontFamily: "var(--fd)", fontWeight: 600, fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+            <span style={{ color: "var(--accent)" }}>.</span>ai
           </span>
         </Link>
 
         {/* Desktop */}
         <div className="hv-desktop-nav" style={{ display: "flex", alignItems: "center", gap: "2px" }}>
-          {primary.map(l => {
+          {PRIMARY.map(l => {
             const active = path === l.href;
             return (
-              <Link key={l.href} href={l.href} style={{ position: "relative", padding: "6px 16px", borderRadius: "100px", fontSize: ".85rem", color: active ? "var(--text)" : "var(--soft)", background: active ? "var(--s3)" : "transparent", textDecoration: "none", fontFamily: "var(--fb)", transition: "all .2s", display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+              <Link key={l.href} href={l.href} style={{ padding: "7px 14px", borderRadius: "var(--r-pill)", fontSize: "var(--text-sm)", color: active ? "var(--text)" : "var(--text-soft)", background: active ? "var(--surface-3)" : "transparent", textDecoration: "none", fontWeight: active ? 500 : 400, transition: "background .15s ease, color .15s ease" }}>
                 {l.label}
-                {active && <span style={{ display: "block", width: "4px", height: "4px", borderRadius: "50%", background: "linear-gradient(90deg,var(--hot),var(--electric))" }} />}
               </Link>
             );
           })}
 
+          {/* Library — personal pages grouped so the primary row stays short */}
+          <div ref={libRef} style={{ position: "relative" }}>
+            <button
+              onClick={() => setLibOpen(o => !o)}
+              aria-expanded={libOpen}
+              aria-haspopup="menu"
+              style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "7px 14px", borderRadius: "var(--r-pill)", border: "none", background: inLibrary ? "var(--surface-3)" : "transparent", color: inLibrary ? "var(--text)" : "var(--text-soft)", fontSize: "var(--text-sm)", fontFamily: "var(--fb)", cursor: "pointer", transition: "background .15s ease, color .15s ease" }}
+            >
+              Library
+              <Icon name="chevron-down" style={{ transform: libOpen ? "rotate(180deg)" : "none", transition: "transform .15s ease" }} />
+            </button>
+            {libOpen && (
+              <div role="menu" style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, minWidth: "180px", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--r-md)", boxShadow: "0 8px 24px rgb(16 16 25 / .10)", padding: "6px", display: "flex", flexDirection: "column", gap: "2px" }}>
+                {LIBRARY.map(l => (
+                  <Link key={l.href} role="menuitem" href={l.href} onClick={() => setLibOpen(false)} style={{ padding: "9px 12px", borderRadius: "var(--r-sm)", fontSize: "var(--text-sm)", color: path === l.href ? "var(--text)" : "var(--text-soft)", background: path === l.href ? "var(--surface-2)" : "transparent", textDecoration: "none" }}>
+                    {l.label}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Theme toggle */}
-          <button onClick={toggle} title={theme === "dark" ? "Light mode" : "Dark mode"}
-            style={{ width: "34px", height: "34px", borderRadius: "50%", border: "1px solid var(--border2)", background: "var(--s2)", color: "var(--soft)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", transition: "all .25s", marginLeft: "4px" }}
-            onMouseEnter={e => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = "rgba(108,58,255,.4)"; b.style.transform = "scale(1.1) rotate(20deg)"; b.style.color = "var(--text)"; }}
-            onMouseLeave={e => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = "var(--border2)"; b.style.transform = "none"; b.style.color = "var(--soft)"; }}
+          <button
+            onClick={toggle}
+            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            style={{ width: "34px", height: "34px", borderRadius: "50%", border: "1px solid var(--border-strong)", background: "var(--surface-2)", color: "var(--text-soft)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", marginLeft: "4px" }}
           >
-            {theme === "dark" ? "☀" : "🌙"}
+            <Icon name={theme === "dark" ? "sun" : "moon"} />
           </button>
 
-          <Link href="/analyzer" style={{ marginLeft: "8px", padding: "8px 20px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".85rem", fontWeight: 500, textDecoration: "none", fontFamily: "var(--fb)", boxShadow: "0 4px 16px rgba(255,45,107,.25)" }}>
-            Score my hook →
+          <Link href="/analyzer" className="btn btn-primary btn-sm" style={{ marginLeft: "8px" }}>
+            Score my hook
+            <Icon name="arrow-right" />
           </Link>
         </div>
 
         {/* Mobile right side */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <button onClick={toggle} className="hv-theme-mobile"
-            style={{ display: "none", width: "34px", height: "34px", borderRadius: "50%", border: "1px solid var(--border2)", background: "var(--s2)", color: "var(--soft)", cursor: "pointer", alignItems: "center", justifyContent: "center", fontSize: "14px" }}>
-            {theme === "dark" ? "☀" : "🌙"}
+          <button
+            onClick={toggle}
+            className="hv-theme-mobile"
+            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            style={{ display: "none", width: "34px", height: "34px", borderRadius: "50%", border: "1px solid var(--border-strong)", background: "var(--surface-2)", color: "var(--text-soft)", cursor: "pointer", alignItems: "center", justifyContent: "center" }}
+          >
+            <Icon name={theme === "dark" ? "sun" : "moon"} />
           </button>
-          <button onClick={() => setMenuOpen(p => !p)} className="hv-hamburger"
-            style={{ display: "none", flexDirection: "column", gap: "5px", padding: "8px", background: "transparent", border: "1px solid var(--border)", borderRadius: "var(--r)", cursor: "pointer" }}>
-            {[0, 1, 2].map(i => (
-              <span key={i} style={{ display: "block", width: "20px", height: "1.5px", background: "var(--soft)", borderRadius: "2px", transition: "all .25s", transform: menuOpen ? (i === 0 ? "rotate(45deg) translate(4.5px,4.5px)" : i === 1 ? "scaleX(0)" : "rotate(-45deg) translate(4.5px,-4.5px)") : "none" }} />
-            ))}
+          <button
+            onClick={() => setMenuOpen(p => !p)}
+            className="hv-hamburger"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            style={{ display: "none", width: "38px", height: "38px", alignItems: "center", justifyContent: "center", background: "transparent", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", color: "var(--text-soft)", cursor: "pointer", zIndex: 210 }}
+          >
+            <Icon name={menuOpen ? "x" : "menu"} size={20} />
           </button>
         </div>
       </nav>
 
       <style>{`
-        @media (max-width: 700px) {
+        @media (max-width: 760px) {
           .hv-desktop-nav { display: none !important; }
           .hv-hamburger { display: flex !important; }
           .hv-theme-mobile { display: flex !important; }

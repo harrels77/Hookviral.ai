@@ -17,14 +17,14 @@ export const metadata: Metadata = {
 };
 
 const REELS_HOOKS_EXAMPLES = [
-  { topic: "Fitness & Wellness", hooks: ["✨ This is what 90 days of consistency actually looks like.", "🌿 I quit 3 'healthy' habits and finally slept through the night.", "Save this — the only morning routine you'll actually stick to."] },
-  { topic: "Finance", hooks: ["Save this before your next impulse purchase. Seriously.", "The budgeting system that took me from broke to saving 30% — no spreadsheets.", "✨ 5 money habits I wish someone showed me at 22."] },
-  { topic: "Lifestyle & Routine", hooks: ["This is your sign to stop optimizing and just start.", "🌿 The 10-minute evening routine that changed how I sleep.", "What a 'slow morning' actually does to your cortisol (save this)."] },
-  { topic: "Business & Creator", hooks: ["✨ I grew from 0 to 20k followers. Here's the honest version.", "The content strategy nobody talks about because it's too simple.", "Save this — the 3 Reels formats that drove 90% of my growth."] },
+  { topic: "Fitness & Wellness", hooks: ["This is what 90 days of consistency actually looks like.", "I quit 3 'healthy' habits and finally slept through the night.", "Save this — the only morning routine you'll actually stick to."] },
+  { topic: "Finance", hooks: ["Save this before your next impulse purchase. Seriously.", "The budgeting system that took me from broke to saving 30% — no spreadsheets.", "5 money habits I wish someone showed me at 22."] },
+  { topic: "Lifestyle & Routine", hooks: ["This is your sign to stop optimizing and just start.", "The 10-minute evening routine that changed how I sleep.", "What a 'slow morning' actually does to your cortisol (save this)."] },
+  { topic: "Business & Creator", hooks: ["I grew from 0 to 20k followers. Here's the honest version.", "The content strategy nobody talks about because it's too simple.", "Save this — the 3 Reels formats that drove 90% of my growth."] },
 ];
 
 const FORMULAS = [
-  { name: "Transformation Arc", desc: "Show the before → after contrast upfront to trigger aspiration.", example: "This is what 90 days of meal prep actually looks like." },
+  { name: "Transformation Arc", desc: "Show the before/after contrast upfront to trigger aspiration.", example: "This is what 90 days of meal prep actually looks like." },
   { name: "Save Hook", desc: "Tell viewers to save so they don't lose something valuable.", example: "Save this before you book your next flight. Trust me." },
   { name: "List Promise", desc: "Number + clear win that's easy to imagine yourself getting.", example: "5 habits that genuinely changed my relationship with money." },
   { name: "Relatable Confession", desc: "Mirror a feeling the viewer already has but hasn't said out loud.", example: "Nobody warns you how lonely 'levelling up' actually feels." },
@@ -65,7 +65,7 @@ export default function InstagramHookGeneratorPage() {
           </p>
           <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
             <Link href="/generator?platform=reels" style={{ display: "inline-flex", padding: "13px 28px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".95rem", fontWeight: 500, textDecoration: "none", fontFamily: "var(--fb)", boxShadow: "0 6px 20px rgba(255,45,107,.3)" }}>
-              Generate Reels Hooks Free →
+              Generate Reels Hooks Free
             </Link>
             <Link href="/analyzer" style={{ display: "inline-flex", padding: "13px 24px", borderRadius: "100px", border: "1px solid var(--border2)", color: "var(--soft)", fontSize: ".95rem", textDecoration: "none", fontFamily: "var(--fb)" }}>
               Score My Hook
@@ -185,7 +185,7 @@ export default function InstagramHookGeneratorPage() {
             Generate 8 scored Instagram Reels hooks in seconds. Free. No account needed.
           </p>
           <Link href="/generator?platform=reels" style={{ display: "inline-flex", padding: "13px 28px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".95rem", fontWeight: 500, textDecoration: "none", fontFamily: "var(--fb)" }}>
-            Generate My Reels Hooks →
+            Generate My Reels Hooks
           </Link>
         </div>
 

@@ -17,10 +17,10 @@ export const metadata: Metadata = {
 };
 
 const TIKTOK_HOOKS_EXAMPLES = [
-  { topic: "Fitness", hooks: ["🔥 I lost 15kg doing this 10-min workout. No gym.", "⚠️ Stop doing pushups like this — you're wasting your time.", "🤯 The one exercise that replaced my entire gym routine."] },
-  { topic: "Finance", hooks: ["💸 You're wasting $400/month on this without knowing it.", "🤯 I saved $10,000 in a year doing nothing differently.", "❌ The money advice everyone gives you is completely wrong."] },
-  { topic: "Productivity", hooks: ["🧠 I deleted my to-do list for 30 days. My output doubled.", "⚡ The 3-minute habit that made me 10x more focused.", "⚠️ Your morning routine is killing your most productive hours."] },
-  { topic: "Business", hooks: ["🚀 I built a $10k/month business with $0 and a phone.", "💡 The business model nobody talks about in 2025.", "🤯 I quit my job 3 months ago. Here's the honest truth."] },
+  { topic: "Fitness", hooks: ["I lost 15kg doing this 10-min workout. No gym.", "Stop doing pushups like this — you're wasting your time.", "The one exercise that replaced my entire gym routine."] },
+  { topic: "Finance", hooks: ["You're wasting $400/month on this without knowing it.", "I saved $10,000 in a year doing nothing differently.", "The money advice everyone gives you is completely wrong."] },
+  { topic: "Productivity", hooks: ["I deleted my to-do list for 30 days. My output doubled.", "The 3-minute habit that made me 10x more focused.", "Your morning routine is killing your most productive hours."] },
+  { topic: "Business", hooks: ["I built a $10k/month business with $0 and a phone.", "The business model nobody talks about in 2026.", "I quit my job 3 months ago. Here's the honest truth."] },
 ];
 
 const FORMULAS = [
@@ -65,7 +65,7 @@ export default function TikTokHookGeneratorPage() {
           </p>
           <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
             <Link href="/generator?platform=TikTok" style={{ display: "inline-flex", padding: "13px 28px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".95rem", fontWeight: 500, textDecoration: "none", fontFamily: "var(--fb)", boxShadow: "0 6px 20px rgba(255,45,107,.3)" }}>
-              Generate TikTok Hooks Free →
+              Generate TikTok Hooks Free
             </Link>
             <Link href="/pricing" style={{ display: "inline-flex", padding: "13px 24px", borderRadius: "100px", border: "1px solid var(--border2)", color: "var(--soft)", fontSize: ".95rem", textDecoration: "none", fontFamily: "var(--fb)" }}>
               See Pro Plan
@@ -126,7 +126,7 @@ export default function TikTokHookGeneratorPage() {
         {/* SEO content */}
         <div style={{ marginBottom: "4rem", padding: "2rem", background: "var(--s1)", borderRadius: "20px", border: "1px solid var(--border)" }}>
           <h2 style={{ fontFamily: "var(--fd)", fontSize: "clamp(1.2rem,2.5vw,1.6rem)", fontWeight: 800, letterSpacing: "-1px", marginBottom: "1rem" }}>
-            How to Write Viral TikTok Hooks in 2025
+            How to Write Viral TikTok Hooks in 2026
           </h2>
           <div style={{ display: "flex", flexDirection: "column", gap: ".875rem" }}>
             {[
@@ -185,7 +185,7 @@ export default function TikTokHookGeneratorPage() {
             Generate 8 TikTok hooks in 3 seconds. Free. No account needed.
           </p>
           <Link href="/generator?platform=TikTok" style={{ display: "inline-flex", padding: "13px 28px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".95rem", fontWeight: 500, textDecoration: "none", fontFamily: "var(--fb)" }}>
-            Generate My TikTok Hooks →
+            Generate My TikTok Hooks
           </Link>
         </div>
 

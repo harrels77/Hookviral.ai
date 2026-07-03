@@ -5,6 +5,7 @@ import Link from "next/link";
 import { NextStep } from "@/components/NextStep";
 import { getSavedTrends, unsaveTrend, type SavedTrend } from "@/lib/prefs";
 import { SOURCE_BADGES, type SourceKey } from "@/lib/sourceBadges";
+import { Icon } from "@/lib/icons";
 
 // Local copy of the surrogate-safe encoder used on the Trends card, kept inline
 // so this page doesn't depend on Trends' internals (a lone UTF-16 surrogate from
@@ -37,7 +38,7 @@ export default function SavedPage() {
       <div className="page-wrap">
         <div style={{ marginBottom: "2rem" }}>
           <h1 style={{ fontFamily: "var(--fd)", fontSize: "clamp(2rem,5vw,2.8rem)", fontWeight: 800, letterSpacing: "-2px" }}>
-            ⭐ Saved <span className="gradient-text">trends</span>
+            Saved trends
           </h1>
           <p style={{ color: "var(--soft)", fontSize: ".875rem", marginTop: ".3rem", fontWeight: 300 }}>
             {saved.length} trend{saved.length !== 1 ? "s" : ""} you&apos;re watching — research or turn them into hooks anytime.
@@ -46,12 +47,12 @@ export default function SavedPage() {
 
         {saved.length === 0 ? (
           <div style={{ textAlign: "center", padding: "6rem 2rem" }}>
-            <div style={{ fontSize: "3rem", opacity: .12, marginBottom: "1.5rem" }}>⭐</div>
-            <p style={{ color: "var(--muted)", fontSize: ".9rem", lineHeight: 1.7, marginBottom: "1.5rem" }}>
+            <p style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)", lineHeight: 1.7, marginBottom: "1.5rem" }}>
               Nothing saved yet. Star a trend to keep an eye on it.
             </p>
-            <Link href="/trends" style={{ display: "inline-flex", padding: "12px 24px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".9rem", fontWeight: 600, textDecoration: "none", fontFamily: "var(--fb)" }}>
-              Browse trends →
+            <Link href="/trends" className="btn btn-primary btn-md">
+              Browse trends
+              <Icon name="arrow-right" />
             </Link>
           </div>
         ) : (
@@ -60,9 +61,9 @@ export default function SavedPage() {
               const badge = (t.source && SOURCE_BADGES[t.source as SourceKey]) || null;
               return (
                 <div key={t.id} style={{ background: "var(--s1)", border: "1px solid var(--border)", borderRadius: "var(--r2)", padding: "1.1rem 1.3rem", display: "flex", flexDirection: "column", gap: "12px", position: "relative" }}>
-                  <button onClick={() => remove(t.id)} title="Remove from Saved"
-                    style={{ position: "absolute", top: "10px", right: "10px", width: "26px", height: "26px", border: "1px solid var(--border)", borderRadius: "50%", background: "var(--s1)", color: "var(--muted)", cursor: "pointer", fontSize: "12px", lineHeight: 1, padding: 0 }}>
-                    ✕
+                  <button onClick={() => remove(t.id)} title="Remove from Saved" aria-label="Remove from Saved"
+                    style={{ position: "absolute", top: "10px", right: "10px", width: "26px", height: "26px", border: "1px solid var(--border)", borderRadius: "50%", background: "var(--surface)", color: "var(--text-muted)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>
+                    <Icon name="x" />
                   </button>
 
                   <div style={{ paddingRight: "26px" }}>
@@ -70,7 +71,7 @@ export default function SavedPage() {
                     <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px", flexWrap: "wrap" }}>
                       {badge && (
                         <span style={{ fontSize: ".62rem", fontFamily: "var(--fd)", fontWeight: 700, padding: "2px 7px", borderRadius: "100px", color: badge.color, background: `${badge.color}14`, border: `1px solid ${badge.color}33` }}>
-                          {badge.emoji} {badge.label}
+                          {badge.label}
                         </span>
                       )}
                       <span style={{ fontSize: ".72rem", color: "var(--muted)" }}>saved {timeAgo(t.savedAt)}</span>
@@ -78,13 +79,12 @@ export default function SavedPage() {
                   </div>
 
                   {/* Same 3 CTAs as Trends (niche-less — you pick the niche when you act) */}
-                  <Link href={`/trends/research?q=${safeEncode(t.title)}`}
-                    style={{ width: "100%", textAlign: "center", padding: "10px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".82rem", fontWeight: 600, textDecoration: "none", fontFamily: "var(--fb)" }}>
-                    🔬 Research &amp; angles
+                  <Link href={`/trends/research?q=${safeEncode(t.title)}`} className="btn btn-primary btn-sm btn-block">
+                    <Icon name="flask" /> Research &amp; angles
                   </Link>
                   <div style={{ display: "flex", gap: "8px" }}>
-                    <Link href={`/generator?topic=${safeEncode(t.title)}`} style={{ flex: 1, textAlign: "center", padding: "8px", borderRadius: "100px", border: "1px solid var(--border2)", color: "var(--muted)", fontSize: ".74rem", textDecoration: "none", fontFamily: "var(--fb)" }}>⚡ Quick hooks</Link>
-                    <Link href={`/analyzer?hook=${safeEncode(t.title)}`} style={{ flex: 1, textAlign: "center", padding: "8px", borderRadius: "100px", border: "1px solid var(--border2)", color: "var(--muted)", fontSize: ".74rem", textDecoration: "none", fontFamily: "var(--fb)" }}>✦ Score it</Link>
+                    <Link href={`/generator?topic=${safeEncode(t.title)}`} style={{ flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "5px", padding: "8px", borderRadius: "var(--r-pill)", border: "1px solid var(--border-strong)", color: "var(--text-muted)", fontSize: "var(--text-xs)", textDecoration: "none", fontFamily: "var(--fb)" }}><Icon name="zap" /> Quick hooks</Link>
+                    <Link href={`/analyzer?hook=${safeEncode(t.title)}`} style={{ flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "5px", padding: "8px", borderRadius: "var(--r-pill)", border: "1px solid var(--border-strong)", color: "var(--text-muted)", fontSize: "var(--text-xs)", textDecoration: "none", fontFamily: "var(--fb)" }}><Icon name="sparkles" /> Score it</Link>
                   </div>
                 </div>
               );

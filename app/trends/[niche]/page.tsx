@@ -98,9 +98,8 @@ export default async function NicheTrendsPage(
       />
       <div className="page-wrap">
         <div style={{ textAlign: "center", padding: "2rem 0 2.5rem", borderBottom: "1px solid var(--border)", marginBottom: "2rem" }}>
-          <div style={{ fontSize: "2.5rem", marginBottom: ".75rem" }}>{n.emoji}</div>
           <h1 style={{ fontFamily: "var(--fd)", fontSize: "clamp(2rem,5vw,3rem)", fontWeight: 800, letterSpacing: "-2px", marginBottom: ".75rem", lineHeight: 1.05 }}>
-            Trending <span className="gradient-text">{n.label}</span> topics
+            Trending <span>{n.label}</span> topics
           </h1>
           <p style={{ color: "var(--soft)", fontWeight: 300, fontSize: "1rem", maxWidth: "560px", margin: "0 auto", lineHeight: 1.7 }}>
             What&apos;s hot right now for {low} creators — and how to turn any of it into an opening that survives the first 3 seconds. {n.tagline}
@@ -124,7 +123,7 @@ export default async function NicheTrendsPage(
                   <div style={{ fontSize: ".92rem", color: "var(--text)", lineHeight: 1.5, marginBottom: "3px" }}>{t.title}</div>
                   {t.sub && <div style={{ fontSize: ".72rem", color: "var(--muted)" }}>{t.sub}</div>}
                 </div>
-                <span style={{ fontSize: ".78rem", color: "var(--electric)", fontFamily: "var(--fb)", whiteSpace: "nowrap", flexShrink: 0 }}>Get hooks →</span>
+                <span style={{ fontSize: ".78rem", color: "var(--electric)", fontFamily: "var(--fb)", whiteSpace: "nowrap", flexShrink: 0 }}>Get hooks</span>
               </Link>
             ))}
           </div>
@@ -134,7 +133,7 @@ export default async function NicheTrendsPage(
             <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", justifyContent: "center", marginTop: "1rem" }}>
               {n.sampleTopics.map(s => (
                 <Link key={s} href={`/generator?topic=${encodeURIComponent(s)}&niche=${n.slug}`} style={{ padding: "8px 16px", borderRadius: "100px", background: "var(--s2)", border: "1px solid var(--border)", color: "var(--soft)", fontSize: ".85rem", textDecoration: "none", fontFamily: "var(--fb)" }}>
-                  {s} →
+                  {s}
                 </Link>
               ))}
             </div>
@@ -143,7 +142,7 @@ export default async function NicheTrendsPage(
 
         <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap", marginBottom: "3rem" }}>
           <Link href={`/generator?niche=${n.slug}`} style={{ padding: "13px 26px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".95rem", fontWeight: 500, textDecoration: "none", fontFamily: "var(--fb)" }}>
-            Generate {n.label} Hooks — Free →
+            Generate {n.label} Hooks — Free
           </Link>
           <Link href={`/hooks-for/${n.slug}`} style={{ padding: "13px 26px", borderRadius: "100px", border: "1px solid var(--border2)", color: "var(--soft)", fontSize: ".95rem", fontWeight: 500, textDecoration: "none", fontFamily: "var(--fb)" }}>
             {n.label} Hook Examples
@@ -208,11 +207,11 @@ export default async function NicheTrendsPage(
           <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
             {NICHE_MODES.filter(o => o.slug !== n.slug).map(o => (
               <Link key={o.slug} href={`/trends/${o.slug}`} style={{ padding: "6px 14px", borderRadius: "100px", border: "1px solid var(--border2)", color: "var(--muted)", fontSize: ".8rem", textDecoration: "none", fontFamily: "var(--fb)" }}>
-                {o.emoji} {o.label}
+                {o.label}
               </Link>
             ))}
             <Link href="/patterns" style={{ padding: "6px 14px", borderRadius: "100px", border: "1px solid var(--border2)", color: "var(--muted)", fontSize: ".8rem", textDecoration: "none", fontFamily: "var(--fb)" }}>
-              🧠 Attention patterns
+              Attention patterns
             </Link>
           </div>
         </div>

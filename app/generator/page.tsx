@@ -6,15 +6,16 @@ import Link from "next/link";
 import { getNiche } from "@/lib/niches";
 import { isPro } from "@/lib/plan";
 import { NextStep } from "@/components/NextStep";
-import { HOOK_PATTERNS } from "@/lib/patterns";
+import { patternHref } from "@/lib/patterns";
+import { scoreColor } from "@/lib/score";
+import { Icon } from "@/lib/icons";
+import { Button, Spinner } from "@/components/ui";
+import { PLATFORMS as PLATFORM_MODES, getPlatform } from "@/lib/platforms";
 
-// Deep-link a pattern name (from the owned taxonomy) to its explanation.
-function patternHref(name: string) {
-  const p = HOOK_PATTERNS.find(x => x.name === name);
-  return p ? `/patterns#${p.id}` : "/patterns";
-}
-
-const PLATFORMS = ["TikTok", "Instagram", "YouTube", "LinkedIn", "X / Twitter"];
+// Short-form only — lib/platforms.ts is the source of truth (the old
+// LinkedIn/X options contradicted the positioning and had no psychology
+// block behind them).
+const PLATFORMS = PLATFORM_MODES.map(p => p.label);
 const TONES = ["Authentic", "Shock", "Educational", "Humor", "Authority", "Storytelling"];
 const NICHES = ["Fitness", "Finance", "Tech", "Business", "Lifestyle", "Education", "Motivation", "Relationships"];
 const GOALS = ["Engagement", "Sales", "Education", "Growth", "Brand awareness", "Lead generation"];
@@ -32,7 +33,6 @@ function loadCredits() {
   if (new Date()>=new Date(s.resetAt)) { const r={count:FREE_DAILY,resetAt:getMidnight()}; localStorage.setItem("hv_credits",JSON.stringify(r)); return r; }
   return s;
 }
-function scoreColor(s: number) { return s>=93?"var(--neon)":s>=88?"var(--gold)":"var(--hot)"; }
 
 export default function GeneratorPage() {
   return (
@@ -46,7 +46,7 @@ function GeneratorInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [topic, setTopic] = useState("");
-  const [platforms, setPlatforms] = useState<string[]>(["TikTok","Instagram"]);
+  const [platforms, setPlatforms] = useState<string[]>(["TikTok"]);
   const [tone, setTone] = useState("Authentic");
   const [niche, setNiche] = useState("");
   const [customNiche, setCustomNiche] = useState("");
@@ -73,6 +73,13 @@ function GeneratorInner() {
   useEffect(() => {
     const t = searchParams.get("topic");
     if (t) setTopic(t.slice(0,200));
+    // Accept slug ("shorts") or label ("YouTube Shorts") — the SEO platform
+    // pages deep-link slugs; previously this param was silently ignored.
+    const plat = searchParams.get("platform");
+    if (plat) {
+      const pm = getPlatform(plat);
+      if (pm) setPlatforms([pm.label]);
+    }
     const nSlug = searchParams.get("niche");
     if (nSlug) {
       const nm = getNiche(nSlug);
@@ -136,45 +143,33 @@ function GeneratorInner() {
   async function copyText(text:string,id:string) { await navigator.clipboard.writeText(text).catch(()=>{}); setCopied(id); setTimeout(()=>setCopied(null),1500); }
 
   const creditPct=(credits/FREE_DAILY)*100;
-  const creditColor=credits===0?"var(--hot)":credits<=3?"var(--gold)":"var(--neon)";
-  const [genHov, setGenHov] = useState(false);
+  const creditColor=credits===0?"var(--danger)":credits<=3?"var(--warning)":"var(--success)";
 
   return (
     <div style={{minHeight:"100vh",background:"var(--bg)"}}>
-      <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0,overflow:"hidden"}}>
-        <div style={{position:"absolute",width:"500px",height:"500px",background:"var(--electric)",borderRadius:"50%",top:"-200px",left:"-200px",filter:"blur(100px)",opacity:.07,animation:"orbFloat 14s ease-in-out infinite"}} />
-        <div style={{position:"absolute",width:"400px",height:"400px",background:"var(--hot)",borderRadius:"50%",bottom:"-150px",right:"-150px",filter:"blur(100px)",opacity:.06,animation:"orbFloat 18s ease-in-out infinite reverse"}} />
-      </div>
-
-      <div style={{position:"relative",zIndex:1}}>
+      <div>
         <div style={{borderBottom:"1px solid var(--border)",padding:"2.5rem 1.5rem 2rem",textAlign:"center"}}>
           <h1 style={{fontFamily:"var(--fd)",fontSize:"clamp(2rem,5vw,3rem)",fontWeight:800,letterSpacing:"-2px",marginBottom:".5rem"}}>
-            Hook <span className="gradient-text">Generator</span>
+            Hook <span>Generator</span>
           </h1>
           <p style={{color:"var(--soft)",fontWeight:300,fontSize:".95rem"}}>Pick a topic and niche. Get 8 scored hooks with the attention patterns that make each one work.</p>
         </div>
 
         <div className="page-wrap">
 
-          {/* Credits bar */}
-          <div style={{background:"var(--s1)",border:"1px solid var(--border)",borderRadius:"var(--r2)",padding:"1rem 1.25rem",marginBottom:"12px"}}>
+          {/* Credits bar — one line + progress, not four reminders of the limit */}
+          <div className="card" style={{padding:"1rem 1.25rem",marginBottom:"12px"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"8px",flexWrap:"wrap",gap:"6px"}}>
               <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
-                <span style={{fontFamily:"var(--fd)",fontWeight:700,fontSize:"1rem",color:creditColor}}>{credits}</span>
-                <span style={{fontSize:".8rem",color:"var(--muted)"}}>/ {FREE_DAILY} free daily credits</span>
+                <span style={{fontFamily:"var(--fd)",fontWeight:700,fontSize:"var(--text-base)",color:creditColor}}>{credits}</span>
+                <span style={{fontSize:"var(--text-sm)",color:"var(--text-muted)"}}>/ {FREE_DAILY} free daily credits{credits===0?" — resets at midnight":""}</span>
               </div>
-              <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
-                {credits<=6&&<span style={{fontSize:".72rem",color:creditColor}}>{credits===0?"Resets at midnight":`${credits} left today`}</span>}
-                <Link href="/pricing" style={{padding:"4px 12px",borderRadius:"100px",border:"1px solid rgba(255,45,107,.35)",background:"rgba(255,45,107,.06)",color:"var(--hot)",fontSize:".72rem",textDecoration:"none",fontFamily:"var(--fb)",fontWeight:500,transition:"all .2s"}}>
-                  {credits<=6?"Pro = unlimited →":"Upgrade ↗"}
-                </Link>
-              </div>
+              <Link href="/pricing" style={{fontSize:"var(--text-xs)",color:"var(--accent)",textDecoration:"none",fontFamily:"var(--fb)",fontWeight:500}}>
+                Pro is unlimited
+              </Link>
             </div>
             <div style={{height:"6px",background:"var(--border)",borderRadius:"6px",overflow:"hidden"}}>
-              <div style={{height:"100%",borderRadius:"6px",background:`linear-gradient(90deg,${creditColor},${credits>3?"var(--electric)":creditColor})`,width:`${creditPct}%`,transition:"width .5s cubic-bezier(.16,1,.3,1)"}} />
-            </div>
-            <div style={{marginTop:"6px",fontSize:".7rem",color:"var(--muted)",display:"flex",justifyContent:"space-between"}}>
-              <span>Free: {credits} remaining</span><span style={{color:"rgba(108,58,255,.5)"}}>Pro: ∞ unlimited</span>
+              <div style={{height:"100%",borderRadius:"6px",background:creditColor,width:`${creditPct}%`,transition:"width .5s cubic-bezier(.16,1,.3,1)"}} />
             </div>
           </div>
 
@@ -182,61 +177,43 @@ function GeneratorInner() {
           <div style={{background:"var(--s1)",border:"1px solid var(--border)",borderRadius:"var(--r3)",overflow:"hidden",marginBottom:"12px",position:"relative"}}>
             <label style={{display:"block",padding:"1.25rem 1.5rem .5rem",fontSize:".68rem",letterSpacing:"2px",textTransform:"uppercase",color:"var(--muted)",fontFamily:"var(--fd)",fontWeight:600}}>Your content</label>
             <textarea value={topic} onChange={e=>setTopic(e.target.value.slice(0,200))} placeholder="e.g. my morning routine that made me 10x more productive without waking up earlier..." rows={4}
-              style={{width:"100%",background:"transparent",border:"none",outline:"none",padding:".5rem 1.5rem 2.5rem",color:"var(--text)",fontSize:"1rem",fontFamily:"var(--fb)",resize:"none",lineHeight:1.7,caretColor:"var(--hot)"}} />
+              style={{width:"100%",background:"transparent",border:"none",padding:".5rem 1.5rem 2.5rem",color:"var(--text)",fontSize:"1rem",fontFamily:"var(--fb)",resize:"none",lineHeight:1.7,caretColor:"var(--accent)"}} />
             <div style={{position:"absolute",bottom:"1rem",right:"1.25rem",fontSize:".72rem",color:topic.length>180?"var(--hot)":"var(--muted)"}}>{topic.length}/200</div>
           </div>
 
-          {/* Optional knobs — sensible defaults (TikTok + Instagram, Authentic, Engagement) work for 80% of cases. */}
+          {/* Optional knobs — sensible defaults (TikTok, Authentic, Engagement) work for 80% of cases. */}
           <details style={{marginBottom:"12px"}}>
-            <summary style={{cursor:"pointer",fontSize:".78rem",color:"var(--muted)",fontFamily:"var(--fb)",padding:"6px 4px",listStyle:"none",userSelect:"none"}}>
-              More options ▾ <span style={{color:"var(--muted)",opacity:.6}}>(platform, tone, niche, goal)</span>
+            <summary style={{cursor:"pointer",fontSize:"var(--text-sm)",color:"var(--text-muted)",fontFamily:"var(--fb)",padding:"6px 4px",listStyle:"none",userSelect:"none"}}>
+              More options <span style={{opacity:.6}}>(platform, tone, niche, goal)</span>
             </summary>
             <div style={{marginTop:"8px",display:"flex",flexDirection:"column",gap:"12px"}}>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px"}}>
-                <Panel label="Platform">{PLATFORMS.map(p=><Chip key={p} label={p} active={platforms.includes(p)} onClick={()=>togglePlatform(p)} color="plat"/>)}</Panel>
-                <Panel label="Tone">{TONES.map(t=><Chip key={t} label={t} active={tone===t} onClick={()=>setTone(t)} color="tone"/>)}</Panel>
+                <Panel label="Platform">{PLATFORMS.map(p=><Chip key={p} label={p} active={platforms.includes(p)} onClick={()=>togglePlatform(p)}/>)}</Panel>
+                <Panel label="Tone">{TONES.map(t=><Chip key={t} label={t} active={tone===t} onClick={()=>setTone(t)}/>)}</Panel>
               </div>
               <Panel label="Niche (optional)">
-                {NICHES.map(n=><Chip key={n} label={n} active={!showCustom&&niche===n} onClick={()=>{setShowCustom(false);setNiche(p=>p===n?"":n);}} color="niche"/>)}
-                <button onClick={()=>{setShowCustom(p=>!p);setNiche("");}} style={{padding:"6px 14px",borderRadius:"100px",border:`1px solid ${showCustom?"rgba(255,184,0,.5)":"var(--border2)"}`,background:showCustom?"rgba(255,184,0,.08)":"transparent",color:showCustom?"var(--gold)":"var(--muted)",fontSize:".8rem",cursor:"pointer",fontFamily:"var(--fb)",transition:"all .2s"}}>✏ Other...</button>
-                {showCustom&&<input ref={customRef} value={customNiche} onChange={e=>setCustomNiche(e.target.value)} placeholder="Type your niche..." style={{padding:"6px 14px",borderRadius:"100px",border:"1px solid rgba(255,184,0,.4)",background:"rgba(255,184,0,.04)",color:"var(--text)",fontSize:".8rem",fontFamily:"var(--fb)",outline:"none",width:"160px",caretColor:"var(--gold)"}}/>}
+                {NICHES.map(n=><Chip key={n} label={n} active={!showCustom&&niche===n} onClick={()=>{setShowCustom(false);setNiche(p=>p===n?"":n);}}/>)}
+                <button onClick={()=>{setShowCustom(p=>!p);setNiche("");}} className="chip" data-active={showCustom}><Icon name="pencil"/> Other…</button>
+                {showCustom&&<input ref={customRef} value={customNiche} onChange={e=>setCustomNiche(e.target.value)} placeholder="Type your niche..." aria-label="Custom niche" style={{padding:"6px 14px",borderRadius:"var(--r-pill)",border:"1px solid var(--border-strong)",background:"var(--surface)",color:"var(--text)",fontSize:"var(--text-sm)",fontFamily:"var(--fb)",width:"160px",caretColor:"var(--accent)"}}/>}
               </Panel>
               <Panel label="Conversion goal">
-                {GOALS.map(g=><Chip key={g} label={g} active={goal===g} onClick={()=>setGoal(g)} color="goal"/>)}
+                {GOALS.map(g=><Chip key={g} label={g} active={goal===g} onClick={()=>setGoal(g)}/>)}
               </Panel>
             </div>
           </details>
 
           {/* Generate button */}
           <div style={{marginBottom:"12px"}}>
-            <button
-              onClick={generate}
-              disabled={loading}
-              onMouseEnter={() => setGenHov(true)}
-              onMouseLeave={() => setGenHov(false)}
-              style={{
-                display:"flex", alignItems:"center", gap:"10px",
-                width:"100%", justifyContent:"center",
-                padding:"15px 28px", borderRadius:"100px", border:"none",
-                background: loading ? "var(--s3)" : "linear-gradient(135deg,var(--hot),var(--electric))",
-                color:"#fff", fontSize:"1rem", fontWeight:600,
-                fontFamily:"var(--fb)",
-                cursor: loading ? "not-allowed" : "pointer",
-                opacity: loading ? 0.6 : 1,
-                transition:"all .3s",
-                transform: genHov && !loading ? "translateY(-3px) scale(1.02)" : "none",
-                boxShadow: genHov && !loading ? "0 16px 40px rgba(255,45,107,.4)" : "0 4px 16px rgba(255,45,107,.15)",
-              }}
-            >
+            <Button onClick={generate} disabled={loading} block>
               {loading
-                ? <><div style={{width:"18px",height:"18px",borderRadius:"50%",border:"2px solid rgba(255,255,255,.3)",borderTopColor:"#fff",animation:"spin 1s linear infinite"}}/>Generating...</>
-                : <>⚡ Generate 8 Hooks + Hashtags</>
+                ? <><Spinner />Generating…</>
+                : <><Icon name="zap" /> Generate 8 hooks + hashtags</>
               }
-            </button>
+            </Button>
           </div>
 
           {error && (
-            <div style={{background:"rgba(255,45,107,.06)",border:"1px solid rgba(255,45,107,.3)",color:"var(--hot)",borderRadius:"var(--r2)",padding:"1rem 1.25rem",marginBottom:"12px",fontSize:".85rem"}}>
+            <div style={{background:"var(--danger-soft)",border:"1px solid var(--danger)",color:"var(--danger)",borderRadius:"var(--r-md)",padding:"1rem 1.25rem",marginBottom:"12px",fontSize:"var(--text-sm)"}}>
               {error}
             </div>
           )}
@@ -265,27 +242,24 @@ function GeneratorInner() {
 
           {/* Script panel */}
           {(selectedHook||scriptLoading)&&(
-            <div style={{marginTop:"2rem",background:"var(--s1)",border:"1px solid rgba(108,58,255,.3)",borderRadius:"var(--r2)",padding:"1.75rem",animation:"cardIn .4s ease"}}>
+            <div className="card" style={{marginTop:"2rem",padding:"1.75rem",animation:"cardIn .4s ease"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"1.25rem"}}>
-                <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                  <span style={{fontFamily:"var(--fd)",fontWeight:700,fontSize:"1rem"}}>Script</span>
-                  <span style={{padding:"3px 10px",background:"rgba(255,45,107,.1)",border:"1px solid rgba(255,45,107,.2)",borderRadius:"100px",fontSize:".68rem",color:"var(--hot)",fontFamily:"var(--fd)",fontWeight:700}}>PRO FEATURE</span>
-                </div>
-                <button onClick={()=>{setScript(null);setSelectedHook(null);}} style={{background:"var(--s2)",border:"1px solid var(--border2)",borderRadius:"50%",width:"28px",height:"28px",color:"var(--soft)",cursor:"pointer",fontSize:"12px"}}>✕</button>
+                <span style={{fontFamily:"var(--fd)",fontWeight:700,fontSize:"var(--text-base)"}}>Script</span>
+                <button onClick={()=>{setScript(null);setSelectedHook(null);}} aria-label="Close script" style={{background:"var(--surface-2)",border:"1px solid var(--border-strong)",borderRadius:"50%",width:"28px",height:"28px",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--text-soft)",cursor:"pointer"}}><Icon name="x"/></button>
               </div>
               {scriptLoading?(
                 <div style={{textAlign:"center",padding:"2rem"}}>
-                  <div style={{width:"36px",height:"36px",borderRadius:"50%",border:"2px solid var(--border2)",borderTopColor:"var(--electric)",animation:"spin 1s linear infinite",margin:"0 auto 1rem"}}/>
-                  <div style={{fontSize:".85rem",color:"var(--soft)"}}>Writing your script...</div>
+                  <Spinner size={32} style={{margin:"0 auto 1rem",display:"block"}}/>
+                  <div style={{fontSize:"var(--text-sm)",color:"var(--text-soft)"}}>Writing your script…</div>
                 </div>
               ):script&&(
                 <div style={{display:"flex",flexDirection:"column",gap:"1rem"}}>
-                  {([["🎬 Hook (0–3s)",script.hook,"var(--hot)"],["🔗 Bridge (3–10s)",script.bridge,"var(--electric)"],["📣 Call to Action",script.cta,"var(--neon)"]] as [string,string,string][]).map(([label,content,color])=>(
-                    <div key={label} style={{background:"var(--s2)",borderRadius:"var(--r)",padding:"1rem",border:"1px solid var(--border)"}}>
-                      <div style={{fontSize:".68rem",fontFamily:"var(--fd)",fontWeight:700,color,letterSpacing:"1px",marginBottom:".5rem"}}>{label}</div>
-                      <p style={{fontSize:".875rem",color:"var(--soft)",lineHeight:1.7}}>{content}</p>
-                      <button onClick={()=>copyText(content,label)} style={{marginTop:".75rem",padding:"5px 14px",borderRadius:"100px",border:"1px solid var(--border2)",background:"transparent",color:copied===label?"var(--neon)":"var(--muted)",fontSize:".72rem",cursor:"pointer",fontFamily:"var(--fb)"}}>
-                        {copied===label?"✓ Copied!":"Copy"}
+                  {([["Hook (0–3s)",script.hook],["Bridge (3–10s)",script.bridge],["Call to action",script.cta]] as [string,string][]).map(([label,content])=>(
+                    <div key={label} style={{background:"var(--surface-2)",borderRadius:"var(--r-sm)",padding:"1rem",border:"1px solid var(--border)"}}>
+                      <div className="kicker" style={{color:"var(--accent)",marginBottom:".5rem"}}>{label}</div>
+                      <p style={{fontSize:"var(--text-sm)",color:"var(--text-soft)",lineHeight:1.7}}>{content}</p>
+                      <button onClick={()=>copyText(content,label)} style={{display:"inline-flex",alignItems:"center",gap:"4px",marginTop:".75rem",padding:"5px 14px",borderRadius:"var(--r-pill)",border:"1px solid var(--border-strong)",background:"transparent",color:copied===label?"var(--success)":"var(--text-muted)",fontSize:"var(--text-xs)",cursor:"pointer",fontFamily:"var(--fb)"}}>
+                        {copied===label?<><Icon name="check"/> Copied</>:<><Icon name="copy"/> Copy</>}
                       </button>
                     </div>
                   ))}
@@ -324,10 +298,10 @@ function HookCard({ hook, index, isFav, copied, expandedHash, expandedAnalysis, 
     >
       {/* Formula + actions */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"10px"}}>
-        <span style={{fontSize:".68rem",fontFamily:"var(--fd)",fontWeight:700,letterSpacing:".5px",padding:"3px 10px",borderRadius:"100px",background:"rgba(108,58,255,.1)",color:"#9B8CFF",border:"1px solid rgba(108,58,255,.2)"}}>{hook.formula}</span>
+        <span style={{fontSize:"var(--text-xs)",fontFamily:"var(--fd)",fontWeight:700,padding:"3px 10px",borderRadius:"var(--r-pill)",background:"var(--accent-soft)",color:"var(--accent)"}}>{hook.formula}</span>
         <div style={{display:"flex",gap:"5px",opacity:hov?1:0,transition:"opacity .2s"}}>
-          <ActionBtn onClick={onFav} active={isFav} activeColor="var(--gold)" title="Favorite">★</ActionBtn>
-          <ActionBtn onClick={onScript} title="Generate script">▶</ActionBtn>
+          <ActionBtn onClick={onFav} active={isFav} activeColor="var(--warning)" title="Favorite"><Icon name="star" fill={isFav?"currentColor":"none"}/></ActionBtn>
+          <ActionBtn onClick={onScript} title="Generate script"><Icon name="play"/></ActionBtn>
         </div>
       </div>
 
@@ -336,7 +310,7 @@ function HookCard({ hook, index, isFav, copied, expandedHash, expandedAnalysis, 
         <div style={{display:"flex",flexWrap:"wrap",gap:"4px",marginBottom:hook.reasoning?"6px":"1rem"}}>
           {hook.patternsUsed.map(p => (
             <Link key={p} href={patternHref(p)} title="Learn this pattern"
-              style={{fontSize:".62rem",padding:"2px 8px",borderRadius:"100px",background:"rgba(0,255,178,.06)",color:"var(--neon)",border:"1px solid rgba(0,255,178,.2)",textDecoration:"none",fontFamily:"var(--fb)"}}>
+              style={{fontSize:"var(--text-xs)",padding:"2px 8px",borderRadius:"var(--r-pill)",background:"var(--success-soft)",color:"var(--success)",border:"1px solid var(--success)",textDecoration:"none",fontFamily:"var(--fb)"}}>
               {p}
             </Link>
           ))}
@@ -358,7 +332,7 @@ function HookCard({ hook, index, isFav, copied, expandedHash, expandedAnalysis, 
 
       {/* Bottom row */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:".875rem"}}>
-        <span style={{fontSize:".68rem",padding:"3px 9px",borderRadius:"6px",background:"rgba(108,58,255,.08)",color:"#9B8CFF",border:"1px solid rgba(108,58,255,.15)"}}>{hook.platform}</span>
+        <span style={{fontSize:"var(--text-xs)",padding:"3px 9px",borderRadius:"var(--r-sm)",background:"var(--surface-3)",color:"var(--text-soft)"}}>{hook.platform}</span>
         <div style={{textAlign:"right"}}>
           <div style={{fontFamily:"var(--fd)",fontSize:"1.4rem",fontWeight:700,letterSpacing:"-1px",color:scoreColor(hook.score),lineHeight:1}}>{hook.score}</div>
           <div style={{fontSize:".6rem",color:"var(--muted)",textTransform:"uppercase",letterSpacing:"1px"}}>/100</div>
@@ -366,47 +340,47 @@ function HookCard({ hook, index, isFav, copied, expandedHash, expandedAnalysis, 
       </div>
 
       {/* Score bar */}
-      <div style={{height:"3px",background:"var(--s3)",borderRadius:"3px",overflow:"hidden",marginBottom:"1rem"}}>
-        <div style={{height:"100%",borderRadius:"3px",background:"linear-gradient(90deg,var(--electric),var(--neon))",width:`${hook.score}%`,transition:"width .8s cubic-bezier(.16,1,.3,1)"}}/>
+      <div style={{height:"3px",background:"var(--surface-3)",borderRadius:"3px",overflow:"hidden",marginBottom:"1rem"}}>
+        <div style={{height:"100%",borderRadius:"3px",background:scoreColor(hook.score),width:`${hook.score}%`,transition:"width .8s cubic-bezier(.16,1,.3,1)"}}/>
       </div>
 
       {/* Hashtags toggle */}
       {hook.hashtags&&hook.hashtags.length>0&&(
         <div style={{marginBottom:"6px"}}>
-          <button onClick={onToggleHash} style={{padding:"4px 12px",borderRadius:"100px",border:"1px solid rgba(0,255,178,.25)",background:showHash?"rgba(0,255,178,.06)":"transparent",color:"var(--neon)",fontSize:".7rem",cursor:"pointer",fontFamily:"var(--fb)",transition:"all .2s",display:"flex",alignItems:"center",gap:"5px"}}>
-            # Hashtags {showHash?"▲":"▼"}
+          <button onClick={onToggleHash} aria-expanded={showHash} style={{padding:"4px 12px",borderRadius:"var(--r-pill)",border:"1px solid var(--border-strong)",background:showHash?"var(--surface-2)":"transparent",color:"var(--text-soft)",fontSize:"var(--text-xs)",cursor:"pointer",fontFamily:"var(--fb)",transition:"all .2s",display:"flex",alignItems:"center",gap:"5px"}}>
+            <Icon name="hash"/> Hashtags <Icon name="chevron-down" style={{transform:showHash?"rotate(180deg)":"none",transition:"transform .15s ease"}}/>
           </button>
           {showHash&&(
             <div style={{marginTop:"8px",display:"flex",flexWrap:"wrap",gap:"5px"}}>
               {hook.hashtags.map(tag=>(
                 <button key={tag} onClick={async()=>{await navigator.clipboard.writeText(tag).catch(()=>{}); setCopiedTag(tag); setTimeout(()=>setCopiedTag(c=>c===tag?null:c),1200);}}
-                  style={{padding:"3px 9px",borderRadius:"6px",background:copiedTag===tag?"rgba(0,255,178,.16)":"rgba(0,255,178,.06)",border:"1px solid rgba(0,255,178,.2)",color:"var(--neon)",fontSize:".7rem",cursor:"pointer",fontFamily:"var(--fb)",transition:"all .2s"}}>
-                  {copiedTag===tag?`✓ ${tag}`:tag}
+                  style={{padding:"3px 9px",borderRadius:"var(--r-sm)",background:copiedTag===tag?"var(--success-soft)":"var(--surface-2)",border:"1px solid var(--border)",color:copiedTag===tag?"var(--success)":"var(--text-soft)",fontSize:"var(--text-xs)",cursor:"pointer",fontFamily:"var(--fb)",transition:"all .2s"}}>
+                  {tag}
                 </button>
               ))}
-              <button onClick={async()=>{await navigator.clipboard.writeText(hook.hashtags!.join(" ")).catch(()=>{});}} style={{padding:"3px 9px",borderRadius:"6px",background:"rgba(108,58,255,.08)",border:"1px solid rgba(108,58,255,.2)",color:"#9B8CFF",fontSize:".7rem",cursor:"pointer",fontFamily:"var(--fb)"}}>Copy all</button>
+              <button onClick={async()=>{await navigator.clipboard.writeText(hook.hashtags!.join(" ")).catch(()=>{});}} style={{padding:"3px 9px",borderRadius:"var(--r-sm)",background:"var(--accent-soft)",border:"1px solid var(--accent)",color:"var(--accent)",fontSize:"var(--text-xs)",cursor:"pointer",fontFamily:"var(--fb)"}}>Copy all</button>
             </div>
           )}
         </div>
       )}
 
-      {/* Analysis toggle (Pro feature) */}
+      {/* Analysis toggle */}
       {hook.analysis&&(
         <div>
-          <button onClick={onToggleAnalysis} style={{padding:"4px 12px",borderRadius:"100px",border:"1px solid rgba(255,184,0,.25)",background:showAnalysis?"rgba(255,184,0,.06)":"transparent",color:"var(--gold)",fontSize:".7rem",cursor:"pointer",fontFamily:"var(--fb)",transition:"all .2s",display:"flex",alignItems:"center",gap:"5px"}}>
-            ✦ Analysis {showAnalysis?"▲":"▼"}
+          <button onClick={onToggleAnalysis} aria-expanded={showAnalysis} style={{padding:"4px 12px",borderRadius:"var(--r-pill)",border:"1px solid var(--border-strong)",background:showAnalysis?"var(--surface-2)":"transparent",color:"var(--text-soft)",fontSize:"var(--text-xs)",cursor:"pointer",fontFamily:"var(--fb)",transition:"all .2s",display:"flex",alignItems:"center",gap:"5px"}}>
+            Analysis <Icon name="chevron-down" style={{transform:showAnalysis?"rotate(180deg)":"none",transition:"transform .15s ease"}}/>
           </button>
           {showAnalysis&&(
-            <div style={{marginTop:"10px",background:"var(--s2)",borderRadius:"var(--r)",padding:".875rem",border:"1px solid var(--border)"}}>
-              <p style={{fontSize:".78rem",color:"var(--soft)",lineHeight:1.65,marginBottom:".75rem",fontStyle:"italic"}}>{hook.analysis.why}</p>
+            <div style={{marginTop:"10px",background:"var(--surface-2)",borderRadius:"var(--r-sm)",padding:".875rem",border:"1px solid var(--border)"}}>
+              <p style={{fontSize:"var(--text-xs)",color:"var(--text-soft)",lineHeight:1.65,marginBottom:".75rem",fontStyle:"italic"}}>{hook.analysis.why}</p>
               <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
-                {([["Curiosity",hook.analysis.curiosity,"var(--electric)"],["Emotion",hook.analysis.emotion,"var(--hot)"],["Clarity",hook.analysis.clarity,"var(--neon)"]] as [string,number,string][]).map(([label,val,color])=>(
+                {([["Curiosity",hook.analysis.curiosity],["Emotion",hook.analysis.emotion],["Clarity",hook.analysis.clarity]] as [string,number][]).map(([label,val])=>(
                   <div key={label} style={{flex:1,minWidth:"70px"}}>
-                    <div style={{fontSize:".62rem",color:"var(--muted)",marginBottom:"4px",textTransform:"uppercase",letterSpacing:"1px"}}>{label}</div>
+                    <div className="kicker" style={{fontSize:".7rem",marginBottom:"4px"}}>{label}</div>
                     <div style={{height:"4px",background:"var(--border)",borderRadius:"4px",overflow:"hidden"}}>
-                      <div style={{height:"100%",background:color,borderRadius:"4px",width:`${val*10}%`,transition:"width .6s ease"}}/>
+                      <div style={{height:"100%",background:scoreColor(val*10),borderRadius:"4px",width:`${val*10}%`,transition:"width .6s ease"}}/>
                     </div>
-                    <div style={{fontSize:".7rem",color,fontFamily:"var(--fd)",fontWeight:700,marginTop:"3px"}}>{val}/10</div>
+                    <div style={{fontSize:"var(--text-xs)",color:scoreColor(val*10),fontFamily:"var(--fd)",fontWeight:700,marginTop:"3px"}}>{val}/10</div>
                   </div>
                 ))}
               </div>
@@ -417,21 +391,19 @@ function HookCard({ hook, index, isFav, copied, expandedHash, expandedAnalysis, 
 
       {/* Deep analyze — sends this hook to the full Analyzer */}
       <button onClick={onAnalyze}
-        style={{marginTop:"12px",width:"100%",padding:"9px",borderRadius:"100px",border:"1px solid rgba(108,58,255,.3)",background:hov?"rgba(108,58,255,.1)":"transparent",color:hov?"#C4B5FD":"var(--muted)",fontSize:".75rem",cursor:"pointer",fontFamily:"var(--fb)",transition:"all .2s",display:"flex",alignItems:"center",justifyContent:"center",gap:"6px"}}>
-        ✦ Deep retention analysis →
+        style={{marginTop:"12px",width:"100%",padding:"9px",borderRadius:"var(--r-pill)",border:"1px solid var(--accent)",background:hov?"var(--accent-soft)":"transparent",color:"var(--accent)",fontSize:"var(--text-xs)",cursor:"pointer",fontFamily:"var(--fb)",transition:"all .2s",display:"flex",alignItems:"center",justifyContent:"center",gap:"6px"}}>
+        Deep retention analysis <Icon name="arrow-right"/>
       </button>
 
-      {copied===hook.id&&<div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",background:"rgba(0,255,178,.08)",border:"1px solid rgba(0,255,178,.3)",color:"var(--neon)",padding:"8px 20px",borderRadius:"100px",fontSize:".78rem",fontFamily:"var(--fd)",fontWeight:700,pointerEvents:"none",zIndex:10,whiteSpace:"nowrap"}}>COPIED ✓</div>}
+      {copied===hook.id&&<div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",background:"var(--success-soft)",border:"1px solid var(--success)",color:"var(--success)",padding:"8px 20px",borderRadius:"var(--r-pill)",fontSize:"var(--text-xs)",fontFamily:"var(--fd)",fontWeight:700,pointerEvents:"none",zIndex:10,whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:"5px"}}><Icon name="check"/> Copied</div>}
     </div>
   );
 }
 
 function ActionBtn({ onClick, active, activeColor, title, children }: { onClick:()=>void; active?:boolean; activeColor?:string; title?:string; children:React.ReactNode }) {
-  const [hov, setHov] = useState(false);
   return (
-    <button onClick={e=>{e.stopPropagation();onClick();}} title={title}
-      onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
-      style={{width:"26px",height:"26px",borderRadius:"50%",border:`1px solid ${active?`${activeColor}55`:"var(--border2)"}`,background:hov?`rgba(255,45,107,.1)`:active?`${activeColor}18`:"var(--s2)",color:active&&activeColor?activeColor:hov?"var(--text)":"var(--muted)",fontSize:"11px",cursor:"pointer",transition:"all .2s",transform:hov?"scale(1.1)":"none"}}>
+    <button onClick={e=>{e.stopPropagation();onClick();}} title={title} aria-label={title}
+      style={{width:"26px",height:"26px",borderRadius:"50%",border:"1px solid var(--border-strong)",background:"var(--surface-2)",color:active&&activeColor?activeColor:"var(--text-muted)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",transition:"color .2s"}}>
       {children}
     </button>
   );
@@ -439,25 +411,16 @@ function ActionBtn({ onClick, active, activeColor, title, children }: { onClick:
 
 function Panel({ label, children, style }: { label:string; children:React.ReactNode; style?:React.CSSProperties }) {
   return (
-    <div style={{background:"var(--s1)",border:"1px solid var(--border)",borderRadius:"var(--r2)",padding:"1.25rem",...style}}>
-      <div style={{fontSize:".68rem",letterSpacing:"2px",textTransform:"uppercase",color:"var(--muted)",marginBottom:".75rem",fontFamily:"var(--fd)",fontWeight:600}}>{label}</div>
+    <div className="card" style={{padding:"1.25rem",...style}}>
+      <div className="kicker" style={{marginBottom:".75rem"}}>{label}</div>
       <div style={{display:"flex",flexWrap:"wrap",gap:"6px"}}>{children}</div>
     </div>
   );
 }
 
-function Chip({ label, active, onClick, color }: { label:string; active:boolean; onClick:()=>void; color:string }) {
-  const map: Record<string,{border:string;bg:string;text:string}> = {
-    plat:{border:"rgba(108,58,255,.6)",bg:"rgba(108,58,255,.1)",text:"#C4B5FD"},
-    tone:{border:"rgba(255,45,107,.5)",bg:"rgba(255,45,107,.08)",text:"#FF9DB8"},
-    niche:{border:"rgba(0,255,178,.4)",bg:"rgba(0,255,178,.06)",text:"var(--neon)"},
-    goal:{border:"rgba(255,184,0,.4)",bg:"rgba(255,184,0,.07)",text:"var(--gold)"},
-  };
-  const c=map[color];
-  const [hov,setHov]=useState(false);
+function Chip({ label, active, onClick }: { label:string; active:boolean; onClick:()=>void }) {
   return (
-    <button onClick={onClick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
-      style={{padding:"6px 14px",borderRadius:"100px",border:`1px solid ${active?c.border:hov?c.border+"88":"var(--border2)"}`,background:active?c.bg:hov?c.bg+"44":"transparent",color:active?c.text:hov?c.text+"99":"var(--muted)",fontSize:".8rem",cursor:"pointer",fontFamily:"var(--fb)",transition:"all .2s",transform:hov&&!active?"scale(1.04)":"none"}}>
+    <button onClick={onClick} className="chip" data-active={active}>
       {label}
     </button>
   );
@@ -465,13 +428,13 @@ function Chip({ label, active, onClick, color }: { label:string; active:boolean;
 
 function UpgradeModal({ onClose }: { onClose:()=>void }) {
   return (
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.85)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:"1.5rem",backdropFilter:"blur(12px)"}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
-      <div style={{background:"var(--s1)",border:"1px solid var(--border2)",borderRadius:"28px",padding:"2.5rem",maxWidth:"440px",width:"100%",position:"relative",animation:"cardIn .4s cubic-bezier(.16,1,.3,1)"}}>
-        <button onClick={onClose} style={{position:"absolute",top:"1.25rem",right:"1.25rem",background:"var(--s2)",border:"1px solid var(--border2)",borderRadius:"50%",width:"32px",height:"32px",color:"var(--soft)",cursor:"pointer",fontSize:"14px"}}>✕</button>
-        <h3 style={{fontFamily:"var(--fd)",fontSize:"1.7rem",fontWeight:800,letterSpacing:"-1px",marginBottom:".5rem"}}>Go Pro. Go Viral. 🚀</h3>
-        <p style={{color:"var(--soft)",fontSize:".875rem",marginBottom:"1.75rem",fontWeight:300,lineHeight:1.7}}>Unlimited hooks, scripts, hashtags, analysis and advanced AI scoring.</p>
-        <Link href="/pricing" style={{display:"block",textAlign:"center",padding:"14px",borderRadius:"100px",background:"linear-gradient(135deg,var(--hot),var(--electric))",color:"#fff",fontSize:".95rem",fontWeight:500,textDecoration:"none",fontFamily:"var(--fb)",marginBottom:"10px"}}>See all plans →</Link>
-        <button onClick={onClose} style={{width:"100%",padding:"10px",borderRadius:"100px",border:"1px solid var(--border2)",background:"transparent",color:"var(--muted)",fontSize:".85rem",cursor:"pointer",fontFamily:"var(--fb)"}}>Continue with free</button>
+    <div style={{position:"fixed",inset:0,background:"rgba(16,16,25,.6)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:"1.5rem"}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+      <div className="card" style={{borderRadius:"var(--r-lg)",padding:"2.5rem",maxWidth:"440px",width:"100%",position:"relative",animation:"cardIn .4s cubic-bezier(.16,1,.3,1)"}}>
+        <button onClick={onClose} aria-label="Close" style={{position:"absolute",top:"1.25rem",right:"1.25rem",background:"var(--surface-2)",border:"1px solid var(--border-strong)",borderRadius:"50%",width:"32px",height:"32px",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--text-soft)",cursor:"pointer"}}><Icon name="x"/></button>
+        <h3 style={{fontFamily:"var(--fd)",fontSize:"var(--text-xl)",fontWeight:800,marginBottom:".5rem"}}>You&apos;ve used today&apos;s free credits</h3>
+        <p style={{color:"var(--text-soft)",fontSize:"var(--text-sm)",marginBottom:"1.75rem",lineHeight:1.7}}>Credits reset at midnight. Pro removes the daily limit — unlimited hooks, scripts, hashtags and analysis.</p>
+        <Link href="/pricing" className="btn btn-primary btn-md btn-block" style={{marginBottom:"10px"}}>See all plans</Link>
+        <Button onClick={onClose} variant="secondary" block>Continue with free</Button>
       </div>
     </div>
   );

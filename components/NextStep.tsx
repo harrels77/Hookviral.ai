@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Icon } from "@/lib/icons";
 
 // The product loop made visible. Every core page ends with this so the user
 // always knows where they are and what the next step is — this is the skeleton
@@ -23,14 +24,14 @@ export function NextStep({ current }: { current?: StepId }) {
   const next = here ? LOOP.find(s => s.id === here.nextId) ?? LOOP[1] : LOOP[0];
 
   return (
-    <section style={{ borderTop: "1px solid var(--border)", marginTop: "3rem" }}>
-      <div style={{ maxWidth: "760px", margin: "0 auto", padding: "2.5rem 1.5rem 3rem", textAlign: "center" }}>
-        <div style={{ fontSize: ".68rem", letterSpacing: "3px", textTransform: "uppercase", color: "var(--muted)", fontFamily: "var(--fd)", fontWeight: 600, marginBottom: "1.25rem" }}>
+    <section style={{ borderTop: "1px solid var(--border)", marginTop: "var(--sp-7)" }}>
+      <div style={{ maxWidth: "760px", margin: "0 auto", padding: "var(--sp-6) 1.5rem var(--sp-7)", textAlign: "center" }}>
+        <div className="kicker" style={{ marginBottom: "var(--sp-4)" }}>
           The HookViral loop
         </div>
 
         {/* Stepper — where you are */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", flexWrap: "wrap", marginBottom: "1.75rem" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", flexWrap: "wrap", marginBottom: "var(--sp-5)" }}>
           {LOOP.map((s, i) => {
             const active = s.id === current;
             return (
@@ -38,31 +39,29 @@ export function NextStep({ current }: { current?: StepId }) {
                 <Link
                   href={s.href}
                   style={{
-                    display: "flex", alignItems: "center", gap: "7px", padding: "6px 14px", borderRadius: "100px",
-                    textDecoration: "none", fontFamily: "var(--fb)", fontSize: ".8rem",
-                    border: `1px solid ${active ? "transparent" : "var(--border2)"}`,
-                    background: active ? "linear-gradient(135deg,var(--hot),var(--electric))" : "transparent",
-                    color: active ? "#fff" : "var(--muted)", fontWeight: active ? 600 : 400,
+                    display: "flex", alignItems: "center", gap: "7px", padding: "6px 14px", borderRadius: "var(--r-pill)",
+                    textDecoration: "none", fontSize: "var(--text-sm)",
+                    border: `1px solid ${active ? "var(--accent)" : "var(--border-strong)"}`,
+                    background: active ? "var(--accent-soft)" : "transparent",
+                    color: active ? "var(--accent)" : "var(--text-muted)", fontWeight: active ? 600 : 400,
                   }}
                 >
-                  <span style={{ fontFamily: "var(--fd)", fontWeight: 800, opacity: active ? 1 : .6 }}>{s.n}</span>
+                  <span style={{ fontFamily: "var(--fd)", fontWeight: 700, opacity: active ? 1 : .6 }}>{s.n}</span>
                   {s.label}
                 </Link>
-                {i < LOOP.length - 1 && <span style={{ color: "var(--muted)", fontSize: ".7rem" }}>→</span>}
+                {i < LOOP.length - 1 && <Icon name="arrow-right" style={{ color: "var(--text-muted)" }} />}
               </span>
             );
           })}
         </div>
 
         {/* Next action */}
-        <div style={{ fontSize: ".8rem", color: "var(--soft)", marginBottom: "1rem", fontWeight: 300 }}>
+        <div style={{ fontSize: "var(--text-sm)", color: "var(--text-soft)", marginBottom: "var(--sp-4)" }}>
           Next: <strong style={{ color: "var(--text)", fontWeight: 500 }}>{next.blurb}</strong>
         </div>
-        <Link
-          href={next.href}
-          style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "13px 28px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".95rem", fontWeight: 600, textDecoration: "none", fontFamily: "var(--fb)", boxShadow: "0 4px 16px rgba(255,45,107,.25)" }}
-        >
-          {next.verb} →
+        <Link href={next.href} className="btn btn-primary btn-md">
+          {next.verb}
+          <Icon name="arrow-right" />
         </Link>
       </div>
     </section>

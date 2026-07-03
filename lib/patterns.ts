@@ -26,7 +26,7 @@ export const HOOK_PATTERNS: HookPattern[] = [
     name: "Open Loop",
     oneLiner: "Raise a question the viewer must stay to resolve.",
     why: "An unanswered question creates a cognitive itch — the brain resists leaving a loop open, so the viewer keeps watching to close it.",
-    example: "🤯 Nobody noticed the detail in this photo for 40 years.",
+    example: "Nobody noticed the detail in this photo for 40 years.",
     examples: [
       { text: "I followed her account for two years before I realized what she was hiding.", score: 92, niche: "Faceless" },
       { text: "There's a reason your videos die at 3 seconds — and it's not the algorithm.", score: 91, niche: "Creator" },
@@ -42,7 +42,7 @@ export const HOOK_PATTERNS: HookPattern[] = [
     name: "Cold Open (In Medias Res)",
     oneLiner: "Start mid-action — no greeting, no setup.",
     why: "Skipping the intro removes the 3 seconds where viewers normally swipe. You drop them straight into stakes already in motion.",
-    example: "🎬 In 1997 a man vanished. The tape is still unexplained.",
+    example: "In 1997 a man vanished. The tape is still unexplained.",
     examples: [
       { text: "The bank called at 6am. My account was already empty.", score: 93, niche: "Finance" },
       { text: "Three seconds before the buzzer, he did the unthinkable.", score: 92, niche: "Sports" },
@@ -58,7 +58,7 @@ export const HOOK_PATTERNS: HookPattern[] = [
     name: "Concrete Specificity",
     oneLiner: "Exact numbers and details instead of vague claims.",
     why: "Specific figures read as true and earned, not generic AI filler — and a precise number is itself a curiosity trigger ('why 47?').",
-    example: "🧪 I tested 47 morning routines and only 1 actually worked.",
+    example: "I tested 47 morning routines and only 1 actually worked.",
     examples: [
       { text: "I saved exactly $11,400 in 9 months on a $52k salary.", score: 92, niche: "Finance" },
       { text: "We tried 31 hooks. Number 19 got 2.4M views.", score: 91, niche: "Creator" },
@@ -74,7 +74,7 @@ export const HOOK_PATTERNS: HookPattern[] = [
     name: "Stakes",
     oneLiner: "Make clear what's at risk or to be gained.",
     why: "Attention follows consequence. If nothing is gained or lost, the brain classifies it as skippable.",
-    example: "⚠️ You're losing $400/month on this without realizing.",
+    example: "You're losing $400/month on this without realizing.",
     examples: [
       { text: "One wrong word in your bio is quietly costing you clients.", score: 91, niche: "Business" },
       { text: "Skip this stretch and your knees pay for it at 40.", score: 90, niche: "Fitness" },
@@ -90,7 +90,7 @@ export const HOOK_PATTERNS: HookPattern[] = [
     name: "Pattern Interrupt",
     oneLiner: "Break the rhythm the scroll expects.",
     why: "The feed trains a swipe rhythm. An unexpected first frame or claim halts the thumb before autopilot continues.",
-    example: "❌ Stop doing crunches — they're hiding your abs.",
+    example: "Stop doing crunches — they're hiding your abs.",
     examples: [
       { text: "Delete your budgeting app. It's part of why you're broke.", score: 91, niche: "Finance" },
       { text: "Stop journaling every morning. It's keeping you stuck.", score: 90, niche: "Motivation" },
@@ -106,7 +106,7 @@ export const HOOK_PATTERNS: HookPattern[] = [
     name: "Contradiction",
     oneLiner: "Challenge a belief the viewer holds.",
     why: "A claim that conflicts with the viewer's model demands resolution — they stay to see if they're wrong.",
-    example: "🤯 Billionaires don't do morning routines like you think.",
+    example: "Billionaires don't do morning routines like you think.",
     examples: [
       { text: "Discipline isn't the answer. It's actually the problem.", score: 90, niche: "Motivation" },
       { text: "More protein isn't building your muscle. This is.", score: 90, niche: "Fitness" },
@@ -122,7 +122,7 @@ export const HOOK_PATTERNS: HookPattern[] = [
     name: "Negativity / Warning",
     oneLiner: "Frame it as a threat or mistake to avoid.",
     why: "Loss and danger are processed faster than gain — a warning gets attention before the viewer decides to.",
-    example: "⚠️ Your morning routine is killing your best hours.",
+    example: "Your morning routine is killing your best hours.",
     examples: [
       { text: "This common habit is quietly wrecking your sleep.", score: 90, niche: "Lifestyle" },
       { text: "The advice in every finance video is actually a trap.", score: 90, niche: "Finance" },
@@ -138,7 +138,7 @@ export const HOOK_PATTERNS: HookPattern[] = [
     name: "Implied Big Payoff",
     oneLiner: "Promise a result clearly worth the watch.",
     why: "Viewers run a fast cost/benefit on every clip. A vivid, believable payoff tips that math toward staying.",
-    example: "✨ I automated an entire channel. It made $5k asleep.",
+    example: "I automated an entire channel. It made $5k asleep.",
     examples: [
       { text: "One cold email landed me a $40k contract.", score: 92, niche: "Business" },
       { text: "This 4-minute habit replaced my $200 therapy bill.", score: 91, niche: "Lifestyle" },
@@ -154,7 +154,7 @@ export const HOOK_PATTERNS: HookPattern[] = [
     name: "Knowledge Gap",
     oneLiner: "Signal there's a hidden thing they don't know.",
     why: "Implying insider or overlooked information makes not-watching feel like missing out.",
-    example: "👀 The real reason your coffee stops working after 20 min.",
+    example: "The real reason your coffee stops working after 20 min.",
     examples: [
       { text: "What nobody tells you about your first 1,000 followers.", score: 90, niche: "Creator" },
       { text: "The part of the contract every freelancer skips.", score: 90, niche: "Business" },
@@ -169,6 +169,13 @@ export const HOOK_PATTERNS: HookPattern[] = [
 
 export function getPattern(id: string): HookPattern | undefined {
   return HOOK_PATTERNS.find(p => p.id === id);
+}
+
+// Deep-link a pattern name to its explanation on the Patterns hub. Single
+// definition — was previously copy-pasted in home / analyzer / generator.
+export function patternHref(name: string): string {
+  const p = HOOK_PATTERNS.find(x => x.name === name);
+  return p ? `/patterns#${p.id}` : "/patterns";
 }
 
 // Compact list passed to the model so it maps to our taxonomy, not its own.

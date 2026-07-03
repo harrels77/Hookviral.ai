@@ -21,13 +21,13 @@ export default function PatternsPage() {
       <div className="page-wrap">
         <div style={{ textAlign: "center", padding: "2rem 0 2.5rem", borderBottom: "1px solid var(--border)", marginBottom: "2rem" }}>
           <h1 style={{ fontFamily: "var(--fd)", fontSize: "clamp(2rem,5vw,3rem)", fontWeight: 800, letterSpacing: "-2px", marginBottom: ".75rem", lineHeight: 1.05 }}>
-            Viral hook <span className="gradient-text">patterns</span>
+            Viral hook <span>patterns</span>
           </h1>
           <p style={{ color: "var(--soft)", fontWeight: 300, fontSize: "1rem", maxWidth: "560px", margin: "0 auto", lineHeight: 1.7 }}>
-            Hooks don&apos;t go viral by luck. These are the structural patterns that stop the scroll in the first 3 seconds — the ones our Analyzer scores your hook against. <strong style={{ color: "var(--text)", fontWeight: 500 }}>★ = especially load-bearing for faceless &amp; narration channels.</strong>
+            Hooks don&apos;t go viral by luck. These are the structural patterns that stop the scroll in the first 3 seconds — the ones our Analyzer scores your hook against. <strong style={{ color: "var(--text)", fontWeight: 500 }}>Patterns tagged Faceless are especially load-bearing for faceless &amp; narration channels.</strong>
           </p>
           <Link href="/why-it-works" style={{ display: "inline-block", marginTop: "1rem", fontSize: ".82rem", color: "var(--electric)", textDecoration: "none", fontFamily: "var(--fb)" }}>
-            Why these specific patterns? — the methodology →
+            Why these specific patterns? — the methodology
           </Link>
         </div>
 
@@ -36,7 +36,7 @@ export default function PatternsPage() {
             <div key={p.id} id={p.id} style={{ background: "var(--s1)", border: "1px solid var(--border)", borderRadius: "var(--r3)", padding: "1.5rem 1.6rem", scrollMarginTop: "calc(var(--nav-h) + 1rem)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: ".5rem", flexWrap: "wrap" }}>
                 <h2 style={{ fontFamily: "var(--fd)", fontSize: "1.15rem", fontWeight: 700, letterSpacing: "-.5px" }}>{p.name}</h2>
-                {p.faceless && <span style={{ fontSize: ".62rem", padding: "2px 8px", borderRadius: "100px", background: "rgba(108,58,255,.1)", color: "#9B8CFF", border: "1px solid rgba(108,58,255,.2)", fontFamily: "var(--fd)", fontWeight: 700 }}>★ FACELESS</span>}
+                {p.faceless && <span style={{ fontSize: "var(--text-xs)", padding: "2px 8px", borderRadius: "var(--r-pill)", background: "var(--accent-soft)", color: "var(--accent)", fontFamily: "var(--fd)", fontWeight: 700 }}>FACELESS</span>}
               </div>
               <p style={{ fontSize: ".92rem", color: "var(--text)", marginBottom: ".75rem", fontWeight: 400 }}>{p.oneLiner}</p>
               <p style={{ fontSize: ".85rem", color: "var(--soft)", lineHeight: 1.7, marginBottom: "1rem", fontWeight: 300 }}>{p.why}</p>
@@ -53,13 +53,13 @@ export default function PatternsPage() {
               {/* Patterns is the hub: act on each pattern, never dead-end on a definition. */}
               <div style={{ display: "flex", gap: "8px", marginTop: "1rem", flexWrap: "wrap" }}>
                 <Link href={`/patterns/${p.id}`} style={{ fontSize: ".75rem", padding: "6px 14px", borderRadius: "100px", background: "rgba(108,58,255,.1)", border: "1px solid rgba(108,58,255,.3)", color: "#C4B5FD", textDecoration: "none", fontFamily: "var(--fb)", fontWeight: 600 }}>
-                  See {p.examples.length + 1} {p.name} examples →
+                  See {p.examples.length + 1} {p.name} examples
                 </Link>
                 <Link href="/analyzer" style={{ fontSize: ".75rem", padding: "6px 14px", borderRadius: "100px", border: "1px solid var(--border2)", color: "var(--soft)", textDecoration: "none", fontFamily: "var(--fb)" }}>
-                  ✦ Analyze a hook for this →
+                  Analyze a hook for this
                 </Link>
                 <Link href={`/generator?topic=${encodeURIComponent(p.example)}`} style={{ fontSize: ".75rem", padding: "6px 14px", borderRadius: "100px", border: "1px solid var(--border2)", color: "var(--soft)", textDecoration: "none", fontFamily: "var(--fb)" }}>
-                  ⚡ Generate hooks like this →
+                  Generate hooks like this
                 </Link>
               </div>
             </div>

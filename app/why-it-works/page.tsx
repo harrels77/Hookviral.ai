@@ -73,7 +73,7 @@ export default function StartHere() {
             Start here
           </div>
           <h1 style={{ fontFamily: "var(--fd)", fontSize: "clamp(2rem,5vw,2.6rem)", fontWeight: 800, letterSpacing: "-2px", lineHeight: 1.1, marginBottom: "1rem" }}>
-            How HookViral works <span className="gradient-text">in 60 seconds</span>.
+            How HookViral works in 60 seconds
           </h1>
           <p style={{ color: "var(--soft)", fontSize: "1.05rem", lineHeight: 1.75, fontWeight: 300 }}>
             Four small tools, one job: <strong style={{ color: "var(--text)", fontWeight: 500 }}>repair the first 3 seconds of your short-form videos.</strong> Pick the one that fits where you are right now — they all connect, but each one works on its own.
@@ -94,7 +94,7 @@ export default function StartHere() {
               <Row label="Why it works" body={t.why} color="var(--soft)" />
 
               <Link href={t.href} style={{ display: "inline-flex", alignItems: "center", marginTop: "1rem", fontSize: ".85rem", color: "var(--electric)", textDecoration: "none", fontFamily: "var(--fb)", fontWeight: 500 }}>
-                {t.cta} →
+                {t.cta}
               </Link>
             </div>
           ))}
@@ -103,13 +103,13 @@ export default function StartHere() {
         {/* Quick start */}
         <div style={{ background: "var(--s1)", border: "1px solid rgba(0,255,178,.2)", borderRadius: "var(--r3)", padding: "1.5rem 1.75rem", marginBottom: "1rem" }}>
           <div style={{ fontSize: ".68rem", textTransform: "uppercase", letterSpacing: "2px", color: "var(--neon)", fontFamily: "var(--fd)", fontWeight: 700, marginBottom: ".75rem" }}>
-            ⚡ Not sure where to start
+            Not sure where to start
           </div>
           <p style={{ fontSize: ".95rem", color: "var(--soft)", lineHeight: 1.75, marginBottom: "1rem" }}>
             Have a hook in your head? Paste it in the <Link href="/analyzer" style={{ color: "var(--electric)", textDecoration: "none" }}>Analyzer</Link> — you&apos;ll see it score, see why, and you can fix it in one click. That single loop is the heart of the product. The rest is for when you want to go wider.
           </p>
           <Link href="/analyzer" style={{ display: "inline-block", padding: "11px 24px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".9rem", fontWeight: 600, textDecoration: "none", fontFamily: "var(--fb)" }}>
-            Try the Analyzer — free →
+            Try the Analyzer — free
           </Link>
         </div>
       </div>

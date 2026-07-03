@@ -7,6 +7,7 @@ import { NextStep } from "@/components/NextStep";
 import { getNichePref, setNichePref, getGeoPref, setGeoPref, getSourcesPref, setSourcesPref,
          saveTrend, unsaveTrend, isTrendSaved, trendId } from "@/lib/prefs";
 import { SOURCE_BADGES, type SourceKey } from "@/lib/sourceBadges";
+import { Icon, type IconName } from "@/lib/icons";
 
 type Velocity = "rising" | "steady" | "cooling" | "new";
 type Source = SourceKey;
@@ -31,9 +32,9 @@ function Sparkline({ ranks, color }: { ranks: number[]; color: string }) {
 }
 
 const GEOS: [string, string][] = [
-  ["GLOBAL", "🌍 Global"],
-  ["US", "🇺🇸 US"], ["FR", "🇫🇷 FR"], ["GB", "🇬🇧 UK"],
-  ["CA", "🇨🇦 CA"], ["ES", "🇪🇸 ES"], ["DE", "🇩🇪 DE"],
+  ["GLOBAL", "Global"],
+  ["US", "US"], ["FR", "FR"], ["GB", "UK"],
+  ["CA", "CA"], ["ES", "ES"], ["DE", "DE"],
 ];
 
 const SOURCE_LABELS: Record<Source, string> = {
@@ -93,11 +94,11 @@ function safeEncode(s: string): string {
   return encodeURIComponent(s.replace(/[\uD800-\uDFFF]/g, ""));
 }
 
-const VELOCITY: Record<Velocity, { label: string; color: string; bg: string }> = {
-  rising:  { label: "🔥 Rising",  color: "var(--hot)",     bg: "rgba(255,45,107,.1)" },
-  new:     { label: "🆕 New",     color: "var(--electric)", bg: "rgba(108,58,255,.1)" },
-  steady:  { label: "⚡ Steady",  color: "var(--gold)",    bg: "rgba(255,184,0,.08)" },
-  cooling: { label: "📉 Cooling", color: "var(--muted)",   bg: "rgba(255,255,255,.04)" },
+const VELOCITY: Record<Velocity, { label: string; icon: IconName; color: string; bg: string }> = {
+  rising:  { label: "Rising",  icon: "trending-up",   color: "var(--accent)",     bg: "var(--accent-soft)" },
+  new:     { label: "New",     icon: "sparkles",      color: "var(--text-soft)",  bg: "var(--surface-2)" },
+  steady:  { label: "Steady",  icon: "minus",         color: "var(--text-muted)", bg: "var(--surface-2)" },
+  cooling: { label: "Cooling", icon: "trending-down", color: "var(--text-muted)", bg: "var(--surface-2)" },
 };
 
 export default function TrendsPage() {
@@ -211,14 +212,10 @@ export default function TrendsPage() {
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
-      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, overflow: "hidden" }}>
-        <div style={{ position: "absolute", width: "500px", height: "500px", background: "var(--hot)", borderRadius: "50%", top: "-200px", left: "-200px", filter: "blur(110px)", opacity: .06, animation: "orbFloat 16s ease-in-out infinite" }} />
-      </div>
-
-      <div style={{ position: "relative", zIndex: 1 }}>
+      <div>
         <div style={{ borderBottom: "1px solid var(--border)", padding: "2.5rem 1.5rem 2rem", textAlign: "center" }}>
           <h1 style={{ fontFamily: "var(--fd)", fontSize: "clamp(2rem,5vw,3rem)", fontWeight: 800, letterSpacing: "-2px", marginBottom: ".5rem" }}>
-            What&apos;s <span className="gradient-text">trending</span> now
+            What&apos;s <span>trending</span> now
           </h1>
           <p style={{ color: "var(--soft)", fontWeight: 300, fontSize: ".95rem" }}>
             See what&apos;s moving across platforms right now — then turn any trend into a hook angle in one click.
@@ -229,8 +226,8 @@ export default function TrendsPage() {
           {/* Quiet controls — defaults work for first view. Refresh always visible. */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", marginBottom: "12px", flexWrap: "wrap" }}>
             <details style={{ flex: 1 }}>
-              <summary style={{ cursor: "pointer", fontSize: ".82rem", color: "var(--muted)", fontFamily: "var(--fb)", padding: "6px 4px", listStyle: "none", userSelect: "none" }}>
-                Filters ▾ <span style={{ color: "var(--muted)", opacity: .6 }}>
+              <summary style={{ cursor: "pointer", fontSize: "var(--text-sm)", color: "var(--text-muted)", fontFamily: "var(--fb)", padding: "6px 4px", listStyle: "none", userSelect: "none" }}>
+                Filters <span style={{ opacity: .6 }}>
                   ({sources.length === ALL_SOURCES.length
                     ? "All sources"
                     : sources.map(s => SOURCE_LABELS[s]).join(" + ")} · {allGeoLess ? "global" : geo} · {nicheLabel || "All niches"})
@@ -240,14 +237,14 @@ export default function TrendsPage() {
                 <div className="hv-controls-row" style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                   <div className="hv-scroll-pill" style={{ display: "flex", border: "1px solid var(--border)", borderRadius: "100px", overflow: "hidden", background: "var(--s1)" }}>
                     {([
-                      ["google",     "🔎 Google"],
-                      ["wikipedia",  "📚 Wikipedia"],
-                      ["hackernews", "🟧 HN"],
-                      ["bluesky",    "🦋 Bluesky"],
-                      ["youtube",    "▶ YouTube"],
-                      ["reddit",     "🟠 Reddit"],
-                      ["tiktok",     "🎵 TikTok"],
-                      ["instagram",  "📸 Instagram"],
+                      ["google",     "Google"],
+                      ["wikipedia",  "Wikipedia"],
+                      ["hackernews", "HN"],
+                      ["bluesky",    "Bluesky"],
+                      ["youtube",    "YouTube"],
+                      ["reddit",     "Reddit"],
+                      ["tiktok",     "TikTok"],
+                      ["instagram",  "Instagram"],
                     ] as [Source, string][]).map(([s, label]) => {
                       const active = sources.includes(s);
                       return (
@@ -256,9 +253,9 @@ export default function TrendsPage() {
                           onClick={() => toggleSource(s)}
                           aria-pressed={active}
                           title={active ? `Hide ${SOURCE_LABELS[s]} trends` : `Include ${SOURCE_LABELS[s]} trends`}
-                          style={{ padding: "9px 18px", border: "none", background: active ? "var(--s3)" : "transparent", color: active ? "var(--text)" : "var(--muted)", fontSize: ".82rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}
+                          style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "9px 16px", border: "none", background: active ? "var(--surface-3)" : "transparent", color: active ? "var(--text)" : "var(--text-muted)", fontSize: "var(--text-sm)", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}
                         >
-                          {active ? "✓ " : ""}{label}
+                          {active && <Icon name="check" />}{label}
                         </button>
                       );
                     })}
@@ -272,23 +269,23 @@ export default function TrendsPage() {
                   </div>
                 </div>
                 <div style={{ background: "var(--s1)", border: "1px solid var(--border)", borderRadius: "var(--r2)", padding: "1rem 1.1rem" }}>
-                  <div style={{ fontSize: ".66rem", letterSpacing: "2px", textTransform: "uppercase", color: "var(--muted)", marginBottom: ".5rem", fontFamily: "var(--fd)", fontWeight: 600 }}>Niche</div>
+                  <div className="kicker" style={{ marginBottom: ".5rem" }}>Niche</div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                    <button onClick={() => setNiche("")} style={{ padding: "6px 14px", borderRadius: "100px", border: `1px solid ${niche === "" ? "rgba(255,45,107,.5)" : "var(--border2)"}`, background: niche === "" ? "rgba(255,45,107,.08)" : "transparent", color: niche === "" ? "var(--hot)" : "var(--muted)", fontSize: ".8rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
-                      🔥 All
+                    <button onClick={() => setNiche("")} className="chip" data-active={niche === ""}>
+                      All
                     </button>
                     {NICHE_MODES.map(n => (
-                      <button key={n.slug} onClick={() => setNiche(n.slug)} style={{ padding: "6px 14px", borderRadius: "100px", border: `1px solid ${niche === n.slug ? "rgba(255,45,107,.5)" : "var(--border2)"}`, background: niche === n.slug ? "rgba(255,45,107,.08)" : "transparent", color: niche === n.slug ? "var(--hot)" : "var(--muted)", fontSize: ".8rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
-                        {n.emoji} {n.label}
+                      <button key={n.slug} onClick={() => setNiche(n.slug)} className="chip" data-active={niche === n.slug}>
+                        {n.label}
                       </button>
                     ))}
                   </div>
                 </div>
               </div>
             </details>
-            <button onClick={() => load(sources, niche, geo)} disabled={loading} title="Refresh trends"
-              style={{ width: "38px", height: "38px", borderRadius: "50%", border: "1px solid var(--border2)", background: "var(--s1)", color: "var(--soft)", cursor: loading ? "not-allowed" : "pointer", fontSize: "15px", transition: "all .2s", opacity: loading ? 0.5 : 1, flexShrink: 0 }}>
-              ↻
+            <button onClick={() => load(sources, niche, geo)} disabled={loading} title="Refresh trends" aria-label="Refresh trends"
+              style={{ width: "38px", height: "38px", borderRadius: "50%", border: "1px solid var(--border-strong)", background: "var(--surface)", color: "var(--text-soft)", cursor: loading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .2s", opacity: loading ? 0.5 : 1, flexShrink: 0 }}>
+              <Icon name="refresh" />
             </button>
           </div>
 
@@ -301,7 +298,7 @@ export default function TrendsPage() {
                 placeholder="Filter trends by keyword..."
                 style={{ width: "100%", padding: "12px 16px 12px 40px", borderRadius: "var(--r2)", border: "1px solid var(--border2)", background: "var(--s1)", color: "var(--text)", fontSize: ".88rem", fontFamily: "var(--fb)", outline: "none", caretColor: "var(--hot)" }}
               />
-              <span style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "var(--muted)", fontSize: ".85rem", pointerEvents: "none" }}>🔎</span>
+              <span style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", display: "flex", pointerEvents: "none" }}><Icon name="search" /></span>
               <span style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", color: "var(--muted)", fontSize: ".72rem" }}>
                 {query
                   ? `${filtered.length} match${filtered.length === 1 ? "" : "es"}`
@@ -315,26 +312,26 @@ export default function TrendsPage() {
               The dev knows what to fix from the route's `unconfigured` array;
               the visitor just needs a calm explanation + a way to move on. */}
           {sources.includes("youtube") && unconfigured.includes("youtube") && (
-            <div style={{ background: "rgba(255,184,0,.06)", border: "1px solid rgba(255,184,0,.3)", color: "var(--gold)", borderRadius: "var(--r2)", padding: "1.25rem 1.5rem", fontSize: ".85rem", lineHeight: 1.7, marginBottom: "12px" }}>
-              YouTube trends aren&apos;t available right now. Other sources are still loading — <button onClick={() => toggleSource("youtube")} style={{ background: "none", border: "none", color: "var(--hot)", cursor: "pointer", fontFamily: "var(--fb)", fontSize: ".85rem", textDecoration: "underline", padding: 0 }}>hide YouTube</button> to continue.
+            <div style={{ background: "var(--warning-soft)", border: "1px solid var(--warning)", color: "var(--warning)", borderRadius: "var(--r2)", padding: "1.25rem 1.5rem", fontSize: ".85rem", lineHeight: 1.7, marginBottom: "12px" }}>
+              YouTube trends aren&apos;t available right now. Other sources are still loading — <button onClick={() => toggleSource("youtube")} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", fontFamily: "var(--fb)", fontSize: ".85rem", textDecoration: "underline", padding: 0 }}>hide YouTube</button> to continue.
             </div>
           )}
 
           {sources.includes("reddit") && unconfigured.includes("reddit") && (
-            <div style={{ background: "rgba(255,138,72,.06)", border: "1px solid rgba(255,138,72,.3)", color: "#FF8A48", borderRadius: "var(--r2)", padding: "1.25rem 1.5rem", fontSize: ".85rem", lineHeight: 1.7, marginBottom: "12px" }}>
-              Reddit trends aren&apos;t available right now. Other sources are still loading — <button onClick={() => toggleSource("reddit")} style={{ background: "none", border: "none", color: "var(--hot)", cursor: "pointer", fontFamily: "var(--fb)", fontSize: ".85rem", textDecoration: "underline", padding: 0 }}>hide Reddit</button> to continue.
+            <div style={{ background: "var(--warning-soft)", border: "1px solid var(--warning)", color: "var(--warning)", borderRadius: "var(--r2)", padding: "1.25rem 1.5rem", fontSize: ".85rem", lineHeight: 1.7, marginBottom: "12px" }}>
+              Reddit trends aren&apos;t available right now. Other sources are still loading — <button onClick={() => toggleSource("reddit")} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", fontFamily: "var(--fb)", fontSize: ".85rem", textDecoration: "underline", padding: 0 }}>hide Reddit</button> to continue.
             </div>
           )}
 
           {sources.includes("tiktok") && unconfigured.includes("tiktok") && (
-            <div style={{ background: "rgba(254,44,85,.06)", border: "1px solid rgba(254,44,85,.3)", color: "#FE2C55", borderRadius: "var(--r2)", padding: "1.25rem 1.5rem", fontSize: ".85rem", lineHeight: 1.7, marginBottom: "12px" }}>
-              TikTok trends aren&apos;t available right now. Other sources are still loading — <button onClick={() => toggleSource("tiktok")} style={{ background: "none", border: "none", color: "var(--hot)", cursor: "pointer", fontFamily: "var(--fb)", fontSize: ".85rem", textDecoration: "underline", padding: 0 }}>hide TikTok</button> to continue.
+            <div style={{ background: "var(--warning-soft)", border: "1px solid var(--warning)", color: "var(--warning)", borderRadius: "var(--r2)", padding: "1.25rem 1.5rem", fontSize: ".85rem", lineHeight: 1.7, marginBottom: "12px" }}>
+              TikTok trends aren&apos;t available right now. Other sources are still loading — <button onClick={() => toggleSource("tiktok")} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", fontFamily: "var(--fb)", fontSize: ".85rem", textDecoration: "underline", padding: 0 }}>hide TikTok</button> to continue.
             </div>
           )}
 
           {sources.includes("instagram") && unconfigured.includes("instagram") && (
-            <div style={{ background: "rgba(225,48,108,.06)", border: "1px solid rgba(225,48,108,.3)", color: "#E1306C", borderRadius: "var(--r2)", padding: "1.25rem 1.5rem", fontSize: ".85rem", lineHeight: 1.7, marginBottom: "12px" }}>
-              Instagram trends aren&apos;t available right now. Other sources are still loading — <button onClick={() => toggleSource("instagram")} style={{ background: "none", border: "none", color: "var(--hot)", cursor: "pointer", fontFamily: "var(--fb)", fontSize: ".85rem", textDecoration: "underline", padding: 0 }}>hide Instagram</button> to continue.
+            <div style={{ background: "var(--warning-soft)", border: "1px solid var(--warning)", color: "var(--warning)", borderRadius: "var(--r2)", padding: "1.25rem 1.5rem", fontSize: ".85rem", lineHeight: 1.7, marginBottom: "12px" }}>
+              Instagram trends aren&apos;t available right now. Other sources are still loading — <button onClick={() => toggleSource("instagram")} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", fontFamily: "var(--fb)", fontSize: ".85rem", textDecoration: "underline", padding: 0 }}>hide Instagram</button> to continue.
             </div>
           )}
 
@@ -353,7 +350,7 @@ export default function TrendsPage() {
           )}
 
           {!loading && error && (
-            <div style={{ background: "rgba(255,45,107,.06)", border: "1px solid rgba(255,45,107,.3)", color: "var(--hot)", borderRadius: "var(--r2)", padding: "1rem 1.25rem", fontSize: ".85rem" }}>
+            <div style={{ background: "var(--danger-soft)", border: "1px solid var(--danger)", color: "var(--danger)", borderRadius: "var(--r2)", padding: "1rem 1.25rem", fontSize: ".85rem" }}>
               {error}
             </div>
           )}
@@ -416,33 +413,34 @@ function TrendCard({ trend, rank, niche }: { trend: Trend; rank: number; niche: 
       <button
         onClick={toggleSave}
         aria-pressed={saved}
+        aria-label={saved ? "Remove from Saved" : "Save this trend"}
         title={saved ? "Remove from Saved" : "Save this trend"}
-        style={{ position: "absolute", top: "10px", right: "10px", width: "28px", height: "28px", border: "none", background: "transparent", cursor: "pointer", padding: 0, fontSize: "15px", lineHeight: 1, color: saved ? "var(--gold)" : "var(--muted)", transform: pop ? "scale(1.35)" : "scale(1)", transition: "transform .2s cubic-bezier(.16,1,.3,1), color .2s" }}
+        style={{ position: "absolute", top: "10px", right: "10px", width: "28px", height: "28px", border: "none", background: "transparent", cursor: "pointer", padding: 0, display: "flex", alignItems: "center", justifyContent: "center", color: saved ? "var(--warning)" : "var(--text-muted)", transform: pop ? "scale(1.35)" : "scale(1)", transition: "transform .2s cubic-bezier(.16,1,.3,1), color .2s" }}
       >
-        {saved ? "★" : "☆"}
+        <Icon name="star" fill={saved ? "currentColor" : "none"} />
       </button>
 
       <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", paddingRight: "26px" }}>
-        <span style={{ fontFamily: "var(--fd)", fontWeight: 800, fontSize: ".95rem", color: rank <= 3 ? "var(--hot)" : "var(--muted)", flexShrink: 0, width: "22px" }}>
-          {rank <= 3 ? "🔥" : rank}
+        <span style={{ fontFamily: "var(--fd)", fontWeight: 800, fontSize: "var(--text-sm)", color: rank <= 3 ? "var(--accent)" : "var(--text-muted)", flexShrink: 0, width: "22px" }}>
+          {rank}
         </span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: ".95rem", color: "var(--text)", lineHeight: 1.45, fontWeight: 500 }}>{trend.title}</div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px", flexWrap: "wrap" }}>
             {trend.source && (
-              <span title={`From ${SOURCE_BADGES[trend.source].label}`} style={{ fontSize: ".62rem", fontFamily: "var(--fd)", fontWeight: 700, padding: "2px 7px", borderRadius: "100px", color: SOURCE_BADGES[trend.source].color, background: `${SOURCE_BADGES[trend.source].color}14`, border: `1px solid ${SOURCE_BADGES[trend.source].color}33` }}>
-                {SOURCE_BADGES[trend.source].emoji} {SOURCE_BADGES[trend.source].label}
+              <span title={`From ${SOURCE_BADGES[trend.source].label}`} style={{ fontSize: ".7rem", fontFamily: "var(--fd)", fontWeight: 700, padding: "2px 8px", borderRadius: "var(--r-pill)", color: SOURCE_BADGES[trend.source].color, background: `${SOURCE_BADGES[trend.source].color}14`, border: `1px solid ${SOURCE_BADGES[trend.source].color}33` }}>
+                {SOURCE_BADGES[trend.source].label}
               </span>
             )}
             {trend.velocity && (
-              <span style={{ fontSize: ".64rem", fontFamily: "var(--fd)", fontWeight: 700, padding: "2px 8px", borderRadius: "100px", color: VELOCITY[trend.velocity].color, background: VELOCITY[trend.velocity].bg, border: `1px solid ${VELOCITY[trend.velocity].color}33` }}>
-                {VELOCITY[trend.velocity].label}
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "3px", fontSize: ".7rem", fontFamily: "var(--fd)", fontWeight: 700, padding: "2px 8px", borderRadius: "var(--r-pill)", color: VELOCITY[trend.velocity].color, background: VELOCITY[trend.velocity].bg }}>
+                <Icon name={VELOCITY[trend.velocity].icon} /> {VELOCITY[trend.velocity].label}
               </span>
             )}
             {trend.history && trend.history.length >= 3 && (
-              <Sparkline ranks={trend.history} color={trend.velocity ? VELOCITY[trend.velocity].color : "var(--electric)"} />
+              <Sparkline ranks={trend.history} color={trend.velocity ? VELOCITY[trend.velocity].color : "var(--accent)"} />
             )}
-            {trend.sub && <span style={{ fontSize: ".72rem", color: "var(--muted)" }}>{trend.sub}</span>}
+            {trend.sub && <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>{trend.sub}</span>}
           </div>
         </div>
       </div>
@@ -453,24 +451,23 @@ function TrendCard({ trend, rank, niche }: { trend: Trend; rank: number; niche: 
           breathe (the inline-in-card expansion was cramped on desktop). */}
       <Link
         href={`/trends/research?q=${safeEncode(trend.title)}${nicheQs}`}
-        style={{ width: "100%", textAlign: "center", padding: "10px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".82rem", fontWeight: 600, textDecoration: "none", fontFamily: "var(--fb)", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+        className="btn btn-primary btn-sm btn-block"
       >
-        🔬 Research &amp; angles
-        <span style={{ fontSize: ".58rem", padding: "1px 6px", borderRadius: "100px", background: "rgba(255,255,255,.15)", color: "#fff", fontFamily: "var(--fd)", fontWeight: 700, letterSpacing: "1px" }}>PRO</span>
+        <Icon name="flask" /> Research &amp; angles
       </Link>
 
       <div style={{ display: "flex", gap: "8px" }}>
         <Link
           href={`/generator?topic=${safeEncode(trend.title)}${nicheQs}`}
-          style={{ flex: 1, textAlign: "center", padding: "8px", borderRadius: "100px", border: "1px solid var(--border2)", color: hov ? "#C4B5FD" : "var(--muted)", fontSize: ".74rem", textDecoration: "none", fontFamily: "var(--fb)", transition: "color .2s" }}
+          style={{ flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "5px", padding: "8px", borderRadius: "var(--r-pill)", border: "1px solid var(--border-strong)", color: hov ? "var(--accent)" : "var(--text-muted)", fontSize: "var(--text-xs)", textDecoration: "none", fontFamily: "var(--fb)", transition: "color .2s" }}
         >
-          ⚡ Quick hooks
+          <Icon name="zap" /> Quick hooks
         </Link>
         <Link
           href={`/analyzer?hook=${safeEncode(trend.title)}`}
-          style={{ flex: 1, textAlign: "center", padding: "8px", borderRadius: "100px", border: "1px solid var(--border2)", color: hov ? "#C4B5FD" : "var(--muted)", fontSize: ".74rem", textDecoration: "none", fontFamily: "var(--fb)", transition: "color .2s" }}
+          style={{ flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "5px", padding: "8px", borderRadius: "var(--r-pill)", border: "1px solid var(--border-strong)", color: hov ? "var(--accent)" : "var(--text-muted)", fontSize: "var(--text-xs)", textDecoration: "none", fontFamily: "var(--fb)", transition: "color .2s" }}
         >
-          ✦ Score it
+          <Icon name="sparkles" /> Score it
         </Link>
       </div>
     </div>

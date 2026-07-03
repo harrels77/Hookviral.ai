@@ -65,7 +65,7 @@ export default function YouTubeHookGeneratorPage() {
           </p>
           <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
             <Link href="/generator?platform=shorts" style={{ display: "inline-flex", padding: "13px 28px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".95rem", fontWeight: 500, textDecoration: "none", fontFamily: "var(--fb)", boxShadow: "0 6px 20px rgba(255,45,107,.3)" }}>
-              Generate YouTube Hooks Free →
+              Generate YouTube Hooks Free
             </Link>
             <Link href="/analyzer" style={{ display: "inline-flex", padding: "13px 24px", borderRadius: "100px", border: "1px solid var(--border2)", color: "var(--soft)", fontSize: ".95rem", textDecoration: "none", fontFamily: "var(--fb)" }}>
               Score My Hook
@@ -185,7 +185,7 @@ export default function YouTubeHookGeneratorPage() {
             Generate 8 scored YouTube Shorts hooks in seconds. Free. No account needed.
           </p>
           <Link href="/generator?platform=shorts" style={{ display: "inline-flex", padding: "13px 28px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".95rem", fontWeight: 500, textDecoration: "none", fontFamily: "var(--fb)" }}>
-            Generate My YouTube Hooks →
+            Generate My YouTube Hooks
           </Link>
         </div>
 

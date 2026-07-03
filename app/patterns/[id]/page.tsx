@@ -69,9 +69,9 @@ export default async function PatternDetailPage(
         <div style={{ textAlign: "center", padding: "1rem 0 2.5rem", borderBottom: "1px solid var(--border)", marginBottom: "2.5rem" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", marginBottom: ".9rem", flexWrap: "wrap" }}>
             <h1 style={{ fontFamily: "var(--fd)", fontSize: "clamp(2rem,5vw,3rem)", fontWeight: 800, letterSpacing: "-2px", lineHeight: 1.05 }}>
-              <span className="gradient-text">{p.name}</span> hooks
+              <span>{p.name}</span> hooks
             </h1>
-            {p.faceless && <span style={{ fontSize: ".62rem", padding: "3px 10px", borderRadius: "100px", background: "rgba(108,58,255,.1)", color: "#9B8CFF", border: "1px solid rgba(108,58,255,.2)", fontFamily: "var(--fd)", fontWeight: 700 }}>★ FACELESS</span>}
+            {p.faceless && <span style={{ fontSize: "var(--text-xs)", padding: "3px 10px", borderRadius: "var(--r-pill)", background: "var(--accent-soft)", color: "var(--accent)", fontFamily: "var(--fd)", fontWeight: 700 }}>FACELESS</span>}
           </div>
           <p style={{ color: "var(--text)", fontWeight: 400, fontSize: "1.05rem", maxWidth: "560px", margin: "0 auto .75rem", lineHeight: 1.6 }}>
             {p.oneLiner}
@@ -81,7 +81,7 @@ export default async function PatternDetailPage(
           </p>
           <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap", marginTop: "1.75rem" }}>
             <Link href={`/generator?topic=${encodeURIComponent(p.example)}`} style={{ padding: "13px 26px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".95rem", fontWeight: 500, textDecoration: "none", fontFamily: "var(--fb)" }}>
-              Generate {p.name} hooks — Free →
+              Generate {p.name} hooks — Free
             </Link>
             <Link href="/analyzer" style={{ padding: "13px 26px", borderRadius: "100px", border: "1px solid var(--border2)", color: "var(--soft)", fontSize: ".95rem", fontWeight: 500, textDecoration: "none", fontFamily: "var(--fb)" }}>
               Score your own hook
@@ -116,10 +116,10 @@ export default async function PatternDetailPage(
           </p>
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
             <Link href="/analyzer" style={{ fontSize: ".78rem", padding: "8px 16px", borderRadius: "100px", border: "1px solid rgba(108,58,255,.3)", color: "#C4B5FD", textDecoration: "none", fontFamily: "var(--fb)" }}>
-              ✦ Analyze a hook for this →
+              Analyze a hook for this
             </Link>
             <Link href={`/generator?topic=${encodeURIComponent(p.example)}`} style={{ fontSize: ".78rem", padding: "8px 16px", borderRadius: "100px", border: "1px solid var(--border2)", color: "var(--soft)", textDecoration: "none", fontFamily: "var(--fb)" }}>
-              ⚡ Generate hooks like this →
+              Generate hooks like this
             </Link>
           </div>
         </div>
@@ -135,7 +135,7 @@ export default async function PatternDetailPage(
             ))}
           </div>
           <Link href="/patterns" style={{ display: "inline-block", marginTop: "1rem", fontSize: ".82rem", color: "var(--electric)", textDecoration: "none", fontFamily: "var(--fb)" }}>
-            ← All patterns overview
+            All patterns overview
           </Link>
         </div>
       </div>

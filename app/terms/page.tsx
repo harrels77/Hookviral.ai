@@ -1,5 +1,11 @@
-// app/terms/page.tsx
-// Copy this file to: app/terms/page.tsx
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Terms of Service",
+  description: "HookViral AI — terms of service.",
+  alternates: { canonical: "/terms" },
+  robots: { index: false, follow: true },
+};
 
 export default function TermsPage() {
   return (

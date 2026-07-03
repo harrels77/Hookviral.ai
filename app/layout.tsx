@@ -1,8 +1,15 @@
 import type { Metadata } from "next";
+import { Syne, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { Nav } from "@/components/Nav";
 import { ThemeProvider } from "@/components/Themeprovider";
 import Footer from "./Footer";
+
+// Self-hosted via next/font — no render-blocking @import, no request to
+// Google (privacy), no layout shift. Exposed as CSS variables so the
+// existing var(--fd)/var(--fb) references keep working.
+const syne = Syne({ subsets: ["latin"], variable: "--fd", display: "swap" });
+const dmSans = DM_Sans({ subsets: ["latin"], variable: "--fb", display: "swap" });
 
 const SITE_URL = "https://hookviral.ai";
 
@@ -113,7 +120,7 @@ const jsonLd = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${syne.variable} ${dmSans.variable}`}>
       <body>
         <script
           type="application/ld+json"

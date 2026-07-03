@@ -7,16 +7,17 @@ import { isPro } from "@/lib/plan";
 import { NICHE_MODES } from "@/lib/niches";
 import { NextStep } from "@/components/NextStep";
 import { ProNote } from "@/components/ProLock";
-import { HOOK_PATTERNS } from "@/lib/patterns";
+import { patternHref } from "@/lib/patterns";
+import { scoreColor } from "@/lib/score";
+import { Icon } from "@/lib/icons";
+import { Button, Spinner } from "@/components/ui";
+import { PLATFORMS as PLATFORM_MODES, getPlatform } from "@/lib/platforms";
 import { getNichePref, setNichePref } from "@/lib/prefs";
 
-// Deep-link a pattern name to its explanation on the Patterns hub.
-function patternHref(name: string) {
-  const p = HOOK_PATTERNS.find(x => x.name === name);
-  return p ? `/patterns#${p.id}` : "/patterns";
-}
-
-const PLATFORMS = ["TikTok", "Instagram", "YouTube", "LinkedIn", "X / Twitter"];
+// Short-form only — the product's positioning (lib/platforms.ts is the
+// source of truth; LinkedIn/X options contradicted it and had no psychology
+// block behind them).
+const PLATFORMS = PLATFORM_MODES.map(p => p.label);
 
 // Honest spoken-delivery heuristic: energetic short-form narration ≈ 3.3 words/s.
 // This estimates whether the line actually lands inside the 3-second window.
@@ -79,10 +80,6 @@ interface StrategicTakes {
   sources: string[];
 }
 
-function scoreColor(s: number) {
-  return s >= 93 ? "var(--neon)" : s >= 80 ? "var(--gold)" : "var(--hot)";
-}
-
 // SessionStorage cache for takes — same pattern as /trends/research, scoped
 // per tab so back-nav restores instantly.
 function takesSessionKey(subject: string, niche: string) {
@@ -106,7 +103,6 @@ function AnalyzerInner() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<Analysis | null>(null);
-  const [btnHov, setBtnHov] = useState(false);
   const [rewriteStyle, setRewriteStyle] = useState(REWRITE_STYLES[0]);
   const [activeTarget, setActiveTarget] = useState<string | null>(null);
   const [rewrites, setRewrites] = useState<{ text: string; score: number }[]>([]);
@@ -242,10 +238,12 @@ function AnalyzerInner() {
     const h = searchParams.get("hook");
     if (!h) return;
     prefilled.current = true;
+    // Accept slug ("tiktok") or label ("TikTok") — SEO pages deep-link slugs.
     const p = searchParams.get("platform");
-    const plat = p && PLATFORMS.includes(p) ? p : platform;
+    const platLabel = p ? getPlatform(p)?.label : undefined;
+    const plat = platLabel ?? platform;
     const trimmed = h.slice(0, 300);
-    if (p && PLATFORMS.includes(p)) setPlatform(p);
+    if (platLabel) setPlatform(platLabel);
     setHook(trimmed);
     analyze({ overrideHook: trimmed, overridePlatform: plat });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -256,14 +254,10 @@ function AnalyzerInner() {
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
-      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, overflow: "hidden" }}>
-        <div style={{ position: "absolute", width: "500px", height: "500px", background: "var(--electric)", borderRadius: "50%", top: "-200px", right: "-200px", filter: "blur(110px)", opacity: .06, animation: "orbFloat 15s ease-in-out infinite" }} />
-      </div>
-
-      <div style={{ position: "relative", zIndex: 1 }}>
+      <div>
         <div style={{ borderBottom: "1px solid var(--border)", padding: "2.5rem 1.5rem 2rem", textAlign: "center" }}>
           <h1 style={{ fontFamily: "var(--fd)", fontSize: "clamp(2rem,5vw,3rem)", fontWeight: 800, letterSpacing: "-2px", marginBottom: ".5rem" }}>
-            Hook <span className="gradient-text">Analyzer</span>
+            Hook <span>Analyzer</span>
           </h1>
           <p style={{ color: "var(--soft)", fontWeight: 300, fontSize: ".95rem" }}>
             Paste any opening line — get the score, the missing patterns, and a stronger rewrite in seconds.
@@ -279,7 +273,7 @@ function AnalyzerInner() {
               onChange={e => setHook(e.target.value.slice(0, 300))}
               placeholder="e.g. Hey guys, today I'm going to show you my morning routine..."
               rows={3}
-              style={{ width: "100%", background: "transparent", border: "none", outline: "none", padding: ".5rem 1.5rem 2.5rem", color: "var(--text)", fontSize: "1rem", fontFamily: "var(--fb)", resize: "none", lineHeight: 1.7, caretColor: "var(--hot)" }}
+              style={{ width: "100%", background: "transparent", border: "none", padding: ".5rem 1.5rem 2.5rem", color: "var(--text)", fontSize: "1rem", fontFamily: "var(--fb)", resize: "none", lineHeight: 1.7, caretColor: "var(--accent)" }}
             />
             <div style={{ position: "absolute", bottom: "1rem", right: "1.25rem", fontSize: ".72rem", color: hook.length > 270 ? "var(--hot)" : "var(--muted)" }}>{hook.length}/300</div>
           </div>
@@ -287,8 +281,8 @@ function AnalyzerInner() {
           {/* Live 3-second deliverability check */}
           {t3 && (
             <div style={{ background: "var(--s1)", border: `1px solid ${t3.color}33`, borderRadius: "var(--r2)", padding: ".85rem 1.1rem", marginBottom: "12px", display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-              <span style={{ fontSize: ".7rem", fontFamily: "var(--fd)", fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: t3.color }}>
-                ⏱ {t3.label}
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "var(--text-xs)", fontFamily: "var(--fd)", fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: t3.color }}>
+                <Icon name="timer" /> {t3.label}
               </span>
               <span style={{ fontSize: ".78rem", color: "var(--soft)" }}>
                 {wordCount} words · ~{t3.secs.toFixed(1)}s to say aloud
@@ -301,29 +295,29 @@ function AnalyzerInner() {
 
           {/* Optional knobs — default platform TikTok + Any niche works for first-pass analysis. */}
           <details style={{ marginBottom: "12px" }}>
-            <summary style={{ cursor: "pointer", fontSize: ".78rem", color: "var(--muted)", fontFamily: "var(--fb)", padding: "6px 4px", listStyle: "none", userSelect: "none" }}>
-              More options ▾ <span style={{ color: "var(--muted)", opacity: .6 }}>(platform, niche)</span>
+            <summary style={{ cursor: "pointer", fontSize: "var(--text-sm)", color: "var(--text-muted)", fontFamily: "var(--fb)", padding: "6px 4px", listStyle: "none", userSelect: "none" }}>
+              More options <span style={{ opacity: .6 }}>(platform, niche)</span>
             </summary>
             <div style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "12px" }}>
-              <div style={{ background: "var(--s1)", border: "1px solid var(--border)", borderRadius: "var(--r2)", padding: "1.25rem" }}>
-                <div style={{ fontSize: ".68rem", letterSpacing: "2px", textTransform: "uppercase", color: "var(--muted)", marginBottom: ".75rem", fontFamily: "var(--fd)", fontWeight: 600 }}>Platform</div>
+              <div className="card" style={{ padding: "1.25rem" }}>
+                <div className="kicker" style={{ marginBottom: ".75rem" }}>Platform</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
                   {PLATFORMS.map(p => (
-                    <button key={p} onClick={() => setPlatform(p)} style={{ padding: "6px 14px", borderRadius: "100px", border: `1px solid ${platform === p ? "rgba(108,58,255,.6)" : "var(--border2)"}`, background: platform === p ? "rgba(108,58,255,.1)" : "transparent", color: platform === p ? "#C4B5FD" : "var(--muted)", fontSize: ".8rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
+                    <button key={p} onClick={() => setPlatform(p)} className="chip" data-active={platform === p}>
                       {p}
                     </button>
                   ))}
                 </div>
               </div>
-              <div style={{ background: "var(--s1)", border: "1px solid var(--border)", borderRadius: "var(--r2)", padding: "1.25rem" }}>
-                <div style={{ fontSize: ".68rem", letterSpacing: "2px", textTransform: "uppercase", color: "var(--muted)", marginBottom: ".75rem", fontFamily: "var(--fd)", fontWeight: 600 }}>Niche <span style={{ textTransform: "none", letterSpacing: 0, fontWeight: 400 }}>— optional, sharpens the verdict</span></div>
+              <div className="card" style={{ padding: "1.25rem" }}>
+                <div className="kicker" style={{ marginBottom: ".75rem" }}>Niche <span style={{ textTransform: "none", letterSpacing: 0, fontWeight: 400 }}>— optional, sharpens the verdict</span></div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                  <button onClick={() => setNiche("")} style={{ padding: "6px 14px", borderRadius: "100px", border: `1px solid ${niche === "" ? "rgba(108,58,255,.6)" : "var(--border2)"}`, background: niche === "" ? "rgba(108,58,255,.1)" : "transparent", color: niche === "" ? "#C4B5FD" : "var(--muted)", fontSize: ".8rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
+                  <button onClick={() => setNiche("")} className="chip" data-active={niche === ""}>
                     Any
                   </button>
                   {NICHE_MODES.map(nm => (
-                    <button key={nm.slug} onClick={() => setNiche(nm.slug)} style={{ padding: "6px 14px", borderRadius: "100px", border: `1px solid ${niche === nm.slug ? "rgba(108,58,255,.6)" : "var(--border2)"}`, background: niche === nm.slug ? "rgba(108,58,255,.1)" : "transparent", color: niche === nm.slug ? "#C4B5FD" : "var(--muted)", fontSize: ".8rem", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
-                      {nm.emoji} {nm.label}
+                    <button key={nm.slug} onClick={() => setNiche(nm.slug)} className="chip" data-active={niche === nm.slug}>
+                      {nm.label}
                     </button>
                   ))}
                 </div>
@@ -332,29 +326,16 @@ function AnalyzerInner() {
           </details>
 
           {/* Analyze button */}
-          <button
-            onClick={() => analyze()}
-            disabled={loading || !hook.trim()}
-            onMouseEnter={() => setBtnHov(true)}
-            onMouseLeave={() => setBtnHov(false)}
-            style={{
-              display: "flex", alignItems: "center", gap: "10px", width: "100%", justifyContent: "center",
-              padding: "15px 28px", borderRadius: "100px", border: "none", marginBottom: "12px",
-              background: loading || !hook.trim() ? "var(--s3)" : "linear-gradient(135deg,var(--hot),var(--electric))",
-              color: "#fff", fontSize: "1rem", fontWeight: 600, fontFamily: "var(--fb)",
-              cursor: loading || !hook.trim() ? "not-allowed" : "pointer",
-              opacity: loading || !hook.trim() ? 0.6 : 1, transition: "all .3s",
-              transform: btnHov && !loading && hook.trim() ? "translateY(-3px) scale(1.02)" : "none",
-              boxShadow: btnHov && !loading && hook.trim() ? "0 16px 40px rgba(255,45,107,.4)" : "0 4px 16px rgba(255,45,107,.15)",
-            }}
-          >
-            {loading
-              ? <><div style={{ width: "18px", height: "18px", borderRadius: "50%", border: "2px solid rgba(255,255,255,.3)", borderTopColor: "#fff", animation: "spin 1s linear infinite" }} />{looksLikeTopic(hook) ? <>Researching positions… <span style={{ fontSize: ".82rem", opacity: .8 }}>(~10s)</span></> : <>Analyzing…</>}</>
-              : <>✦ Analyze {looksLikeTopic(hook) && hook.trim() ? "Subject" : "Retention"}</>}
-          </button>
+          <div style={{ marginBottom: "12px" }}>
+            <Button onClick={() => analyze()} disabled={loading || !hook.trim()} block>
+              {loading
+                ? <><Spinner />{looksLikeTopic(hook) ? <>Researching positions… <span style={{ fontSize: "var(--text-sm)", opacity: .8 }}>(~10s)</span></> : <>Analyzing…</>}</>
+                : <>Analyze {looksLikeTopic(hook) && hook.trim() ? "subject" : "retention"}</>}
+            </Button>
+          </div>
 
           {error && (
-            <div style={{ background: "rgba(255,45,107,.06)", border: "1px solid rgba(255,45,107,.3)", color: "var(--hot)", borderRadius: "var(--r2)", padding: "1rem 1.25rem", marginBottom: "12px", fontSize: ".85rem" }}>
+            <div style={{ background: "var(--danger-soft)", border: "1px solid var(--danger)", color: "var(--danger)", borderRadius: "var(--r-md)", padding: "1rem 1.25rem", marginBottom: "12px", fontSize: "var(--text-sm)" }}>
               {error}
             </div>
           )}
@@ -375,16 +356,14 @@ function AnalyzerInner() {
                   renders. Offer the takes flow as the recovery path now that
                   they've confirmed the score is unhelpful. */}
               {looksLikeTopic(hook) && result.score < 40 && (
-                <div style={{ marginBottom: "1.5rem", background: "rgba(255,184,0,.06)", border: "1px solid rgba(255,184,0,.3)", borderRadius: "var(--r2)", padding: "1rem 1.25rem", display: "flex", flexDirection: "column", gap: "10px" }}>
-                  <div style={{ fontSize: ".82rem", color: "var(--gold)", fontFamily: "var(--fb)", fontWeight: 500, lineHeight: 1.6 }}>
-                    💡 This still reads like a <strong>subject</strong>, not a hook. The low score is honest — a search-bar entry can&apos;t stop the scroll on its own.
+                <div style={{ marginBottom: "1.5rem", background: "var(--warning-soft)", border: "1px solid var(--warning)", borderRadius: "var(--r-md)", padding: "1rem 1.25rem", display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <div style={{ fontSize: "var(--text-sm)", color: "var(--warning)", fontFamily: "var(--fb)", fontWeight: 500, lineHeight: 1.6 }}>
+                    This still reads like a <strong>subject</strong>, not a hook. The low score is honest — a search-bar entry can&apos;t stop the scroll on its own.
                   </div>
-                  <button
-                    onClick={() => fetchTakes(hook.trim())}
-                    style={{ alignSelf: "flex-start", padding: "8px 18px", borderRadius: "100px", border: "none", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".82rem", fontWeight: 600, fontFamily: "var(--fb)", cursor: "pointer" }}
-                  >
-                    🎯 Get strategic positions on &ldquo;{hook.trim().slice(0, 40)}{hook.trim().length > 40 ? "…" : ""}&rdquo; →
-                  </button>
+                  <Button onClick={() => fetchTakes(hook.trim())} size="sm" style={{ alignSelf: "flex-start" }}>
+                    <Icon name="target" />
+                    Get strategic positions on &ldquo;{hook.trim().slice(0, 40)}{hook.trim().length > 40 ? "…" : ""}&rdquo;
+                  </Button>
                 </div>
               )}
 
@@ -394,7 +373,7 @@ function AnalyzerInner() {
                   <div style={{ fontSize: ".68rem", textTransform: "uppercase", letterSpacing: "2px", color: "var(--muted)", marginBottom: "4px", fontFamily: "var(--fd)", fontWeight: 600, display: "flex", alignItems: "center", gap: "8px" }}>
                     Retention score
                     <Link href="/why-it-works" title="How is this computed?" style={{ fontSize: ".68rem", color: "var(--electric)", textDecoration: "none", textTransform: "none", letterSpacing: 0, fontWeight: 400 }}>
-                      How? →
+                      How?
                     </Link>
                   </div>
                   <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
@@ -402,25 +381,25 @@ function AnalyzerInner() {
                     <span style={{ fontSize: ".8rem", color: "var(--muted)" }}>/100</span>
                   </div>
                 </div>
-                <span style={{ fontSize: ".75rem", fontFamily: "var(--fd)", fontWeight: 700, padding: "5px 14px", borderRadius: "100px", background: "rgba(108,58,255,.1)", color: "#9B8CFF", border: "1px solid rgba(108,58,255,.2)" }}>{result.formula}</span>
+                <span style={{ fontSize: "var(--text-xs)", fontFamily: "var(--fd)", fontWeight: 700, padding: "5px 14px", borderRadius: "var(--r-pill)", background: "var(--accent-soft)", color: "var(--accent)" }}>{result.formula}</span>
               </div>
 
-              <div style={{ height: "5px", background: "var(--s3)", borderRadius: "3px", overflow: "hidden", marginBottom: "1.5rem" }}>
-                <div style={{ height: "100%", borderRadius: "3px", background: "linear-gradient(90deg,var(--electric),var(--neon))", width: `${result.score}%`, transition: "width .8s cubic-bezier(.16,1,.3,1)" }} />
+              <div style={{ height: "5px", background: "var(--surface-3)", borderRadius: "3px", overflow: "hidden", marginBottom: "1.5rem" }}>
+                <div style={{ height: "100%", borderRadius: "3px", background: scoreColor(result.score), width: `${result.score}%`, transition: "width .8s cubic-bezier(.16,1,.3,1)" }} />
               </div>
 
               {/* Why */}
               <p style={{ fontSize: ".9rem", color: "var(--soft)", lineHeight: 1.7, marginBottom: "1.5rem" }}>{result.why}</p>
 
-              {/* Sub-scores */}
+              {/* Sub-scores — same semantic tiers as the main score (lib/score) */}
               <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: result.weakPoints?.length ? "1.5rem" : 0 }}>
-                {([["Curiosity", result.curiosity, "var(--electric)"], ["Emotion", result.emotion, "var(--hot)"], ["Clarity", result.clarity, "var(--neon)"]] as [string, number, string][]).map(([label, val, color]) => (
+                {([["Curiosity", result.curiosity], ["Emotion", result.emotion], ["Clarity", result.clarity]] as [string, number][]).map(([label, val]) => (
                   <div key={label} style={{ flex: 1, minWidth: "90px" }}>
-                    <div style={{ fontSize: ".62rem", color: "var(--muted)", marginBottom: "5px", textTransform: "uppercase", letterSpacing: "1px" }}>{label}</div>
+                    <div className="kicker" style={{ fontSize: ".7rem", marginBottom: "5px" }}>{label}</div>
                     <div style={{ height: "5px", background: "var(--border)", borderRadius: "4px", overflow: "hidden" }}>
-                      <div style={{ height: "100%", background: color, borderRadius: "4px", width: `${val * 10}%`, transition: "width .6s ease" }} />
+                      <div style={{ height: "100%", background: scoreColor(val * 10), borderRadius: "4px", width: `${val * 10}%`, transition: "width .6s ease" }} />
                     </div>
-                    <div style={{ fontSize: ".75rem", color, fontFamily: "var(--fd)", fontWeight: 700, marginTop: "4px" }}>{val}/10</div>
+                    <div style={{ fontSize: "var(--text-xs)", color: scoreColor(val * 10), fontFamily: "var(--fd)", fontWeight: 700, marginTop: "4px" }}>{val}/10</div>
                   </div>
                 ))}
               </div>
@@ -445,9 +424,9 @@ function AnalyzerInner() {
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
                       {result.patternsUsed?.length > 0
                         ? result.patternsUsed.map(p => (
-                          <Link key={p} href={patternHref(p)} title="What this pattern means" style={{ fontSize: ".7rem", padding: "3px 9px", borderRadius: "100px", background: "rgba(0,255,178,.08)", color: "var(--neon)", border: "1px solid rgba(0,255,178,.2)", textDecoration: "none" }}>{p}</Link>
+                          <Link key={p} href={patternHref(p)} title="What this pattern means" style={{ fontSize: "var(--text-xs)", padding: "3px 9px", borderRadius: "var(--r-pill)", background: "var(--success-soft)", color: "var(--success)", border: "1px solid var(--success)", textDecoration: "none" }}>{p}</Link>
                         ))
-                        : <span style={{ fontSize: ".78rem", color: "var(--muted)" }}>None detected</span>}
+                        : <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>None detected</span>}
                     </div>
                   </div>
                   <div style={{ background: "var(--s2)", borderRadius: "var(--r2)", padding: "1rem 1.1rem", border: "1px solid var(--border)" }}>
@@ -455,9 +434,9 @@ function AnalyzerInner() {
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
                       {result.patternsMissing?.length > 0
                         ? result.patternsMissing.map(p => (
-                          <Link key={p} href={patternHref(p)} title="Learn this pattern" style={{ fontSize: ".7rem", padding: "3px 9px", borderRadius: "100px", background: "rgba(255,184,0,.07)", color: "var(--gold)", border: "1px solid rgba(255,184,0,.25)", textDecoration: "none" }}>{p}</Link>
+                          <Link key={p} href={patternHref(p)} title="Learn this pattern" style={{ fontSize: "var(--text-xs)", padding: "3px 9px", borderRadius: "var(--r-pill)", background: "var(--warning-soft)", color: "var(--warning)", border: "1px solid var(--warning)", textDecoration: "none" }}>{p}</Link>
                         ))
-                        : <span style={{ fontSize: ".78rem", color: "var(--muted)" }}>Solid coverage</span>}
+                        : <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>Solid coverage</span>}
                     </div>
                   </div>
                 </div>
@@ -466,7 +445,7 @@ function AnalyzerInner() {
               {(result.patternsUsed?.length > 0 || result.patternsMissing?.length > 0) && (
                 <div style={{ marginTop: ".75rem", textAlign: "center" }}>
                   <Link href="/patterns" style={{ fontSize: ".78rem", color: "var(--muted)", textDecoration: "none" }}>
-                    What do these patterns mean? See the library →
+                    What do these patterns mean? See the library
                   </Link>
                 </div>
               )}
@@ -482,16 +461,18 @@ function AnalyzerInner() {
                         key={s}
                         onClick={() => { if (!locked) setRewriteStyle(s); }}
                         title={locked ? "Pro — all 5 styles" : undefined}
-                        style={{ padding: "6px 14px", borderRadius: "100px", border: `1px solid ${rewriteStyle === s ? "rgba(108,58,255,.6)" : "var(--border2)"}`, background: rewriteStyle === s ? "rgba(108,58,255,.1)" : "transparent", color: locked ? "var(--muted)" : rewriteStyle === s ? "#C4B5FD" : "var(--muted)", fontSize: ".8rem", cursor: locked ? "not-allowed" : "pointer", fontFamily: "var(--fb)", transition: "all .2s", opacity: locked ? 0.45 : 1 }}
+                        className="chip"
+                        data-active={rewriteStyle === s}
+                        style={{ opacity: locked ? 0.45 : 1, cursor: locked ? "not-allowed" : "pointer" }}
                       >
-                        {locked ? `🔒 ${s}` : s}
+                        {locked ? <><Icon name="lock" /> {s}</> : s}
                       </button>
                     );
                   })}
                 </div>
                 {!pro && (
                   <div style={{ fontSize: ".72rem", color: "var(--muted)", marginBottom: "1rem" }}>
-                    Free: 1 rewrite style. <Link href="/pricing" style={{ color: "var(--electric)", textDecoration: "none" }}>Pro unlocks all 5 + 3 variants →</Link>
+                    Free: 1 rewrite style. <Link href="/pricing" style={{ color: "var(--accent)", textDecoration: "none" }}>Pro unlocks all 5 + 3 variants</Link>
                   </div>
                 )}
 
@@ -507,27 +488,23 @@ function AnalyzerInner() {
                           key={p}
                           onClick={() => rewrite(p)}
                           disabled={rwLoading}
-                          style={{ padding: "6px 14px", borderRadius: "100px", border: "1px solid rgba(255,184,0,.35)", background: activeTarget === p ? "rgba(255,184,0,.12)" : "rgba(255,184,0,.05)", color: "var(--gold)", fontSize: ".8rem", cursor: rwLoading ? "not-allowed" : "pointer", fontFamily: "var(--fb)", transition: "all .2s", opacity: rwLoading ? 0.6 : 1 }}
+                          style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "6px 14px", borderRadius: "var(--r-pill)", border: "1px solid var(--warning)", background: activeTarget === p ? "var(--warning-soft)" : "transparent", color: "var(--warning)", fontSize: "var(--text-sm)", cursor: rwLoading ? "not-allowed" : "pointer", fontFamily: "var(--fb)", transition: "all .2s", opacity: rwLoading ? 0.6 : 1 }}
                         >
-                          ＋ {p}
+                          <Icon name="plus" /> {p}
                         </button>
                       ))}
                     </div>
                   </div>
                 )}
 
-                <button
-                  onClick={() => rewrite()}
-                  disabled={rwLoading}
-                  style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%", justifyContent: "center", padding: "12px 24px", borderRadius: "100px", border: "none", background: rwLoading ? "var(--s3)" : "linear-gradient(135deg,var(--electric),var(--hot))", color: "#fff", fontSize: ".9rem", fontWeight: 600, fontFamily: "var(--fb)", cursor: rwLoading ? "not-allowed" : "pointer", opacity: rwLoading ? 0.6 : 1 }}
-                >
+                <Button onClick={() => rewrite()} disabled={rwLoading} block>
                   {rwLoading
-                    ? <><div style={{ width: "16px", height: "16px", borderRadius: "50%", border: "2px solid rgba(255,255,255,.3)", borderTopColor: "#fff", animation: "spin 1s linear infinite" }} />Rewriting...</>
-                    : <>✦ Rewrite — {rewriteStyle}</>}
-                </button>
+                    ? <><Spinner />Rewriting…</>
+                    : <>Rewrite — {rewriteStyle}</>}
+                </Button>
 
                 {rwError && (
-                  <div style={{ marginTop: "1rem", background: "rgba(255,45,107,.06)", border: "1px solid rgba(255,45,107,.3)", color: "var(--hot)", borderRadius: "var(--r2)", padding: ".875rem 1.1rem", fontSize: ".82rem" }}>
+                  <div style={{ marginTop: "1rem", background: "var(--danger-soft)", border: "1px solid var(--danger)", color: "var(--danger)", borderRadius: "var(--r-md)", padding: ".875rem 1.1rem", fontSize: "var(--text-sm)" }}>
                     {rwError}
                   </div>
                 )}
@@ -537,7 +514,7 @@ function AnalyzerInner() {
                     <div style={{ fontSize: ".72rem", color: "var(--muted)", marginBottom: "8px", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                       Original retention
                       <span style={{ fontFamily: "var(--fd)", fontWeight: 800, color: scoreColor(result.score) }}>{result.score}</span>
-                      <span>→ {activeTarget ? <>rewritten to add <strong style={{ color: "var(--gold)" }}>{activeTarget}</strong></> : "rewrites below"}</span>
+                      <span>{activeTarget ? <>rewritten to add <strong style={{ color: "var(--gold)" }}>{activeTarget}</strong></> : "rewrites below"}</span>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                       {(pro ? rewrites : rewrites.slice(0, 1)).map((r, i) => {
@@ -548,12 +525,12 @@ function AnalyzerInner() {
                             <p style={{ flex: 1, fontSize: ".9rem", lineHeight: 1.6, color: "var(--text)" }}>{r.text}</p>
                             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, minWidth: "54px" }}>
                               <span style={{ fontFamily: "var(--fd)", fontWeight: 800, fontSize: "1.2rem", color: scoreColor(r.score), letterSpacing: "-1px", lineHeight: 1 }}>{r.score}</span>
-                              <span style={{ fontSize: ".62rem", fontFamily: "var(--fd)", fontWeight: 700, color: up ? "var(--neon)" : "var(--hot)", marginTop: "2px" }}>
-                                {up ? "+" : ""}{delta} {up ? "▲" : "▼"}
+                              <span style={{ display: "inline-flex", alignItems: "center", gap: "3px", fontSize: "var(--text-xs)", fontFamily: "var(--fd)", fontWeight: 700, color: up ? "var(--success)" : "var(--danger)", marginTop: "2px" }}>
+                                {up ? "+" : ""}{delta} <Icon name={up ? "trending-up" : "trending-down"} />
                               </span>
                             </div>
-                            <span style={{ fontSize: ".72rem", color: copiedIdx === i ? "var(--neon)" : "var(--muted)", fontFamily: "var(--fb)", whiteSpace: "nowrap", flexShrink: 0 }}>
-                              {copiedIdx === i ? "✓ Copied" : "Copy"}
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "var(--text-xs)", color: copiedIdx === i ? "var(--success)" : "var(--text-muted)", fontFamily: "var(--fb)", whiteSpace: "nowrap", flexShrink: 0 }}>
+                              {copiedIdx === i ? <><Icon name="check" /> Copied</> : <><Icon name="copy" /> Copy</>}
                             </span>
                           </div>
                         );
@@ -577,8 +554,8 @@ function AnalyzerInner() {
                 <div style={{ marginTop: "1.75rem", background: "var(--s2)", border: "1px solid rgba(108,58,255,.3)", borderRadius: "var(--r3)", padding: "1.1rem 1.25rem" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
                     <div style={{ flex: 1, minWidth: "200px" }}>
-                      <div style={{ fontSize: ".66rem", color: "var(--electric)", textTransform: "uppercase", letterSpacing: "2px", fontFamily: "var(--fd)", fontWeight: 700, marginBottom: ".4rem" }}>
-                        🔬 Push it further
+                      <div className="kicker" style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--accent)", marginBottom: ".4rem" }}>
+                        <Icon name="flask" /> Push it further
                       </div>
                       <div style={{ fontSize: ".88rem", color: "var(--soft)", lineHeight: 1.5 }}>
                         Deep research on <strong style={{ color: "var(--text)" }}>&ldquo;{result.subject}&rdquo;</strong> — context, stakes, and 3-5 new angles to film.
@@ -586,18 +563,18 @@ function AnalyzerInner() {
                     </div>
                     <Link
                       href={`/trends/research?q=${encodeURIComponent(result.subject)}${niche ? `&niche=${encodeURIComponent(niche)}` : ""}`}
-                      style={{ padding: "10px 22px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", color: "#fff", fontSize: ".85rem", fontWeight: 600, textDecoration: "none", fontFamily: "var(--fb)", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: "6px" }}
+                      className="btn btn-primary btn-sm"
                     >
                       Research &amp; angles
-                      <span style={{ fontSize: ".56rem", padding: "1px 6px", borderRadius: "100px", background: "rgba(255,255,255,.18)", fontFamily: "var(--fd)", fontWeight: 700, letterSpacing: "1px" }}>PRO</span>
+                      <Icon name="arrow-right" />
                     </Link>
                   </div>
                 </div>
               )}
 
               <div style={{ marginTop: "1.5rem", textAlign: "center" }}>
-                <Link href="/generator" style={{ fontSize: ".85rem", color: "var(--electric)", textDecoration: "none" }}>
-                  Need a stronger hook? Generate 8 scored ones →
+                <Link href="/generator" style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "var(--text-sm)", color: "var(--accent)", textDecoration: "none" }}>
+                  Need a stronger hook? Generate 8 scored ones <Icon name="arrow-right" />
                 </Link>
               </div>
             </div>
@@ -629,8 +606,8 @@ function TakesView({
       <div style={{ background: "var(--s1)", border: "1px solid rgba(108,58,255,.3)", borderRadius: "var(--r3)", padding: "1.25rem 1.5rem" }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
           <div style={{ flex: 1, minWidth: "240px" }}>
-            <div style={{ fontSize: ".68rem", color: "var(--electric)", textTransform: "uppercase", letterSpacing: "2px", fontFamily: "var(--fd)", fontWeight: 700, marginBottom: ".5rem" }}>
-              🎯 Strategic Takes
+            <div className="kicker" style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--accent)", marginBottom: ".5rem" }}>
+              <Icon name="target" /> Strategic Takes
             </div>
             <div style={{ fontSize: ".95rem", color: "var(--soft)", lineHeight: 1.55 }}>
               &ldquo;<strong style={{ color: "var(--text)" }}>{subject}</strong>&rdquo; reads as a subject, not a hook. Here are{" "}
@@ -647,7 +624,7 @@ function TakesView({
             style={{ padding: "8px 16px", borderRadius: "100px", border: "1px solid var(--border2)", background: "transparent", color: "var(--muted)", fontSize: ".74rem", fontFamily: "var(--fb)", cursor: "pointer", whiteSpace: "nowrap" }}
             title="If this actually was a hook, score it anyway"
           >
-            Score as a hook anyway →
+            Score as a hook anyway
           </button>
         </div>
       </div>
@@ -675,8 +652,8 @@ function TakesView({
               try { host = new URL(url).hostname.replace(/^www\./, ""); } catch { /* keep raw */ }
               return (
                 <a key={url} href={url} target="_blank" rel="noopener noreferrer"
-                  style={{ fontSize: ".74rem", padding: "4px 12px", borderRadius: "100px", border: "1px solid var(--border2)", color: "var(--electric)", textDecoration: "none", fontFamily: "var(--fb)" }}>
-                  {host} ↗
+                  style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "var(--text-xs)", padding: "4px 12px", borderRadius: "var(--r-pill)", border: "1px solid var(--border-strong)", color: "var(--accent)", textDecoration: "none", fontFamily: "var(--fb)" }}>
+                  {host} <Icon name="arrow-up-right" />
                 </a>
               );
             })}
@@ -689,10 +666,6 @@ function TakesView({
 
 function TakeCard({ take, index }: { take: Take; index: number }) {
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
-  // Subtle visual differentiation: red/blue/gold border per take so the eye
-  // distinguishes opposing positions at a glance. Falls back to electric.
-  const accents = ["var(--hot)", "var(--electric)", "var(--gold)"];
-  const accent = accents[index % accents.length];
 
   async function copyHook(text: string, i: number) {
     await navigator.clipboard.writeText(text).catch(() => {});
@@ -701,21 +674,22 @@ function TakeCard({ take, index }: { take: Take; index: number }) {
   }
 
   return (
-    <div style={{ background: "var(--s1)", border: `1px solid ${accent}33`, borderLeft: `3px solid ${accent}`, borderRadius: "var(--r3)", padding: "1.5rem 1.75rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
-      {/* Take header: emoji + name + stance */}
+    <div className="card" style={{ borderLeft: "3px solid var(--accent)", borderRadius: "var(--r-lg)", padding: "1.5rem 1.75rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+      {/* Take header: numbered position + name + stance. One accent for all
+          takes — the number distinguishes the camps (DS §3, one accent). */}
       <div>
         <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: ".5rem" }}>
-          <span style={{ fontSize: "1.4rem", lineHeight: 1 }}>{take.emoji}</span>
-          <h3 style={{ fontFamily: "var(--fd)", fontSize: "1.1rem", fontWeight: 800, letterSpacing: "-.5px", color: accent }}>
+          <span style={{ width: "26px", height: "26px", borderRadius: "50%", background: "var(--accent-soft)", color: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--fd)", fontWeight: 800, fontSize: "var(--text-sm)", flexShrink: 0 }}>{index + 1}</span>
+          <h3 style={{ fontFamily: "var(--fd)", fontSize: "var(--text-lg)", fontWeight: 800, color: "var(--text)" }}>
             {take.name}
           </h3>
         </div>
-        <p style={{ fontSize: ".95rem", color: "var(--text)", lineHeight: 1.55, fontWeight: 500 }}>
+        <p style={{ fontSize: "var(--text-base)", color: "var(--text)", lineHeight: 1.55, fontWeight: 500 }}>
           {take.stance}
         </p>
         {take.reasoning && (
-          <p style={{ marginTop: ".5rem", fontSize: ".78rem", color: "var(--muted)", lineHeight: 1.55, fontStyle: "italic" }}>
-            💭 {take.reasoning}
+          <p style={{ marginTop: ".5rem", fontSize: "var(--text-xs)", color: "var(--text-muted)", lineHeight: 1.55, fontStyle: "italic" }}>
+            {take.reasoning}
           </p>
         )}
       </div>
@@ -739,8 +713,8 @@ function TakeCard({ take, index }: { take: Take; index: number }) {
       {/* Ready hooks for this take */}
       {take.hooks.length > 0 && (
         <div>
-          <div style={{ fontSize: ".62rem", color: "var(--neon)", fontFamily: "var(--fd)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: ".5rem" }}>
-            🪝 Ready hooks for this take
+          <div className="kicker" style={{ fontSize: ".7rem", color: "var(--success)", marginBottom: ".5rem" }}>
+            Ready hooks for this take
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {take.hooks.map((h, i) => (
@@ -760,7 +734,7 @@ function TakeCard({ take, index }: { take: Take; index: number }) {
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
                     {h.patternsUsed.map(p => (
                       <Link key={p} href={patternHref(p)} title="Learn this pattern"
-                        style={{ fontSize: ".62rem", padding: "2px 8px", borderRadius: "100px", background: "rgba(0,255,178,.06)", color: "var(--neon)", border: "1px solid rgba(0,255,178,.2)", textDecoration: "none", fontFamily: "var(--fb)" }}>
+                        style={{ fontSize: "var(--text-xs)", padding: "2px 8px", borderRadius: "var(--r-pill)", background: "var(--success-soft)", color: "var(--success)", border: "1px solid var(--success)", textDecoration: "none", fontFamily: "var(--fb)" }}>
                         {p}
                       </Link>
                     ))}
@@ -769,15 +743,15 @@ function TakeCard({ take, index }: { take: Take; index: number }) {
                 <div style={{ display: "flex", gap: "8px" }}>
                   <button
                     onClick={() => copyHook(h.text, i)}
-                    style={{ padding: "5px 12px", borderRadius: "100px", border: "1px solid var(--border2)", background: "transparent", color: copiedIdx === i ? "var(--neon)" : "var(--muted)", fontSize: ".7rem", cursor: "pointer", fontFamily: "var(--fb)" }}
+                    style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "5px 12px", borderRadius: "var(--r-pill)", border: "1px solid var(--border-strong)", background: "transparent", color: copiedIdx === i ? "var(--success)" : "var(--text-muted)", fontSize: "var(--text-xs)", cursor: "pointer", fontFamily: "var(--fb)" }}
                   >
-                    {copiedIdx === i ? "✓ Copied" : "Copy"}
+                    {copiedIdx === i ? <><Icon name="check" /> Copied</> : <><Icon name="copy" /> Copy</>}
                   </button>
                   <Link
                     href={`/analyzer?hook=${encodeURIComponent(h.text)}`}
-                    style={{ padding: "5px 12px", borderRadius: "100px", border: "1px solid rgba(108,58,255,.3)", color: "#C4B5FD", fontSize: ".7rem", textDecoration: "none", fontFamily: "var(--fb)" }}
+                    style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "5px 12px", borderRadius: "var(--r-pill)", border: "1px solid var(--accent)", color: "var(--accent)", fontSize: "var(--text-xs)", textDecoration: "none", fontFamily: "var(--fb)" }}
                   >
-                    ✦ Analyze
+                    <Icon name="sparkles" /> Analyze
                   </Link>
                 </div>
               </div>

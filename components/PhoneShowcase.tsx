@@ -15,10 +15,10 @@ function Cap({ children }: { children: React.ReactNode }) {
 // ── Trends screen — a mini live feed ──
 function TrendsScreen() {
   const rows = [
-    { t: "Wembanyama injury update", e: "🦋", s: "Bluesky", c: "#0085FF", v: "🔥 Rising", vc: "var(--hot)" },
-    { t: "5am morning routine", e: "🔎", s: "Google", c: "#5BA8FF", v: "⚡ Steady", vc: "var(--electric)" },
-    { t: "AI side hustle 2026", e: "▶", s: "YouTube", c: "#FF4D5A", v: "🆕 New", vc: "var(--electric)" },
-    { t: "Faceless YouTube automation", e: "🟧", s: "Hacker News", c: "#FF6600", v: "🔥 Rising", vc: "var(--hot)" },
+    { t: "Wembanyama injury update", s: "Bluesky", c: "#0085FF", v: "Rising", vc: "var(--accent)" },
+    { t: "5am morning routine", s: "Google", c: "#5BA8FF", v: "Steady", vc: "var(--text-muted)" },
+    { t: "AI side hustle 2026", s: "YouTube", c: "#FF4D5A", v: "New", vc: "var(--text-muted)" },
+    { t: "Faceless YouTube automation", s: "Hacker News", c: "#FF6600", v: "Rising", vc: "var(--accent)" },
   ];
   return (
     <div style={{ minHeight: "352px" }}>
@@ -28,13 +28,13 @@ function TrendsScreen() {
           <div key={i} style={{ background: "var(--s1)", border: "1px solid var(--border)", borderRadius: "11px", padding: "9px 10px" }}>
             <div style={{ fontSize: ".72rem", color: "var(--text)", fontWeight: 500, lineHeight: 1.3, marginBottom: "6px" }}>{r.t}</div>
             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <span style={{ fontSize: ".54rem", fontFamily: "var(--fd)", fontWeight: 700, padding: "2px 7px", borderRadius: "100px", color: r.c, background: `${r.c}14`, border: `1px solid ${r.c}33` }}>{r.e} {r.s}</span>
+              <span style={{ fontSize: ".54rem", fontFamily: "var(--fd)", fontWeight: 700, padding: "2px 7px", borderRadius: "100px", color: r.c, background: `${r.c}14`, border: `1px solid ${r.c}33` }}>{r.s}</span>
               <span style={{ fontSize: ".54rem", fontFamily: "var(--fd)", fontWeight: 700, color: r.vc }}>{r.v}</span>
             </div>
           </div>
         ))}
       </div>
-      <div style={{ padding: "9px", borderRadius: "100px", background: "linear-gradient(135deg,var(--hot),var(--electric))", textAlign: "center", fontSize: ".68rem", color: "#fff", fontFamily: "var(--fd)", fontWeight: 700 }}>🔬 Research &amp; angles</div>
+      <div style={{ padding: "9px", borderRadius: "100px", background: "var(--accent)", textAlign: "center", fontSize: ".68rem", color: "var(--on-accent)", fontFamily: "var(--fd)", fontWeight: 700 }}>Research &amp; angles</div>
     </div>
   );
 }
@@ -97,11 +97,11 @@ function AnalyzerScreen() {
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
         {["Cold Open", "Stakes"].map(p => (
-          <span key={p} style={{ fontSize: ".54rem", padding: "2px 8px", borderRadius: "100px", color: "var(--neon)", background: "rgba(0,255,178,.08)", border: "1px solid rgba(0,255,178,.2)" }}>✓ {p}</span>
+          <span key={p} style={{ fontSize: ".54rem", padding: "2px 8px", borderRadius: "100px", color: "var(--success)", background: "var(--success-soft)", border: "1px solid var(--success)" }}>{p}</span>
         ))}
-        <span style={{ fontSize: ".54rem", padding: "2px 8px", borderRadius: "100px", color: "var(--gold)", background: "rgba(255,184,0,.07)", border: "1px solid rgba(255,184,0,.25)" }}>+ Open Loop</span>
+        <span style={{ fontSize: ".54rem", padding: "2px 8px", borderRadius: "100px", color: "var(--warning)", background: "var(--warning-soft)", border: "1px solid var(--warning)" }}>+ Open Loop</span>
       </div>
-      <div style={{ marginTop: "10px", padding: "9px", borderRadius: "100px", border: "1px solid rgba(108,58,255,.4)", textAlign: "center", fontSize: ".66rem", color: "var(--electric)", fontFamily: "var(--fd)", fontWeight: 700 }}>✦ Rewrite to 91 →</div>
+      <div style={{ marginTop: "10px", padding: "9px", borderRadius: "100px", border: "1px solid var(--accent)", textAlign: "center", fontSize: ".66rem", color: "var(--accent)", fontFamily: "var(--fd)", fontWeight: 700 }}>Rewrite to 91</div>
     </div>
   );
 }
@@ -130,15 +130,15 @@ export function PhoneShowcase() {
   // lift = visual elevation (transform doesn't affect flow, so captions stay on
   // a flat baseline). zi = stacking so the bigger center overlaps its siblings.
   const items = [
-    { screen: <TrendsScreen />, step: "Discover", tool: "Trends", glow: "rgba(0,133,255,.32)", w: 232, delay: 0, lift: 8, zi: 1, mx: "-18px" },
-    { screen: <GeneratorScreen />, step: "Create", tool: "Generator", glow: "rgba(255,184,0,.3)", w: 268, delay: 140, lift: -22, zi: 3, mx: "0" },
-    { screen: <AnalyzerScreen />, step: "Diagnose & fix", tool: "Analyzer", glow: "rgba(108,58,255,.34)", w: 232, delay: 280, lift: 8, zi: 1, mx: "-18px" },
+    { screen: <TrendsScreen />, step: "Discover", tool: "Trends", glow: "rgba(16,16,25,.10)", w: 232, delay: 0, lift: 8, zi: 1, mx: "-18px" },
+    { screen: <GeneratorScreen />, step: "Create", tool: "Generator", glow: "rgba(201,19,75,.14)", w: 268, delay: 140, lift: -22, zi: 3, mx: "0" },
+    { screen: <AnalyzerScreen />, step: "Diagnose & fix", tool: "Analyzer", glow: "rgba(16,16,25,.10)", w: 232, delay: 280, lift: 8, zi: 1, mx: "-18px" },
   ];
 
   return (
     <div ref={ref} style={{ position: "relative" }}>
-      {/* Ambient backdrop glow */}
-      <div aria-hidden style={{ position: "absolute", inset: "-12% -5%", background: "radial-gradient(ellipse 55% 55% at 50% 42%, rgba(108,58,255,.14), rgba(255,45,107,.06) 45%, transparent 72%)", filter: "blur(24px)", pointerEvents: "none", zIndex: 0 }} />
+      {/* Ambient backdrop tint — single accent, quiet (DS §3) */}
+      <div aria-hidden style={{ position: "absolute", inset: "-12% -5%", background: "radial-gradient(ellipse 55% 55% at 50% 42%, rgba(201,19,75,.07), transparent 70%)", filter: "blur(24px)", pointerEvents: "none", zIndex: 0 }} />
 
       <div className="hv-phones-stage" style={{ position: "relative", zIndex: 1 }}>
         {items.map(it => (

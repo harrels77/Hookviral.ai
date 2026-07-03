@@ -21,7 +21,9 @@ export function Logo({ size = 28 }: { size?: number }) {
     >
       <span
         style={{
-          background: "linear-gradient(135deg, var(--hot), var(--electric))",
+          // --brand-grad is one of the only two gradient surfaces allowed
+          // (wordmark + nothing else decorative — see DESIGN-SYSTEM.md §3).
+          background: "var(--brand-grad)",
           WebkitBackgroundClip: "text",
           backgroundClip: "text",
           WebkitTextFillColor: "transparent",

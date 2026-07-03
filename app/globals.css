@@ -1,4 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
+/* HookViral — global styles.
+   Source of truth for every visual rule: DESIGN-SYSTEM.md.
+   Fonts are loaded via next/font in app/layout.tsx (variables --fd / --fb
+   are injected on <html>) — no CSS @import, no external font request. */
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -7,106 +10,225 @@
   -webkit-font-smoothing: antialiased;
 }
 
-/* ── THEME TOKENS ──
-   Default theme is LIGHT. Most first-touch visitors arrive from SEO in daylight
-   on mobile, where a light UI is more approachable. The bare :root (no
-   data-theme attribute — i.e. SSR + pre-hydration) carries the light palette, so
-   default visitors get no flash. ThemeProvider sets data-theme explicitly after
-   mount; only users who saved "dark" see a brief flip. Dark opts in via
-   [data-theme="dark"], placed last so it wins at equal specificity over the
-   :root light defaults. */
-
-/* Structural tokens — theme-independent (fonts, sizes, radii). */
+/* ── STRUCTURAL TOKENS (theme-independent) ── */
 :root {
-  --fd: 'Syne', sans-serif;
-  --fb: 'DM Sans', sans-serif;
-
   --nav-h: 64px;
   --max-w: 880px;
-  --r: 12px;
-  --r2: 18px;
-  --r3: 24px;
+
+  /* Type scale — the ONLY font sizes allowed (DS §2). */
+  --text-xs:   .75rem;
+  --text-sm:   .875rem;
+  --text-base: 1rem;
+  --text-lg:   1.25rem;
+  --text-xl:   1.5rem;
+  --text-2xl:  2rem;
+  --text-3xl:  2.75rem;
+  --text-4xl:  clamp(2.75rem, 5vw, 3.75rem);
+
+  /* Spacing scale — 4px base (DS §4). */
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 24px; --sp-6: 32px; --sp-7: 48px; --sp-8: 64px; --sp-9: 96px;
+
+  /* Radii — 3 values + pill (DS §4). Pill is for buttons/badges only. */
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-pill: 999px;
+
+  /* Legacy radius aliases (older inline styles reference these). */
+  --r:  var(--r-sm);
+  --r2: var(--r-md);
+  --r3: var(--r-lg);
 }
 
-/* ── LIGHT MODE (default) ── */
-/* small-text accent colors (--neon, --gold) and --muted/--hot are tuned for
-   WCAG AA 4.5:1 on the light backgrounds (--bg #F4F3FF, --s1 #FFF, --s2 #F0EFF8,
-   --s3 #E8E7F5). Verified worst-case ratios: --muted 5.23, --hot 4.67,
-   --neon 4.79, --gold 5.23, --soft 7.11, --electric 7.65, --text 15.74 — all
-   ≥ 4.5. Earlier values (#00A882 neon = 2.66, #C98A00 gold = 2.68, #8A88A8
-   muted = 3.09) failed Lighthouse and were darkened. */
+/* ── THEME TOKENS ──
+   Default theme is LIGHT (SEO visitors, daylight, mobile). The bare :root
+   carries the light palette so SSR + pre-hydration render with no flash;
+   [data-theme="dark"] is opt-in and placed last to win at equal specificity.
+
+   One signature accent (raspberry). Green / amber / red are SEMANTIC —
+   reserved for meaning (score tiers, states), never decoration (DS §3).
+   Legacy names (--s1, --hot, --electric, --neon, --gold, --soft, --muted,
+   --border2) are kept as aliases so untouched inline styles keep working;
+   new code must use the canonical names. */
 :root,
 [data-theme="light"] {
-  --bg:       #F4F3FF;
-  --s1:       #FFFFFF;
-  --s2:       #F0EFF8;
-  --s3:       #E8E7F5;
-  --border:   #D8D6EE;
-  --border2:  #C4C2DE;
-  --nav-bg:   rgba(244,243,255,.92);
+  --bg:            #FAFAFC;
+  --surface:       #FFFFFF;
+  --surface-2:     #F2F2F7;
+  --surface-3:     #E9E9F1;
+  --border:        #E3E3EC;
+  --border-strong: #C9C9DA;
+  --nav-bg:        rgba(250,250,252,.9);
 
-  --hot:      #C9134B;
-  --electric: #4724BC;
-  --neon:     #007355;
-  --gold:     #7E5800;
+  --text:       #101019;
+  --text-soft:  #454458;
+  --text-muted: #5F5E78; /* AA 4.5:1 on --surface and --surface-2 */
 
-  --text:     #0E0D1A;
-  --soft:     #4A4868;
-  --muted:    #5E5C7A;
+  --accent:       #C9134B;
+  --accent-hover: #A80F3E;
+  --accent-soft:  #FBE9EF;
+  --on-accent:    #FFFFFF;
+
+  --success:      #0A7D5C; --success-soft: #E7F6F0;
+  --warning:      #8A6100; --warning-soft: #FBF3E0;
+  --danger:       #B42318; --danger-soft:  #FDEBE9;
+
+  --focus: #2E5AAC;
+
+  --brand-grad: linear-gradient(135deg, #C9134B, #6D28D9);
+
+  /* Legacy aliases — do not use in new code. */
+  --s1: var(--surface);
+  --s2: var(--surface-2);
+  --s3: var(--surface-3);
+  --border2: var(--border-strong);
+  --soft:  var(--text-soft);
+  --muted: var(--text-muted);
+  --hot:      var(--accent);
+  --electric: var(--accent);
+  --neon:     var(--success);
+  --gold:     var(--warning);
 }
 
-/* ── DARK MODE (opt-in) ── */
-/* small-text colors (--muted, --electric) tuned for WCAG AA 4.5:1 on the dark
-   backgrounds (--bg #060609, --s1 #0c0c14). Lighthouse caught the earlier
-   values (--muted #46465A = 2.20, --electric #6C3AFF = 3.41) as failing;
-   brightened to pass. --soft #8A88A8 already passes (~5.45). */
 [data-theme="dark"] {
-  --bg:       #060609;
-  --s1:       #0C0C14;
-  --s2:       #111120;
-  --s3:       #171728;
-  --border:   #1E1E30;
-  --border2:  #272740;
-  --nav-bg:   rgba(6,6,9,.9);
+  --bg:            #0B0B10;
+  --surface:       #13131E;
+  --surface-2:     #1A1A28;
+  --surface-3:     #222233;
+  --border:        #232336;
+  --border-strong: #32324A;
+  --nav-bg:        rgba(11,11,16,.9);
 
-  --hot:      #FF2D6B;
-  --electric: #8B6BFF;
-  --neon:     #00FFB2;
-  --gold:     #FFB800;
+  --text:       #F2F1F8;
+  --text-soft:  #B7B5C9;
+  --text-muted: #908EA8;
 
-  --text:     #F0EEF8;
-  --soft:     #8A88A8;
-  --muted:    #7C7B98;
+  --accent:       #FF3D71;
+  --accent-hover: #FF6390;
+  --accent-soft:  #33121E;
+  --on-accent:    #FFFFFF;
+
+  --success:      #34D399; --success-soft: #0C2A1F;
+  --warning:      #E5B32B; --warning-soft: #2A2208;
+  --danger:       #F87171; --danger-soft:  #2C1210;
+
+  --focus: #7AA2E8;
+
+  --brand-grad: linear-gradient(135deg, #FF3D71, #9B6BFF);
 }
 
 html { scroll-behavior: smooth; }
 
 body {
-  font-family: var(--fb);
+  font-family: var(--fb), sans-serif;
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
   overflow-x: hidden;
+  font-size: var(--text-base);
   transition: background .3s ease, color .3s ease;
 }
 
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
 
+/* Visible keyboard focus everywhere (DS §8.8). */
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Brand gradient text — home H1 and wordmark ONLY (DS §3). Static. */
 .gradient-text {
-  background: linear-gradient(90deg, var(--hot), var(--electric), var(--neon));
-  background-size: 200% auto;
+  background: var(--brand-grad);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  animation: gradShift 5s ease infinite;
 }
 
 .page-wrap {
   max-width: var(--max-w);
   margin: 0 auto;
   padding: 2.5rem 1.25rem 6rem;
+}
+
+/* ── Shared components (DS §6) ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--fb), sans-serif;
+  font-weight: 600;
+  border-radius: var(--r-pill);
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background .18s ease, color .18s ease, border-color .18s ease,
+              box-shadow .18s ease, transform .18s ease;
+}
+.btn-md { padding: 12px 24px; font-size: var(--text-base); }
+.btn-sm { padding: 7px 16px;  font-size: var(--text-sm); font-weight: 500; }
+.btn-primary { background: var(--accent); color: var(--on-accent); }
+.btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 8px 24px rgb(16 16 25 / .12); }
+.btn-secondary { border-color: var(--border-strong); color: var(--text-soft); background: transparent; }
+.btn-secondary:hover { background: var(--surface-2); color: var(--text); }
+.btn-ghost { color: var(--text-muted); }
+.btn-ghost:hover { color: var(--text); background: var(--surface-2); }
+.btn:disabled, .btn[aria-disabled="true"] {
+  opacity: .5; cursor: not-allowed; transform: none; box-shadow: none;
+}
+.btn-block { width: 100%; }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-family: var(--fb), sans-serif;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.chip:hover { color: var(--text); border-color: var(--text-muted); }
+.chip[data-active="true"] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.chip:disabled { opacity: .45; cursor: not-allowed; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+
+.kicker {
+  font-family: var(--fb), sans-serif;
+  font-weight: 600;
+  font-size: var(--text-xs);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--border-strong);
+  border-top-color: currentColor;
+  animation: spin 1s linear infinite;
+  flex-shrink: 0;
 }
 
 /* Phone showcase — a fanned cluster (bigger center, elevated, overlapping
@@ -182,39 +304,19 @@ body {
   .hv-scoredemo-grid { grid-template-columns: 1fr !important; }
 }
 
-/* ── Animations ── */
-@keyframes gradShift {
-  0%,100% { background-position: 0% center; }
-  50%      { background-position: 100% center; }
-}
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
+/* ── Animations (each must have a reduced-motion story, DS §8.14) ── */
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 @keyframes cardIn {
-  from { opacity: 0; transform: translateY(20px) scale(.97); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
-}
-@keyframes pulseGlow {
-  0%,100% { box-shadow: 0 0 0 0 rgba(255,45,107,.4); }
-  50%     { box-shadow: 0 0 0 8px rgba(255,45,107,0); }
-}
-@keyframes orbFloat {
-  0%,100% { transform: translate(0,0); }
-  50%     { transform: translate(20px,-15px); }
-}
-@keyframes blink {
-  0%,100% { opacity: 1; }
-  50%     { opacity: 0; }
-}
-@keyframes marqueeScroll {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes chipPop {
   from { opacity: 0; transform: translateY(6px) scale(.9); }
   to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .btn, .chip { transition: none; }
 }

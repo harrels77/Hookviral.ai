@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Icon } from "@/lib/icons";
 
 // Single, shared Pro-lock surface. Every "this is Pro" message in the product
 // renders through this — same wording shape, same look, same destination.
@@ -9,24 +10,24 @@ export function ProNote({ title, detail }: { title: string; detail?: string }) {
       href="/pricing"
       style={{
         display: "block",
-        background: "var(--s2)",
-        border: "1px dashed var(--border2)",
-        borderRadius: "var(--r2)",
+        background: "var(--surface-2)",
+        border: "1px dashed var(--border-strong)",
+        borderRadius: "var(--r-md)",
         padding: ".9rem 1.1rem",
         textDecoration: "none",
         fontFamily: "var(--fb)",
       }}
     >
-      <div style={{ fontSize: ".85rem", color: "var(--text)", fontWeight: 500, marginBottom: detail ? "4px" : 0 }}>
-        🔒 {title}
+      <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "var(--text-sm)", color: "var(--text)", fontWeight: 500, marginBottom: detail ? "4px" : 0 }}>
+        <Icon name="lock" /> {title}
       </div>
       {detail && (
-        <div style={{ fontSize: ".78rem", color: "var(--muted)", lineHeight: 1.5 }}>
+        <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", lineHeight: 1.5 }}>
           {detail}
         </div>
       )}
-      <div style={{ fontSize: ".75rem", color: "var(--electric)", marginTop: "6px" }}>
-        See Pro →
+      <div style={{ fontSize: "var(--text-xs)", color: "var(--accent)", marginTop: "6px" }}>
+        See Pro
       </div>
     </Link>
   );
