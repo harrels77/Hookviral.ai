@@ -6,6 +6,7 @@ import { NextStep } from "@/components/NextStep";
 import { getSavedTrends, unsaveTrend, type SavedTrend } from "@/lib/prefs";
 import { SOURCE_BADGES, type SourceKey } from "@/lib/sourceBadges";
 import { Icon } from "@/lib/icons";
+import { BrandIcon } from "@/components/BrandIcon";
 
 // Local copy of the surrogate-safe encoder used on the Trends card, kept inline
 // so this page doesn't depend on Trends' internals (a lone UTF-16 surrogate from
@@ -73,7 +74,8 @@ export default function SavedPage() {
                     <div style={{ fontSize: ".95rem", color: "var(--text)", lineHeight: 1.45, fontWeight: 500 }}>{t.title}</div>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px", flexWrap: "wrap" }}>
                       {badge && (
-                        <span style={{ fontSize: ".62rem", fontFamily: "var(--fd)", fontWeight: 700, padding: "2px 7px", borderRadius: "100px", color: badge.color, background: `${badge.color}14`, border: `1px solid ${badge.color}33` }}>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: ".7rem", fontFamily: "var(--fd)", fontWeight: 700, padding: "2px 8px", borderRadius: "var(--r-pill)", color: badge.color, background: `${badge.color}14`, border: `1px solid ${badge.color}33` }}>
+                          <BrandIcon name={t.source as SourceKey} size={11} />
                           {badge.label}
                         </span>
                       )}

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { PhoneFrame } from "@/components/PhoneFrame";
+import { BrandIcon, type BrandName } from "@/components/BrandIcon";
 
 // Three phones, each a REAL product surface (Trends / Generator / Analyzer),
 // fanned in a light 3D cluster with the center elevated. Illustrative example
@@ -14,11 +15,11 @@ function Cap({ children }: { children: React.ReactNode }) {
 
 // ── Trends screen — a mini live feed ──
 function TrendsScreen() {
-  const rows = [
-    { t: "Wembanyama injury update", s: "Bluesky", c: "#0085FF", v: "Rising", vc: "var(--accent)" },
-    { t: "5am morning routine", s: "Google", c: "#5BA8FF", v: "Steady", vc: "var(--text-muted)" },
-    { t: "AI side hustle 2026", s: "YouTube", c: "#FF4D5A", v: "New", vc: "var(--text-muted)" },
-    { t: "Faceless YouTube automation", s: "Hacker News", c: "#FF6600", v: "Rising", vc: "var(--accent)" },
+  const rows: { t: string; s: string; k: BrandName; c: string; v: string; vc: string }[] = [
+    { t: "Wembanyama injury update", s: "Bluesky", k: "bluesky", c: "#0085FF", v: "Rising", vc: "var(--accent)" },
+    { t: "5am morning routine", s: "Google", k: "google", c: "#5BA8FF", v: "Steady", vc: "var(--text-muted)" },
+    { t: "AI side hustle 2026", s: "YouTube", k: "youtube", c: "#FF4D5A", v: "New", vc: "var(--text-muted)" },
+    { t: "Faceless YouTube automation", s: "Hacker News", k: "hackernews", c: "#FF6600", v: "Rising", vc: "var(--accent)" },
   ];
   return (
     <div style={{ minHeight: "352px" }}>
@@ -28,7 +29,7 @@ function TrendsScreen() {
           <div key={i} style={{ background: "var(--s1)", border: "1px solid var(--border)", borderRadius: "11px", padding: "9px 10px" }}>
             <div style={{ fontSize: ".72rem", color: "var(--text)", fontWeight: 500, lineHeight: 1.3, marginBottom: "6px" }}>{r.t}</div>
             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <span style={{ fontSize: ".54rem", fontFamily: "var(--fd)", fontWeight: 700, padding: "2px 7px", borderRadius: "100px", color: r.c, background: `${r.c}14`, border: `1px solid ${r.c}33` }}>{r.s}</span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: ".54rem", fontFamily: "var(--fd)", fontWeight: 700, padding: "2px 7px", borderRadius: "100px", color: r.c, background: `${r.c}14`, border: `1px solid ${r.c}33` }}><BrandIcon name={r.k} size={9} />{r.s}</span>
               <span style={{ fontSize: ".54rem", fontFamily: "var(--fd)", fontWeight: 700, color: r.vc }}>{r.v}</span>
             </div>
           </div>

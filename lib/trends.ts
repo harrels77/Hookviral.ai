@@ -370,8 +370,8 @@ export async function blueskyTrends(): Promise<Trend[]> {
       const replies = p?.replyCount ?? 0;
       const fmtLikes = likes >= 1000 ? `${(likes / 1000).toFixed(1)}k` : `${likes}`;
       const sub = handle
-        ? `@${handle} · ↑${fmtLikes} · 💬${replies}`
-        : `↑${fmtLikes} · 💬${replies}`;
+        ? `@${handle} · ${fmtLikes} likes · ${replies} replies`
+        : `${fmtLikes} likes · ${replies} replies`;
       return { title, sub };
     })
     .filter((t): t is Trend => t !== null)

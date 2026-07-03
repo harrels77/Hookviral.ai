@@ -7,6 +7,7 @@ import { NextStep } from "@/components/NextStep";
 import { getNichePref, setNichePref, getGeoPref, setGeoPref, getSourcesPref, setSourcesPref,
          saveTrend, unsaveTrend, isTrendSaved, trendId } from "@/lib/prefs";
 import { SOURCE_BADGES, type SourceKey } from "@/lib/sourceBadges";
+import { BrandIcon } from "@/components/BrandIcon";
 import { Icon, nicheIcon, type IconName } from "@/lib/icons";
 
 type Velocity = "rising" | "steady" | "cooling" | "new";
@@ -255,7 +256,7 @@ export default function TrendsPage() {
                           title={active ? `Hide ${SOURCE_LABELS[s]} trends` : `Include ${SOURCE_LABELS[s]} trends`}
                           style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "9px 16px", border: "none", background: active ? "var(--surface-3)" : "transparent", color: active ? "var(--text)" : "var(--text-muted)", fontSize: "var(--text-sm)", cursor: "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}
                         >
-                          <span aria-hidden style={{ width: "8px", height: "8px", borderRadius: "50%", background: SOURCE_BADGES[s].color, opacity: active ? 1 : .45, flexShrink: 0 }} />
+                          <BrandIcon name={s} size={13} style={{ color: SOURCE_BADGES[s].color, opacity: active ? 1 : .55 }} />
                           {label}
                           {active && <Icon name="check" />}
                         </button>
@@ -431,7 +432,7 @@ function TrendCard({ trend, rank, niche }: { trend: Trend; rank: number; niche: 
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px", flexWrap: "wrap" }}>
             {trend.source && (
               <span title={`From ${SOURCE_BADGES[trend.source].label}`} style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: ".7rem", fontFamily: "var(--fd)", fontWeight: 700, padding: "2px 8px", borderRadius: "var(--r-pill)", color: SOURCE_BADGES[trend.source].color, background: `${SOURCE_BADGES[trend.source].color}14`, border: `1px solid ${SOURCE_BADGES[trend.source].color}33` }}>
-                <span aria-hidden style={{ width: "6px", height: "6px", borderRadius: "50%", background: SOURCE_BADGES[trend.source].color }} />
+                <BrandIcon name={trend.source} size={11} />
                 {SOURCE_BADGES[trend.source].label}
               </span>
             )}

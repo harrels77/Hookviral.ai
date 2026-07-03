@@ -11,11 +11,11 @@ import { scoreColor } from "@/lib/score";
 import { Icon } from "@/lib/icons";
 import { Button, Spinner } from "@/components/ui";
 import { PLATFORMS as PLATFORM_MODES, getPlatform } from "@/lib/platforms";
+import { BrandIcon, PLATFORM_BRAND } from "@/components/BrandIcon";
 
 // Short-form only — lib/platforms.ts is the source of truth (the old
 // LinkedIn/X options contradicted the positioning and had no psychology
-// block behind them).
-const PLATFORMS = PLATFORM_MODES.map(p => p.label);
+// block behind them). Chips render from PLATFORM_MODES with brand marks.
 const TONES = ["Authentic", "Shock", "Educational", "Humor", "Authority", "Storytelling"];
 const NICHES = ["Fitness", "Finance", "Tech", "Business", "Lifestyle", "Education", "Motivation", "Relationships"];
 const GOALS = ["Engagement", "Sales", "Education", "Growth", "Brand awareness", "Lead generation"];
@@ -188,7 +188,11 @@ function GeneratorInner() {
             </summary>
             <div style={{marginTop:"8px",display:"flex",flexDirection:"column",gap:"12px"}}>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px"}}>
-                <Panel label="Platform">{PLATFORMS.map(p=><Chip key={p} label={p} active={platforms.includes(p)} onClick={()=>togglePlatform(p)}/>)}</Panel>
+                <Panel label="Platform">{PLATFORM_MODES.map(pm=>(
+                  <button key={pm.slug} onClick={()=>togglePlatform(pm.label)} className="chip" data-active={platforms.includes(pm.label)}>
+                    <BrandIcon name={PLATFORM_BRAND[pm.slug]} size={13} /> {pm.label}
+                  </button>
+                ))}</Panel>
                 <Panel label="Tone">{TONES.map(t=><Chip key={t} label={t} active={tone===t} onClick={()=>setTone(t)}/>)}</Panel>
               </div>
               <Panel label="Niche (optional)">

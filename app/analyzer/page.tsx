@@ -13,12 +13,12 @@ import { Icon, nicheIcon } from "@/lib/icons";
 import { Button, Spinner } from "@/components/ui";
 import { ScoreRing } from "@/components/ScoreRing";
 import { PLATFORMS as PLATFORM_MODES, getPlatform } from "@/lib/platforms";
+import { BrandIcon, PLATFORM_BRAND } from "@/components/BrandIcon";
 import { getNichePref, setNichePref } from "@/lib/prefs";
 
 // Short-form only — the product's positioning (lib/platforms.ts is the
 // source of truth; LinkedIn/X options contradicted it and had no psychology
-// block behind them).
-const PLATFORMS = PLATFORM_MODES.map(p => p.label);
+// block behind them). Chips render from PLATFORM_MODES with brand marks.
 
 // Honest spoken-delivery heuristic: energetic short-form narration ≈ 3.3 words/s.
 // This estimates whether the line actually lands inside the 3-second window.
@@ -303,9 +303,9 @@ function AnalyzerInner() {
               <div className="card" style={{ padding: "1.25rem" }}>
                 <div className="kicker" style={{ marginBottom: ".75rem" }}>Platform</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                  {PLATFORMS.map(p => (
-                    <button key={p} onClick={() => setPlatform(p)} className="chip" data-active={platform === p}>
-                      {p}
+                  {PLATFORM_MODES.map(pm => (
+                    <button key={pm.slug} onClick={() => setPlatform(pm.label)} className="chip" data-active={platform === pm.label}>
+                      <BrandIcon name={PLATFORM_BRAND[pm.slug]} size={13} /> {pm.label}
                     </button>
                   ))}
                 </div>

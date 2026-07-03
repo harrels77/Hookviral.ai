@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { BrandIcon } from "@/components/BrandIcon";
+import { SOURCE_BADGES } from "@/lib/sourceBadges";
 
 export const metadata: Metadata = {
   title: "Instagram Reels Hook Generator — Free AI Hooks | HookViral AI",
@@ -56,6 +58,11 @@ export default function InstagramHookGeneratorPage() {
         <div style={{ textAlign: "center", marginBottom: "3.5rem" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "4px 14px", borderRadius: "100px", border: "1px solid rgba(225,48,108,.3)", background: "rgba(225,48,108,.07)", fontSize: ".72rem", color: "var(--hot)", marginBottom: "1.5rem", letterSpacing: ".5px" }}>
             Instagram Reels · Free · AI-Powered
+          </div>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: "1.25rem" }}>
+            <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "56px", height: "56px", borderRadius: "18px", color: SOURCE_BADGES.instagram.color, background: `${SOURCE_BADGES.instagram.color}14` }}>
+              <BrandIcon name="instagram" size={26} />
+            </span>
           </div>
           <h1 style={{ fontFamily: "var(--fd)", fontSize: "clamp(2rem,5vw,3.5rem)", fontWeight: 800, letterSpacing: "-2px", marginBottom: "1rem", lineHeight: 1.05 }}>
             Instagram Reels Hook Generator
