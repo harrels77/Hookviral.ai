@@ -28,12 +28,37 @@ const STATS = [
   { n: "Free", label: "No account needed" },
 ];
 
+// Types the hook out character by character, then reports done so the score
+// can land after the line — the hero demo behaves like someone writing a hook.
+// Reduced-motion users get the full text instantly.
+function useTypedText(text: string, speed = 24) {
+  const [typed, setTyped] = useState(text);
+  const [done, setDone] = useState(true);
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      setTyped(text); setDone(true);
+      return;
+    }
+    let i = 0;
+    setTyped(""); setDone(false);
+    const id = setInterval(() => {
+      i += 1;
+      setTyped(text.slice(0, i));
+      if (i >= text.length) { clearInterval(id); setDone(true); }
+    }, speed);
+    return () => clearInterval(id);
+  }, [text, speed]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+  return { typed, done };
+}
+
 export default function HomePage() {
   const [demoActive, setDemoActive] = useState(0);
 
   // Auto-cycle demo hooks in the hero phone mockup
   useEffect(() => {
-    const t = setInterval(() => setDemoActive(p => (p + 1) % DEMO_HOOKS.length), 3200);
+    const t = setInterval(() => setDemoActive(p => (p + 1) % DEMO_HOOKS.length), 4200);
     return () => clearInterval(t);
   }, []);
 
@@ -283,6 +308,7 @@ export default function HomePage() {
 // PHONE MOCKUP COMPONENT
 // ══════════════════════════════════
 function PhoneMockup({ hook }: { hook: typeof DEMO_HOOKS[0] }) {
+  const { typed, done } = useTypedText(hook.text);
   return (
     <div style={{ position: "relative", width: "260px" }}>
       {/* Soft accent halo behind the phone — the page's single decorative tint */}
@@ -312,17 +338,20 @@ function PhoneMockup({ hook }: { hook: typeof DEMO_HOOKS[0] }) {
             <span style={{ fontSize: ".65rem", fontFamily: "var(--fd)", fontWeight: 700, padding: "3px 10px", borderRadius: "100px", background: "var(--accent-soft)", color: "var(--accent)" }}>{hook.formula}</span>
           </div>
 
-          {/* Hook text */}
-          <div style={{ background: "var(--surface)", borderRadius: "14px", padding: "1rem", marginBottom: ".75rem", border: "1px solid var(--border)", minHeight: "80px", transition: "all .4s ease" }}>
-            <p style={{ fontSize: ".85rem", lineHeight: 1.7, color: "var(--text)" }}>{hook.text}</p>
+          {/* Hook text — typed live, like someone writing their opening line */}
+          <div style={{ background: "var(--surface)", borderRadius: "14px", padding: "1rem", marginBottom: ".75rem", border: "1px solid var(--border)", minHeight: "80px" }}>
+            <p style={{ fontSize: ".85rem", lineHeight: 1.7, color: "var(--text)" }}>
+              {typed}
+              {!done && <span aria-hidden style={{ display: "inline-block", width: "2px", height: ".9em", background: "var(--accent)", marginLeft: "2px", verticalAlign: "-1px" }} />}
+            </p>
           </div>
 
-          {/* Score */}
+          {/* Score — lands only after the line is written */}
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: ".75rem" }}>
             <div style={{ flex: 1, height: "5px", background: "var(--border)", borderRadius: "3px", overflow: "hidden" }}>
-              <div style={{ height: "100%", background: scoreColor(hook.score), width: `${hook.score}%`, borderRadius: "3px", transition: "width .8s cubic-bezier(.16,1,.3,1)" }} />
+              <div style={{ height: "100%", background: scoreColor(hook.score), width: done ? `${hook.score}%` : "0%", borderRadius: "3px", transition: "width .7s cubic-bezier(.16,1,.3,1)" }} />
             </div>
-            <span style={{ fontFamily: "var(--fd)", fontWeight: 800, fontSize: "1rem", color: scoreColor(hook.score), flexShrink: 0 }}>{hook.score}<span style={{ fontSize: ".55rem", color: "var(--text-muted)", fontWeight: 400 }}>/100</span></span>
+            <span style={{ fontFamily: "var(--fd)", fontWeight: 800, fontSize: "1rem", color: scoreColor(hook.score), flexShrink: 0, opacity: done ? 1 : .25, transition: "opacity .4s ease" }}>{hook.score}<span style={{ fontSize: ".55rem", color: "var(--text-muted)", fontWeight: 400 }}>/100</span></span>
           </div>
 
           {/* Action buttons */}

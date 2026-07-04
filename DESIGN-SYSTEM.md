@@ -98,7 +98,7 @@ Règles :
 ## 5. Icônes
 
 - **Lucide uniquement** (`lucide-react`). Aucun emoji dans l'UI, aucun caractère unicode décoratif (→ ▲ ✓ ★ ✕ inclus — Lucide a `ArrowRight`, `TrendingUp`, `Check`, `Star`, `X`).
-- **Exception unique : les marques tierces** (TikTok, Instagram, YouTube, Google, Reddit, Bluesky, HN, Wikipedia, X) sont désignées par leur logo officiel monochrome via `components/BrandIcon.tsx` (`simple-icons`, teinté `currentColor`, couleur = `SOURCE_BADGES.color`). Jamais d'emoji, jamais de logo couleur multi-teintes, jamais Lucide pour une marque.
+- **Exception : les référents du monde réel portent leur vrai symbole.** (1) Marques tierces (TikTok, Instagram, YouTube, Google, Reddit, Bluesky, HN, Wikipedia, X) → logo officiel monochrome via `components/BrandIcon.tsx` (`simple-icons`, teinté `currentColor`, couleur = `SOURCE_BADGES.color`). (2) Pays (geo US/FR/UK/CA/ES/DE) → drapeau SVG via `components/FlagIcon.tsx` (`country-flag-icons` — les emojis drapeaux ne rendent pas sous Windows). Jamais d'emoji dans les deux cas.
 - Tailles : **16px** dans le texte/boutons, **20px** autonome. Rien d'autre.
 - `strokeWidth: 1.75` partout, couleur `currentColor` (jamais de couleur propre).
 - Une icône accompagne, elle ne remplace pas un mot (exception : actions universelles Copy/Close/Star avec `aria-label`).

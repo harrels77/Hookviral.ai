@@ -8,6 +8,7 @@ import { getNichePref, setNichePref, getGeoPref, setGeoPref, getSourcesPref, set
          saveTrend, unsaveTrend, isTrendSaved, trendId } from "@/lib/prefs";
 import { SOURCE_BADGES, type SourceKey } from "@/lib/sourceBadges";
 import { BrandIcon } from "@/components/BrandIcon";
+import { FlagIcon, isFlagCode } from "@/components/FlagIcon";
 import { Icon, nicheIcon, type IconName } from "@/lib/icons";
 
 type Velocity = "rising" | "steady" | "cooling" | "new";
@@ -266,7 +267,7 @@ export default function TrendsPage() {
                   <div className="hv-scroll-pill" style={{ display: "flex", border: "1px solid var(--border)", borderRadius: "100px", overflow: "hidden", background: "var(--s1)", opacity: allGeoLess ? 0.4 : 1 }} title={allGeoLess ? "Selected sources are global — geo doesn't apply" : undefined}>
                     {GEOS.map(([code, label]) => (
                       <button key={code} onClick={() => setGeo(code)} disabled={allGeoLess} title={allGeoLess ? "Selected sources are global" : `Trends for ${code}`} style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "9px 14px", border: "none", background: geo === code ? "var(--surface-3)" : "transparent", color: geo === code ? "var(--text)" : "var(--text-muted)", fontSize: "var(--text-sm)", cursor: allGeoLess ? "not-allowed" : "pointer", fontFamily: "var(--fb)", transition: "all .2s" }}>
-                        {code === "GLOBAL" && <Icon name="globe" />}{label}
+                        {code === "GLOBAL" ? <Icon name="globe" /> : isFlagCode(code) ? <FlagIcon code={code} /> : null}{label}
                       </button>
                     ))}
                   </div>
