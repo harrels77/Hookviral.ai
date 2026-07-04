@@ -12,6 +12,7 @@ import { Icon } from "@/lib/icons";
 import { Button, Spinner } from "@/components/ui";
 import { PLATFORMS as PLATFORM_MODES, getPlatform } from "@/lib/platforms";
 import { BrandIcon, PLATFORM_BRAND } from "@/components/BrandIcon";
+import { OptionsBar, OptionGroup, ValueChip } from "@/components/OptionsBar";
 
 // Short-form only — lib/platforms.ts is the source of truth (the old
 // LinkedIn/X options contradicted the positioning and had no psychology
@@ -181,30 +182,40 @@ function GeneratorInner() {
             <div style={{position:"absolute",bottom:"1rem",right:"1.25rem",fontSize:".72rem",color:topic.length>180?"var(--hot)":"var(--muted)"}}>{topic.length}/200</div>
           </div>
 
-          {/* Optional knobs — sensible defaults (TikTok, Authentic, Engagement) work for 80% of cases. */}
-          <details style={{marginBottom:"12px"}}>
-            <summary style={{cursor:"pointer",fontSize:"var(--text-sm)",color:"var(--text-muted)",fontFamily:"var(--fb)",padding:"6px 4px",listStyle:"none",userSelect:"none"}}>
-              More options <span style={{opacity:.6}}>(platform, tone, niche, goal)</span>
-            </summary>
-            <div style={{marginTop:"8px",display:"flex",flexDirection:"column",gap:"12px"}}>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px"}}>
-                <Panel label="Platform">{PLATFORM_MODES.map(pm=>(
-                  <button key={pm.slug} onClick={()=>togglePlatform(pm.label)} className="chip" data-active={platforms.includes(pm.label)}>
-                    <BrandIcon name={PLATFORM_BRAND[pm.slug]} size={13} /> {pm.label}
-                  </button>
-                ))}</Panel>
-                <Panel label="Tone">{TONES.map(t=><Chip key={t} label={t} active={tone===t} onClick={()=>setTone(t)}/>)}</Panel>
-              </div>
-              <Panel label="Niche (optional)">
-                {NICHES.map(n=><Chip key={n} label={n} active={!showCustom&&niche===n} onClick={()=>{setShowCustom(false);setNiche(p=>p===n?"":n);}}/>)}
-                <button onClick={()=>{setShowCustom(p=>!p);setNiche("");}} className="chip" data-active={showCustom}><Icon name="pencil"/> Other…</button>
-                {showCustom&&<input ref={customRef} value={customNiche} onChange={e=>setCustomNiche(e.target.value)} placeholder="Type your niche..." aria-label="Custom niche" style={{padding:"6px 14px",borderRadius:"var(--r-pill)",border:"1px solid var(--border-strong)",background:"var(--surface)",color:"var(--text)",fontSize:"var(--text-sm)",fontFamily:"var(--fb)",width:"160px",caretColor:"var(--accent)"}}/>}
-              </Panel>
-              <Panel label="Conversion goal">
-                {GOALS.map(g=><Chip key={g} label={g} active={goal===g} onClick={()=>setGoal(g)}/>)}
-              </Panel>
-            </div>
-          </details>
+          {/* Optional knobs — sensible defaults (TikTok, Authentic, Engagement)
+              work for 80% of cases. The bar shows the live selection even closed. */}
+          <OptionsBar
+            label="Options"
+            style={{marginBottom:"12px"}}
+            summary={
+              <>
+                {PLATFORM_MODES.filter(pm=>platforms.includes(pm.label)).map(pm=>(
+                  <ValueChip key={pm.slug}><BrandIcon name={PLATFORM_BRAND[pm.slug]} size={11} /> {pm.label}</ValueChip>
+                ))}
+                <ValueChip>{tone}</ValueChip>
+                <ValueChip><Icon name="target" /> {activeNiche || "Any niche"}</ValueChip>
+              </>
+            }
+          >
+            <OptionGroup label="Platform">
+              {PLATFORM_MODES.map(pm=>(
+                <button key={pm.slug} onClick={()=>togglePlatform(pm.label)} className="chip" data-active={platforms.includes(pm.label)}>
+                  <BrandIcon name={PLATFORM_BRAND[pm.slug]} size={13} /> {pm.label}
+                </button>
+              ))}
+            </OptionGroup>
+            <OptionGroup label="Tone">
+              {TONES.map(t=><Chip key={t} label={t} active={tone===t} onClick={()=>setTone(t)}/>)}
+            </OptionGroup>
+            <OptionGroup label="Niche (optional)">
+              {NICHES.map(n=><Chip key={n} label={n} active={!showCustom&&niche===n} onClick={()=>{setShowCustom(false);setNiche(p=>p===n?"":n);}}/>)}
+              <button onClick={()=>{setShowCustom(p=>!p);setNiche("");}} className="chip" data-active={showCustom}><Icon name="pencil"/> Other…</button>
+              {showCustom&&<input ref={customRef} value={customNiche} onChange={e=>setCustomNiche(e.target.value)} placeholder="Type your niche..." aria-label="Custom niche" style={{padding:"6px 14px",borderRadius:"var(--r-pill)",border:"1px solid var(--border-strong)",background:"var(--surface)",color:"var(--text)",fontSize:"var(--text-sm)",fontFamily:"var(--fb)",width:"160px",caretColor:"var(--accent)"}}/>}
+            </OptionGroup>
+            <OptionGroup label="Conversion goal">
+              {GOALS.map(g=><Chip key={g} label={g} active={goal===g} onClick={()=>setGoal(g)}/>)}
+            </OptionGroup>
+          </OptionsBar>
 
           {/* Generate button */}
           <div style={{marginBottom:"12px"}}>
@@ -410,15 +421,6 @@ function ActionBtn({ onClick, active, activeColor, title, children }: { onClick:
       style={{width:"26px",height:"26px",borderRadius:"50%",border:"1px solid var(--border-strong)",background:"var(--surface-2)",color:active&&activeColor?activeColor:"var(--text-muted)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",transition:"color .2s"}}>
       {children}
     </button>
-  );
-}
-
-function Panel({ label, children, style }: { label:string; children:React.ReactNode; style?:React.CSSProperties }) {
-  return (
-    <div className="card" style={{padding:"1.25rem",...style}}>
-      <div className="kicker" style={{marginBottom:".75rem"}}>{label}</div>
-      <div style={{display:"flex",flexWrap:"wrap",gap:"6px"}}>{children}</div>
-    </div>
   );
 }
 

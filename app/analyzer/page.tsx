@@ -14,6 +14,7 @@ import { Button, Spinner } from "@/components/ui";
 import { ScoreRing } from "@/components/ScoreRing";
 import { PLATFORMS as PLATFORM_MODES, getPlatform } from "@/lib/platforms";
 import { BrandIcon, PLATFORM_BRAND } from "@/components/BrandIcon";
+import { OptionsBar, OptionGroup, ValueChip } from "@/components/OptionsBar";
 import { getNichePref, setNichePref } from "@/lib/prefs";
 
 // Short-form only — the product's positioning (lib/platforms.ts is the
@@ -294,37 +295,42 @@ function AnalyzerInner() {
             </div>
           )}
 
-          {/* Optional knobs — default platform TikTok + Any niche works for first-pass analysis. */}
-          <details style={{ marginBottom: "12px" }}>
-            <summary style={{ cursor: "pointer", fontSize: "var(--text-sm)", color: "var(--text-muted)", fontFamily: "var(--fb)", padding: "6px 4px", listStyle: "none", userSelect: "none" }}>
-              More options <span style={{ opacity: .6 }}>(platform, niche)</span>
-            </summary>
-            <div style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "12px" }}>
-              <div className="card" style={{ padding: "1.25rem" }}>
-                <div className="kicker" style={{ marginBottom: ".75rem" }}>Platform</div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                  {PLATFORM_MODES.map(pm => (
-                    <button key={pm.slug} onClick={() => setPlatform(pm.label)} className="chip" data-active={platform === pm.label}>
-                      <BrandIcon name={PLATFORM_BRAND[pm.slug]} size={13} /> {pm.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="card" style={{ padding: "1.25rem" }}>
-                <div className="kicker" style={{ marginBottom: ".75rem" }}>Niche <span style={{ textTransform: "none", letterSpacing: 0, fontWeight: 400 }}>— optional, sharpens the verdict</span></div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                  <button onClick={() => setNiche("")} className="chip" data-active={niche === ""}>
-                    Any
-                  </button>
-                  {NICHE_MODES.map(nm => (
-                    <button key={nm.slug} onClick={() => setNiche(nm.slug)} className="chip" data-active={niche === nm.slug}>
-                      <Icon name={nicheIcon(nm.slug)} /> {nm.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </details>
+          {/* Optional knobs — default platform TikTok + Any niche works for
+              first-pass analysis. The bar shows the live selection even closed. */}
+          <OptionsBar
+            label="Options"
+            style={{ marginBottom: "12px" }}
+            summary={
+              <>
+                <ValueChip>
+                  {(() => { const slug = getPlatform(platform)?.slug; return slug ? <BrandIcon name={PLATFORM_BRAND[slug]} size={11} /> : null; })()}
+                  {platform}
+                </ValueChip>
+                <ValueChip>
+                  <Icon name={niche ? nicheIcon(niche) : "sparkles"} />
+                  {NICHE_MODES.find(nm => nm.slug === niche)?.label ?? "Any niche"}
+                </ValueChip>
+              </>
+            }
+          >
+            <OptionGroup label="Platform">
+              {PLATFORM_MODES.map(pm => (
+                <button key={pm.slug} onClick={() => setPlatform(pm.label)} className="chip" data-active={platform === pm.label}>
+                  <BrandIcon name={PLATFORM_BRAND[pm.slug]} size={13} /> {pm.label}
+                </button>
+              ))}
+            </OptionGroup>
+            <OptionGroup label={<>Niche <span style={{ textTransform: "none", letterSpacing: 0, fontWeight: 400 }}>— optional, sharpens the verdict</span></>}>
+              <button onClick={() => setNiche("")} className="chip" data-active={niche === ""}>
+                Any
+              </button>
+              {NICHE_MODES.map(nm => (
+                <button key={nm.slug} onClick={() => setNiche(nm.slug)} className="chip" data-active={niche === nm.slug}>
+                  <Icon name={nicheIcon(nm.slug)} /> {nm.label}
+                </button>
+              ))}
+            </OptionGroup>
+          </OptionsBar>
 
           {/* Analyze button */}
           <div style={{ marginBottom: "12px" }}>

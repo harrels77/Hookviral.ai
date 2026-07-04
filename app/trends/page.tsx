@@ -9,6 +9,7 @@ import { getNichePref, setNichePref, getGeoPref, setGeoPref, getSourcesPref, set
 import { SOURCE_BADGES, type SourceKey } from "@/lib/sourceBadges";
 import { BrandIcon } from "@/components/BrandIcon";
 import { FlagIcon, isFlagCode } from "@/components/FlagIcon";
+import { OptionsBar, OptionGroup, ValueChip } from "@/components/OptionsBar";
 import { Icon, nicheIcon, type IconName } from "@/lib/icons";
 
 type Velocity = "rising" | "steady" | "cooling" | "new";
@@ -227,15 +228,30 @@ export default function TrendsPage() {
         <div className="page-wrap">
           {/* Quiet controls — defaults work for first view. Refresh always visible. */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", marginBottom: "12px", flexWrap: "wrap" }}>
-            <details style={{ flex: 1 }}>
-              <summary style={{ cursor: "pointer", fontSize: "var(--text-sm)", color: "var(--text-muted)", fontFamily: "var(--fb)", padding: "6px 4px", listStyle: "none", userSelect: "none" }}>
-                Filters <span style={{ opacity: .6 }}>
-                  ({sources.length === ALL_SOURCES.length
-                    ? "All sources"
-                    : sources.map(s => SOURCE_LABELS[s]).join(" + ")} · {allGeoLess ? "global" : geo} · {nicheLabel || "All niches"})
-                </span>
-              </summary>
-              <div style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "10px" }}>
+            <OptionsBar
+              label="Filters"
+              style={{ flex: 1, minWidth: 0 }}
+              summary={
+                <>
+                  <ValueChip>
+                    {sources.slice(0, 4).map(s => (
+                      <BrandIcon key={s} name={s} size={12} style={{ color: SOURCE_BADGES[s].color }} />
+                    ))}
+                    {sources.length > 4 && <span>+{sources.length - 4}</span>}
+                  </ValueChip>
+                  <ValueChip>
+                    {allGeoLess || geo === "GLOBAL"
+                      ? <><Icon name="globe" /> Global</>
+                      : <>{isFlagCode(geo) && <FlagIcon code={geo} size={13} />} {geo === "GB" ? "UK" : geo}</>}
+                  </ValueChip>
+                  <ValueChip>
+                    {niche ? <Icon name={nicheIcon(niche)} /> : null}
+                    {nicheLabel || "All niches"}
+                  </ValueChip>
+                </>
+              }
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 <div className="hv-controls-row" style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                   <div className="hv-scroll-pill" style={{ display: "flex", border: "1px solid var(--border)", borderRadius: "100px", overflow: "hidden", background: "var(--s1)" }}>
                     {([
@@ -272,21 +288,18 @@ export default function TrendsPage() {
                     ))}
                   </div>
                 </div>
-                <div style={{ background: "var(--s1)", border: "1px solid var(--border)", borderRadius: "var(--r2)", padding: "1rem 1.1rem" }}>
-                  <div className="kicker" style={{ marginBottom: ".5rem" }}>Niche</div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                    <button onClick={() => setNiche("")} className="chip" data-active={niche === ""}>
-                      All
+                <OptionGroup label="Niche">
+                  <button onClick={() => setNiche("")} className="chip" data-active={niche === ""}>
+                    All
+                  </button>
+                  {NICHE_MODES.map(n => (
+                    <button key={n.slug} onClick={() => setNiche(n.slug)} className="chip" data-active={niche === n.slug}>
+                      <Icon name={nicheIcon(n.slug)} /> {n.label}
                     </button>
-                    {NICHE_MODES.map(n => (
-                      <button key={n.slug} onClick={() => setNiche(n.slug)} className="chip" data-active={niche === n.slug}>
-                        <Icon name={nicheIcon(n.slug)} /> {n.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                  ))}
+                </OptionGroup>
               </div>
-            </details>
+            </OptionsBar>
             <button onClick={() => load(sources, niche, geo)} disabled={loading} title="Refresh trends" aria-label="Refresh trends"
               style={{ width: "38px", height: "38px", borderRadius: "50%", border: "1px solid var(--border-strong)", background: "var(--surface)", color: "var(--text-soft)", cursor: loading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .2s", opacity: loading ? 0.5 : 1, flexShrink: 0 }}>
               <Icon name="refresh" />
